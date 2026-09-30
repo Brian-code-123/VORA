@@ -47,7 +47,7 @@ def tables() -> str:
             f"| Answer keyword faithfulness (n={rag['faithfulness']['n']}) | {rag['faithfulness']['acc']*100:.0f}% | – |",
             f"| TTS MOS proxy (UTMOS22) en / zh | {mos['en']['mean_mos_proxy']} / {mos['zh']['mean_mos_proxy']} | ≥3.5 |",
             "", "**Memory (RSS added by loading, M2)**", "", "| Component | MB |", "|---|---|",
-            f"| ASR + RAG + TTS in one process (incl. shared library imports) | {mem['asr_rag_tts']:.0f} (target ≤500) |",
+            f"| ASR + RAG + TTS in one process (incl. shared library imports) | {mem['asr_rag_tts']:.0f} in the latest run (437-638 across runs; target ≤500) |",
             f"| LLM Qwen2.5-0.5B Q4_K_M | {mem['llm']:.0f} |",
             "", "**LLM runtime: ONNX vs GGUF (same prompt, M2 CPU)**", "", "| Runtime | First token (ms) | Decode tok/s | Size |", "|---|---|---|---|",
             f"| ONNX fp32 (optimum) | {onnx['onnx_fp32']['first_token_ms_median']:.0f} | {onnx['onnx_fp32']['decode_tok_s_median']:.1f} | – |",

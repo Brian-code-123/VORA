@@ -41,7 +41,7 @@ def measure(name: str) -> float:
     return json.loads(out.stdout.strip().splitlines()[-1])["delta_mb"]
 
 
-@pytest.mark.xfail(reason="MEASURED ~645 MB (incl. ~160 MB shared library imports) for ASR+RAG+TTS on M2 vs the brief's 500 MB; "
+@pytest.mark.xfail(reason="MEASURED 437-638 MB across runs (incl. ~160 MB shared library imports; macOS memory compression) for ASR+RAG+TTS on M2 vs the brief's 500 MB; "
                           "reported as not met, untried mitigations listed in docs/report.md", strict=False)
 def test_asr_rag_tts_rss_under_500mb():
     m = {"asr_rag_tts": measure("asr_rag_tts"), "llm": measure("llm")}
