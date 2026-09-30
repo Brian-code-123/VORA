@@ -4,7 +4,7 @@ import time
 import pytest
 
 from vora.config import Settings
-from vora.llm import BUSY, UNSURE, Llm
+from vora.llm import BUSY, SYSTEM, UNSURE, Llm
 from vora.rag.store import Hit
 
 S = Settings()
@@ -78,12 +78,13 @@ def test_lock_timeout_returns_busy(llm):
         llm._lock.release()
 
 
-def test_two_users_alternating_keeps_prefix_cache(llm):
+def test_alternating_users_reuse_system_prefix(llm):
+    """Users alternate with different questions: the KV cache must still start with the shared system prompt."""
     other = Hit("E05", "LED colors: blue means the box is listening, green means it is speaking.", 0.9)
     list(llm.stream("warranty of x200?", [WARRANTY_EN]))
     list(llm.stream("what does blue mean?", [other]))
-    list(llm.stream("warranty of x200?", [WARRANTY_EN]))
-    assert len(llm.llm.cache.cache_state) >= 2
+    sys_ids = llm.llm.tokenize(("<|im_start|>system\n" + SYSTEM + "<|im_end|>").encode(), add_bos=False, special=True)
+    assert list(llm.llm._input_ids[: len(sys_ids)]) == sys_ids
 
 
 @pytest.mark.perf

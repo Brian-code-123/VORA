@@ -3,6 +3,7 @@ Usage: python scripts/bench.py [--n 30] [--out results/bench.json]"""
 import argparse
 import asyncio
 import json
+import os
 import platform
 import statistics
 import time
@@ -33,7 +34,7 @@ def rtf(processing_s: float, audio_s: float) -> float:
 
 def host() -> dict:
     return {"cpu": platform.processor() or platform.machine(), "machine": platform.machine(), "system": platform.platform(),
-            "cores": psutil.cpu_count(logical=False), "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"}
+            "cores": psutil.cpu_count(logical=False), "loadavg_1m": round(os.getloadavg()[0], 1), "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"}
 
 
 def make_audio(tts, text: str) -> np.ndarray:
