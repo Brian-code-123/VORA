@@ -2,7 +2,7 @@ import re
 import threading
 from typing import Iterator
 
-from llama_cpp import Llama, LlamaRAMCache
+from llama_cpp import Llama
 
 from vora.config import Settings
 from vora.rag.store import Hit
@@ -42,9 +42,11 @@ class Llm:
         self.s = settings
         self.llm = Llama(
             model_path=str(next((settings.models_dir / "llm").glob("*.gguf"))),
-            n_ctx=1024, n_threads=settings.llm_threads, n_batch=128, n_gpu_layers=0, verbose=False,
+            n_ctx=1024, n_threads=settings.llm_threads, n_threads_batch=settings.llm_threads,  # default n_threads_batch = all logical cores: E-core stragglers made prefill 10x slower (22 vs 374 tok/s)
+            n_batch=512, n_gpu_layers=0, verbose=False,
         )
-        self.llm.set_cache(LlamaRAMCache(capacity_bytes=64 << 20))  # 2 alternating users would thrash the single-prompt KV prefix
+        # No LlamaRAMCache: every entry copies ~90 MB of logits (RSS 2.5 GB, seconds of memcpy). llama.cpp already reuses the
+        # KV prefix of the previous prompt, which is the shared system prompt when users alternate.
         self._lock = threading.Lock()
         self._cancel = threading.Event()
 
