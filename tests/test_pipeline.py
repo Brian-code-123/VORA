@@ -39,28 +39,31 @@ class FakeLlm:
     def __init__(self, tokens=("Warranty ", "is ", "two ", "years. ", "Bye."), delay=0.0):
         self.tokens, self.delay, self.calls, self.cancelled = tokens, delay, [], 0
 
-    def stream(self, q, hits):
+    def stream(self, q, hits, cancel=None):
         self.calls.append(q)
-        for t in self.tokens:
-            time.sleep(self.delay)
-            yield t
-
-    def cancel(self):
-        self.cancelled += 1
+        done = False
+        try:
+            for t in self.tokens:
+                time.sleep(self.delay)
+                yield t
+            done = True
+        finally:
+            if not done:  # consumer closed the stream early (turn cancelled)
+                self.cancelled += 1
 
 
 class FakeTts:
     def __init__(self, chunks=3, delay=0.0):
         self.chunks, self.delay, self.said, self.cancelled = chunks, delay, [], 0
 
-    def synth(self, text):
+    def synth(self, text, cancel=None):
         self.said.append(text)
         for _ in range(self.chunks):
+            if cancel is not None and cancel.is_set():
+                self.cancelled += 1
+                return
             time.sleep(self.delay)
             yield b"\x01\x00" * 100
-
-    def cancel(self):
-        self.cancelled += 1
 
 
 def P(script, retriever=None, llm=None, tts=None, filler=False, queue_max=64, delay=0.0, clock=time.perf_counter):
@@ -154,7 +157,8 @@ async def test_barge_in_cancels_and_drains():
     await feed_all(p, 2)
     await asyncio.sleep(0.15)  # reply audio is flowing / queue full
     await feed_all(p, 2)
-    assert p.llm.cancelled >= 1 and p.tts.cancelled >= 1
+    await asyncio.sleep(0.1)
+    assert p.tts.cancelled >= 1  # worker observed this turn's cancel event
     msgs = drain(p)
     idx = max(i for i, m in enumerate(msgs) if m[0] == "json" and m[1]["type"] == "cancel")
     assert not any(m[0] == "audio" for m in msgs[idx + 1:])
@@ -176,6 +180,7 @@ async def test_new_final_cancels_previous_turn():
     await asyncio.sleep(0.08)
     await feed_all(p, 1)
     await p.wait_idle()
+    await asyncio.sleep(0.15)
     assert p.llm.cancelled >= 1 and p.llm.calls == ["first question", "second question"]
     types = [m[1]["type"] for m in drain(p) if m[0] == "json"]
     assert types.count("metrics") == 1 and "cancel" in types
