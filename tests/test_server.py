@@ -247,3 +247,11 @@ def test_real_models_roundtrip_en():
     types = {d["type"] for k, d in got if k == "json"}
     assert {"partial", "final", "context", "metrics"} <= types
     assert sum(len(b) for k, b in got if k == "audio") > 16000
+
+
+def test_client_files_served():
+    with TestClient(app_with(models([[]]))) as c:
+        html = c.get("/")
+        assert html.status_code == 200 and "worklet.js" in html.text and "echoCancellation" in html.text
+        js = c.get("/worklet.js")
+        assert js.status_code == 200 and "registerProcessor" in js.text
