@@ -46,3 +46,14 @@ def test_empty_and_whitespace_tokens():
 def test_abbreviation_not_split():
     out, tail = run(list("Use e.g. the app. Done."))
     assert out + tail == ["Use e.g. the app.", "Done."]
+
+
+def test_first_chunk_split_after_four_words_when_no_punctuation():
+    out, tail = run(list("The warranty on the VORA-X200 is two years."))
+    assert out[0] == "The warranty on the"
+    assert " ".join(out + tail) == "The warranty on the VORA-X200 is two years."
+
+
+def test_short_first_words_not_split():
+    out, tail = run(list("It is on a red day."))
+    assert out + tail == ["It is on a red day."]

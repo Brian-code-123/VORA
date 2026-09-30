@@ -40,6 +40,7 @@ class Models:
             m.make_asr(lang).feed(np.zeros(1600, dtype=np.int16).tobytes())
         m.retriever.search("warm up")
         list(m.llm.stream("hi", [Hit("w", "Hello.", 1.0)]))
+        list(m.llm.stream("你好", [Hit("w", "你好。", 1.0)]))  # pages in CJK embedding rows (cold zh call took 4.7 s)
         list(m.tts.synth("Hello.")), list(m.tts.synth("你好。"))
         return m
 
