@@ -54,6 +54,11 @@ class SentenceChunker:
                     if len(head.strip()) >= (8 if _is_cjk(head) else 12):
                         cut = i + 1
                         break
+            if cut is None and not self.first_done and not _is_cjk(self.buf):
+                # latency: the first audio chunk is synthesised at ~0.2x real time, so keep it to ~4 words
+                w = self.buf.split(" ")
+                if len(w) >= 5 and len(" ".join(w[:4])) >= 16:
+                    cut = len(" ".join(w[:4])) + 1
             if cut is None:
                 limit = 60 if _is_cjk(self.buf) else 120
                 if len(self.buf) >= limit:
