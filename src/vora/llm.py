@@ -61,7 +61,8 @@ class Llm:
             used += n
         return "\n".join(f"[{i + 1}] {p}" for i, p in enumerate(parts))
 
-    def stream(self, question: str, hits: list[Hit]) -> Iterator[str]:
+    def stream(self, question: str, hits: list[Hit], cancel: threading.Event | None = None) -> Iterator[str]:
+        """`cancel` is a per-turn event (shared instance flag would let one user's barge-in kill another's reply)."""
         lang = _lang(question)
         if not hits:
             yield UNSURE[lang]
@@ -69,7 +70,9 @@ class Llm:
         if not self._lock.acquire(timeout=3.0):
             yield BUSY[lang]
             return
-        self._cancel.clear()
+        if cancel is None:
+            cancel = self._cancel
+            cancel.clear()
         gen = None
         try:
             msgs = [{"role": "system", "content": SYSTEM},
@@ -77,7 +80,7 @@ class Llm:
             gen = self.llm.create_chat_completion(messages=msgs, stream=True, max_tokens=80, temperature=0.2)
             buf, decided, ref = [], False, _terms(hits[0].text) | _terms(question)
             for ev in gen:
-                if self._cancel.is_set():
+                if cancel.is_set():
                     return
                 tok = ev["choices"][0]["delta"].get("content")
                 if not tok:

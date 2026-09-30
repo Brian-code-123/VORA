@@ -81,22 +81,26 @@ class Tts:
             "zh": _voice(str(next(zh.glob("*.onnx"))), str(zh / "tokens.txt"), lexicon=str(zh / "lexicon.txt")),
         }
         self._cancel = threading.Event()
+        self._lock = threading.Lock()  # sherpa OfflineTts.generate is not documented thread-safe; held only while generating
 
     def cancel(self) -> None:
         self._cancel.set()
 
-    def synth(self, text: str) -> Iterator[bytes]:
-        self._cancel.clear()
+    def synth(self, text: str, cancel: threading.Event | None = None) -> Iterator[bytes]:
+        if cancel is None:
+            cancel = self._cancel
+            cancel.clear()
         for lang, run in split_by_script(sanitize_for_tts(text)):
             if not re.search(r"\w", run):
                 continue
             v = self.voices[lang]
-            audio = v.generate(run.strip(), sid=0, speed=1.0, callback=lambda s, p: 1 if self._cancel.is_set() else 0)
+            with self._lock:  # released before chunks are yielded: a slow client must not hold the voice
+                audio = v.generate(run.strip(), sid=0, speed=1.0, callback=lambda s, p: 1 if cancel.is_set() else 0)
             x = np.asarray(audio.samples, dtype=np.float32)
             if audio.sample_rate != SR:
                 x = resample_poly(x, SR, audio.sample_rate).astype(np.float32)
             pcm = (np.clip(x, -1, 1) * 32767).astype(np.int16)
             for i in range(0, len(pcm), CHUNK):
-                if self._cancel.is_set():
+                if cancel.is_set():
                     return
                 yield pcm[i:i + CHUNK].tobytes()

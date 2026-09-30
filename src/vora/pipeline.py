@@ -28,7 +28,7 @@ class Executors:
     asr: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(2, "asr"))
     rag: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(1, "rag"))
     llm: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(1, "llm"))
-    tts: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(1, "tts"))
+    tts: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(4, "tts"))  # one blocked-on-client worker per session
 
 
 def _lang(text: str) -> str:
@@ -147,8 +147,6 @@ class Pipeline:
         if not self._turn_active():
             return
         self._turn_ev.set()
-        self.llm.cancel()
-        self.tts.cancel()
         self._turn.cancel()
         try:
             await self._turn
@@ -171,7 +169,7 @@ class Pipeline:
         def llm_worker() -> None:
             chunker = SentenceChunker()
             try:
-                for tok in self.llm.stream(text, hits):
+                for tok in self.llm.stream(text, hits, ev):
                     if ev.is_set():
                         return
                     if "first_token" not in trace.marks:
@@ -193,7 +191,7 @@ class Pipeline:
                 if item is None:
                     return
                 sentence, is_filler = item
-                for chunk in self.tts.synth(sentence):
+                for chunk in self.tts.synth(sentence, ev):
                     if ev.is_set():
                         return
                     now = self.clock()
