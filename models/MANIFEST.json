@@ -1,0 +1,41 @@
+{
+  "asr_en": {
+    "repo": "csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17",
+    "license": "Apache-2.0",
+    "files": {
+      "decoder-epoch-99-avg-1.int8.onnx": "21e2a2acd961b3ac72f55be2f10f1a285e1b0b0ba010d7c0b6eab141411b163c",
+      "encoder-epoch-99-avg-1.int8.onnx": "3810755ce7c3ab26b42a8bcf39d191308fa27fb0f53358823ba46141d03b7eb3",
+      "joiner-epoch-99-avg-1.int8.onnx": "e085d73b593cf9b0707f370dbd656d58327d3fe36d80d849202ef81df02cb01e"
+    }
+  },
+  "asr_zh": {
+    "repo": "csukuangfj/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23",
+    "license": "Apache-2.0",
+    "files": {
+      "decoder-epoch-99-avg-1.int8.onnx": "22f123bb8cba9b38974b3df18a3f45e7081f4985ebb2e075d9f21f618c468bbf",
+      "encoder-epoch-99-avg-1.int8.onnx": "1c556ea57cec304e55ec4b72e52c1cc098bb01476ed7d90f3de939fe126487b1",
+      "joiner-epoch-99-avg-1.int8.onnx": "a7cf9d82757bdcf786059454495a9ca95e4bd7347f72473fc08d794475c36169"
+    }
+  },
+  "tts_en": {
+    "repo": "csukuangfj/vits-piper-en_US-lessac-low",
+    "license": "MIT (Piper) / voice dataset public domain",
+    "files": {
+      "en_US-lessac-low.onnx": "7552bd58d49baaee47628e945f5045b6876a6af0aa3bb5605efcaa755ea9640f"
+    }
+  },
+  "tts_zh": {
+    "repo": "csukuangfj/vits-piper-zh_CN-huayan-x_low",
+    "license": "MIT (Piper)",
+    "files": {
+      "zh_CN-huayan-x_low.onnx": "74ab713ba7c6d5e8b0b690a85d468c8fe7a4bc531759dbada9a47ced6007af71"
+    }
+  },
+  "llm": {
+    "repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+    "license": "Apache-2.0",
+    "files": {
+      "qwen2.5-0.5b-instruct-q4_k_m.gguf": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
+    }
+  }
+}
