@@ -9,13 +9,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "httpx"]
+dev = ["pytest", "pytest-asyncio", "pytest-timeout", "httpx"]
 eval = ["jiwer", "datasets", "soundfile", "torch", "onnxruntime", "optimum[onnxruntime]", "playwright"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
 markers = ["perf: latency/memory tests, need models and real CPU"]
 asyncio_mode = "auto"
+timeout = 120
 
 [build-system]
 requires = ["hatchling"]
