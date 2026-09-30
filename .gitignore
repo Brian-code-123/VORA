@@ -5,3 +5,4 @@ __pycache__/
 results/
 .pytest_cache/
 index/
+data/
