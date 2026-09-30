@@ -17,7 +17,7 @@ ENV FASTEMBED_CACHE_PATH=/app/models/fastembed \
     VORA_HOST=0.0.0.0 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src
-COPY scripts/fetch_models.py scripts/fetch_models.py
+COPY scripts/fetch_models.py scripts/quantize_tts.py scripts/
 RUN python scripts/fetch_models.py
 COPY src ./src
 COPY kb ./kb

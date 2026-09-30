@@ -19,14 +19,15 @@
   },
   "tts_en": {
     "repo": "csukuangfj/vits-piper-en_US-lessac-low",
-    "license": "MIT (Piper) / voice dataset public domain",
+    "license": "Piper MIT; voice dataset: Blizzard 2013 Lessac licence (custom, not OSI/CC)",
     "files": {
+      "en_US-lessac-low.int8.onnx": "c3ea8ccb87f6b22c052adc385f808391fdb63277819365770a908111ab48bc12",
       "en_US-lessac-low.onnx": "7552bd58d49baaee47628e945f5045b6876a6af0aa3bb5605efcaa755ea9640f"
     }
   },
   "tts_zh": {
     "repo": "csukuangfj/vits-piper-zh_CN-huayan-x_low",
-    "license": "MIT (Piper)",
+    "license": "Piper MIT; voice dataset licence UNKNOWN per Piper model card",
     "files": {
       "zh_CN-huayan-x_low.onnx": "74ab713ba7c6d5e8b0b690a85d468c8fe7a4bc531759dbada9a47ced6007af71"
     }

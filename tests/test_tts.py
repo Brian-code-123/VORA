@@ -74,3 +74,29 @@ def test_first_chunk_under_200ms_short_sentence(tts):
         ts.append((time.perf_counter() - t0) * 1000)
     # ruling: int8 en voice measures ~230 ms on M2 (fp32 ~80 ms but 63 MB > 30 MB gate); zh x_low is ~45 ms
     assert ts[1] < 200 and ts[0] < 300, ts
+
+
+@needs_models
+def test_two_sentences_not_truncated(tts):
+    """sherpa's callback returns 1 to continue / 0 to stop (docstring says the opposite): a wrong value dropped sentence 2."""
+    a, b = "The battery lasts ten hours.", "Hold the reset button for five seconds."
+    both = len(b"".join(tts.synth(f"{a} {b}")))
+    apart = len(b"".join(tts.synth(a))) + len(b"".join(tts.synth(b)))
+    assert both >= 0.9 * apart, (both, apart)
+
+
+@needs_models
+def test_cancel_during_generation_stops_quickly(tts):
+    import threading
+    ev = threading.Event()
+    ev.set()
+    assert b"".join(tts.synth("One sentence here. Another sentence follows. And a third one.", ev)) == b""
+
+
+def test_pick_en_model_prefers_int8_and_fp32_flag(tmp_path):
+    from vora.tts import pick_en_model
+    (tmp_path / "en.onnx").write_bytes(b"x")
+    assert pick_en_model(tmp_path, fp32=False).name == "en.onnx"          # int8 missing -> fp32 fallback
+    (tmp_path / "en.int8.onnx").write_bytes(b"x")
+    assert pick_en_model(tmp_path, fp32=False).name == "en.int8.onnx"
+    assert pick_en_model(tmp_path, fp32=True).name == "en.onnx"           # glob("*.onnx") used to match int8 too

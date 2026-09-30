@@ -1,5 +1,7 @@
+import logging
 import re
 import threading
+from pathlib import Path
 from typing import Iterator, Literal
 
 import numpy as np
@@ -8,6 +10,7 @@ from scipy.signal import resample_poly
 
 from vora.config import Settings
 
+log = logging.getLogger("vora")
 SR = 16000
 CHUNK = int(0.2 * SR)  # 200 ms of samples
 _CJK = re.compile(r"[一-鿿]")
@@ -61,6 +64,17 @@ def split_by_script(text: str) -> list[tuple[str, str]]:
     return [(l, t) for l, t in runs]
 
 
+def pick_en_model(d: Path, fp32: bool) -> Path:
+    """int8 voice unless fp32 requested; falls back to fp32 when no int8 file exists (fresh image / fresh checkout)."""
+    plain = sorted(p for p in d.glob("*.onnx") if not p.name.endswith(".int8.onnx"))
+    int8 = sorted(d.glob("*.int8.onnx"))
+    if fp32 or not int8:
+        if not fp32:
+            log.warning("no int8 English voice in %s: using fp32 (run scripts/quantize_tts.py for the 30 MB gate)", d)
+        return plain[0]
+    return int8[0]
+
+
 def _voice(model: str, tokens: str, data_dir: str = "", lexicon: str = "", threads: int = 2):
     cfg = sherpa_onnx.OfflineTtsConfig(
         model=sherpa_onnx.OfflineTtsModelConfig(
@@ -77,7 +91,7 @@ class Tts:
         en = d / "tts_en"
         zh = d / "tts_zh"
         self.voices = {
-            "en": _voice(str(next(en.glob("*.onnx" if settings.tts_en_fp32 else "*.int8.onnx"))), str(en / "tokens.txt"), data_dir=str(en / "espeak-ng-data")),
+            "en": _voice(str(pick_en_model(en, settings.tts_en_fp32)), str(en / "tokens.txt"), data_dir=str(en / "espeak-ng-data")),
             "zh": _voice(str(next(zh.glob("*.onnx"))), str(zh / "tokens.txt"), lexicon=str(zh / "lexicon.txt")),
         }
         self._cancel = threading.Event()
@@ -95,7 +109,7 @@ class Tts:
                 continue
             v = self.voices[lang]
             with self._lock:  # released before chunks are yielded: a slow client must not hold the voice
-                audio = v.generate(run.strip(), sid=0, speed=1.0, callback=lambda s, p: 1 if cancel.is_set() else 0)
+                audio = v.generate(run.strip(), sid=0, speed=1.0, callback=lambda s, p: 0 if cancel.is_set() else 1)  # sherpa 1.13: 1 = continue, 0 = stop (its docstring says the reverse)
             x = np.asarray(audio.samples, dtype=np.float32)
             if audio.sample_rate != SR:
                 x = resample_poly(x, SR, audio.sample_rate).astype(np.float32)
