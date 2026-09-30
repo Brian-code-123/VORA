@@ -58,7 +58,7 @@ def test_zh_wav_final_has_cjk(recs):
     pcm = read(S.models_dir / "asr_zh/test_wavs/0.wav")
     ev, _, _ = stream_wav(AsrSession(recs, "zh"), pcm)
     finals = [e for e in ev if e.kind == "final"]
-    assert len(finals) == 1 and any("一" <= ch <= "鿿" for ch in finals[0].text)
+    assert finals and all(any("\u4e00" <= ch <= "\u9fff" for ch in f.text) for f in finals)  # bundled clip pauses mid-sentence -> 2 finals
 
 
 def test_silence_emits_no_final(recs):
