@@ -1,0 +1,52 @@
+{"q": "how long is the warranty on the vora x200", "chunk_id": ["E03", "Z03"], "split": "dev"}
+{"q": "vora x 200 warranty period", "chunk_id": ["E03", "Z03"], "split": "dev"}
+{"q": "X200保修期多久", "chunk_id": ["E03", "Z03"], "split": "dev"}
+{"q": "m100 warranty how many years", "chunk_id": ["E03", "Z03"], "split": "heldout"}
+{"q": "保修期是几年", "chunk_id": ["E03", "Z03"], "split": "dev"}
+{"q": "what is the wake word", "chunk_id": ["E04", "Z04"], "split": "dev"}
+{"q": "how do i change the wake word", "chunk_id": ["E04", "Z04"], "split": "heldout"}
+{"q": "唤醒词是什么", "chunk_id": ["E04", "Z04"], "split": "dev"}
+{"q": "怎么修改唤醒词", "chunk_id": ["E04", "Z04"], "split": "heldout"}
+{"q": "what does the red light mean", "chunk_id": ["E05", "Z05"], "split": "dev"}
+{"q": "led 蓝色代表什么", "chunk_id": ["E05", "Z05"], "split": "dev"}
+{"q": "why is the light flashing white", "chunk_id": ["E05", "Z05"], "split": "heldout"}
+{"q": "is my audio sent to the cloud", "chunk_id": ["E06", "Z06"], "split": "dev"}
+{"q": "隐私 音频会上传吗", "chunk_id": ["E06", "Z06"], "split": "dev"}
+{"q": "how does the mute switch work", "chunk_id": ["E06", "Z06"], "split": "heldout"}
+{"q": "how do i connect the box to wifi", "chunk_id": ["E07", "Z07"], "split": "dev"}
+{"q": "x200 支持 5ghz 吗", "chunk_id": ["E07", "Z07"], "split": "dev"}
+{"q": "does the m100 support wifi 6", "chunk_id": ["E07", "Z07"], "split": "heldout"}
+{"q": "how do i factory reset it", "chunk_id": ["E08", "Z08"], "split": "dev"}
+{"q": "怎么恢复出厂设置", "chunk_id": ["E08", "Z08"], "split": "dev"}
+{"q": "hold reset button how long", "chunk_id": ["E08", "Z08"], "split": "heldout"}
+{"q": "how often does the firmware update", "chunk_id": ["E09", "Z09"], "split": "dev"}
+{"q": "怎么检查固件更新", "chunk_id": ["E09", "Z09"], "split": "dev"}
+{"q": "does it understand cantonese", "chunk_id": ["E10", "Z10"], "split": "dev"}
+{"q": "支持哪些语言", "chunk_id": ["E10", "Z10"], "split": "dev"}
+{"q": "can it answer in mixed chinese and english", "chunk_id": ["E10", "Z10"], "split": "heldout"}
+{"q": "can i import my own documents", "chunk_id": ["E11", "Z11"], "split": "dev"}
+{"q": "知识库最大能导入多大", "chunk_id": ["E11", "Z11"], "split": "dev"}
+{"q": "which file formats can i upload for the knowledge base", "chunk_id": ["E11", "Z11"], "split": "heldout"}
+{"q": "how much does the x200 cost", "chunk_id": ["E12", "Z12"], "split": "dev"}
+{"q": "退货政策是什么", "chunk_id": ["E12", "Z12"], "split": "dev"}
+{"q": "who pays for return shipping", "chunk_id": ["E12", "Z12"], "split": "heldout"}
+{"q": "how do i contact support", "chunk_id": ["E13", "Z13"], "split": "dev"}
+{"q": "客服工作时间", "chunk_id": ["E13", "Z13"], "split": "heldout"}
+{"q": "what temperature can it operate in", "chunk_id": ["E14", "Z14"], "split": "dev"}
+{"q": "what power adapter does the x200 use", "chunk_id": ["E15", "Z15"], "split": "dev"}
+{"q": "待机功耗多少", "chunk_id": ["E15", "Z15"], "split": "heldout"}
+{"q": "how many microphones does the x200 have", "chunk_id": ["E16", "Z16"], "split": "dev"}
+{"q": "拾音距离多远", "chunk_id": ["E16", "Z16"], "split": "heldout"}
+{"q": "how loud is the speaker", "chunk_id": ["E17", "Z17"], "split": "dev"}
+{"q": "the box does not respond what should i do", "chunk_id": ["E18", "Z18"], "split": "dev"}
+{"q": "没反应怎么办", "chunk_id": ["E18", "Z18"], "split": "heldout"}
+{"q": "what is the weather in hong kong today", "chunk_id": null, "split": "dev"}
+{"q": "who won the world cup in 2018", "chunk_id": null, "split": "dev"}
+{"q": "how do i bake sourdough bread", "chunk_id": null, "split": "dev"}
+{"q": "请问明天股市会涨吗", "chunk_id": null, "split": "dev"}
+{"q": "translate hello into french", "chunk_id": null, "split": "dev"}
+{"q": "what is the capital of australia", "chunk_id": null, "split": "dev"}
+{"q": "推荐一部好看的电影", "chunk_id": null, "split": "dev"}
+{"q": "how do i change a car tyre", "chunk_id": null, "split": "dev"}
+{"q": "what is quantum computing", "chunk_id": null, "split": "dev"}
+{"q": "今天星期几", "chunk_id": null, "split": "dev"}
