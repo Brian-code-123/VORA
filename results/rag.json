@@ -1,0 +1,128 @@
+{
+ "top3_dev": {
+  "acc": 0.929,
+  "n": 28,
+  "misses": [
+   "how do i connect the box to wifi",
+   "what temperature can it operate in"
+  ]
+ },
+ "top3_heldout": {
+  "acc": 0.857,
+  "n": 14,
+  "misses": [
+   "does the m100 support wifi 6",
+   "没反应怎么办"
+  ]
+ },
+ "offtopic_rejected": {
+  "rate": 0.9,
+  "n": 10
+ },
+ "faithfulness": {
+  "acc": 0.9,
+  "n": 20,
+  "rows": [
+   {
+    "q": "how long is the warranty on the vora x200",
+    "answer": "the warranty on the vora-x200 is 2 years.",
+    "ok": true
+   },
+   {
+    "q": "what is the wake word",
+    "answer": "the wake word is \"hey vora\".",
+    "ok": true
+   },
+   {
+    "q": "what does the red light mean",
+    "answer": "the red light on the box indicates that the microphone is muted.",
+    "ok": true
+   },
+   {
+    "q": "how do i factory reset it",
+    "answer": "to factory reset the device, hold the reset button on the back for 10 seconds until the led flashes white.",
+    "ok": true
+   },
+   {
+    "q": "how do i contact support",
+    "answer": "to contact support, you should send an email to support@vora.example.",
+    "ok": true
+   },
+   {
+    "q": "does it understand cantonese",
+    "answer": "yes, the vora box understands cantonese.",
+    "ok": false
+   },
+   {
+    "q": "who pays for return shipping",
+    "answer": "the buyer pays for return shipping.",
+    "ok": true
+   },
+   {
+    "q": "how much does the x200 cost",
+    "answer": "the x200 costs 199 usd.",
+    "ok": true
+   },
+   {
+    "q": "what temperature can it operate in",
+    "answer": "the context does not provide information about the operating temperature of the vora box.",
+    "ok": false
+   },
+   {
+    "q": "what power adapter does the x200 use",
+    "answer": "the x200 uses a 12 v 2 a usb-c adapter.",
+    "ok": true
+   },
+   {
+    "q": "how many microphones does the x200 have",
+    "answer": "the x200 has 4 microphones.",
+    "ok": true
+   },
+   {
+    "q": "how loud is the speaker",
+    "answer": "the x200 has a 10 w speaker, while the m100 has a 5 w speaker.",
+    "ok": true
+   },
+   {
+    "q": "which file formats can i upload for the knowledge base",
+    "answer": "you can upload your own documents (markdown, txt, pdf) up to 1 gb on the x200 through the vora home app or a usb drive.",
+    "ok": true
+   },
+   {
+    "q": "how often does the firmware update",
+    "answer": "the firmware update is installed over the air once a month.",
+    "ok": true
+   },
+   {
+    "q": "can i import my own documents",
+    "answer": "yes, you can import your own documents.",
+    "ok": true
+   },
+   {
+    "q": "X200保修期多久",
+    "answer": "vora-x200的保修期是2年。",
+    "ok": true
+   },
+   {
+    "q": "怎么恢复出厂设置",
+    "answer": "按住背面的复位键 10 秒，直到指示灯白色闪烁。",
+    "ok": true
+   },
+   {
+    "q": "唤醒词是什么",
+    "answer": "默认唤醒词是“hey vora”。",
+    "ok": true
+   },
+   {
+    "q": "支持哪些语言",
+    "answer": "支持普通话和英语。",
+    "ok": true
+   },
+   {
+    "q": "知识库最大能导入多大",
+    "answer": "知识库最大能导入1gb",
+    "ok": true
+   }
+  ]
+ }
+}

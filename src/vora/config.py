@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     max_sessions: int = 4
     max_frame_bytes: int = 64 * 1024
     idle_timeout_s: float = 60.0
+    stall_timeout_s: float = 10.0   # bounded out-queue full this long -> client is not reading, drop the session
+    max_text_frame_bytes: int = 4096
+    allowed_origins: tuple[str, ...] = ()   # extra allowed Origin values; same-origin (Origin host == Host) is always allowed
     asr_threads: int = 2
     llm_threads: int = 4
     ssl_cert: str = ""

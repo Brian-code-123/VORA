@@ -1,0 +1,19 @@
+{
+ "onnx_fp32": {
+  "first_token_ms_median": 1582.5727089541033,
+  "decode_tok_s_median": 7.857097163725831
+ },
+ "onnx_int8": {
+  "first_token_ms_median": 628.0275840545073,
+  "decode_tok_s_median": 18.238179503863545
+ },
+ "gguf_q4_k_m": {
+  "first_token_ms_median": 437.57354095578194,
+  "decode_tok_s_median": 7.24878081194284
+ },
+ "onnx_file_mb": {
+  "model.onnx": 1.1,
+  "model_quantized.onnx": 602.9
+ },
+ "note": "M2 arm64 CPU. ONNX path uses fp32 KV-cache-less generate via optimum (not the prefix-cached path the live server uses)."
+}

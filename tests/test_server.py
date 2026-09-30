@@ -255,3 +255,53 @@ def test_client_files_served():
         assert html.status_code == 200 and "worklet.js" in html.text and "echoCancellation" in html.text
         js = c.get("/worklet.js")
         assert js.status_code == 200 and "registerProcessor" in js.text
+
+
+def test_cross_origin_websocket_rejected():
+    with TestClient(app_with(models([[]] * 2))) as c:
+        wait_ready(c)
+        with pytest.raises(WebSocketDisconnect) as e:
+            with c.websocket_connect("/ws", headers={"origin": "http://evil.example"}) as ws:
+                ws.receive()
+        assert e.value.code == 1008
+        with c.websocket_connect("/ws", headers={"origin": "http://testserver"}) as ws:   # same origin as Host
+            ws.send_text(json.dumps({"type": "stop"}))
+
+
+def test_load_failure_is_reported_on_health():
+    def loader(s):
+        raise RuntimeError("boom: no int8 voice")
+
+    with TestClient(create_app(settings=Settings(), loader=loader)) as c:
+        for _ in range(50):
+            r = c.get("/health")
+            if r.json().get("error"):
+                break
+            time.sleep(0.05)
+        assert r.status_code == 503 and "boom" in r.json()["error"]
+
+
+async def test_oversize_text_frame_closes_1009_and_non_object_json_ignored():
+    ws, s = StubWs(), Settings(max_text_frame_bytes=200)
+    m = models([[[fin("hello there")]]])
+    t = asyncio.create_task(serve_session(ws, m, s, set()))
+    await asyncio.sleep(0.02)
+    ws.inbox.put_nowait({"type": "websocket.receive", "text": "[1, 2]"})      # not an object: ignored
+    ws.push()
+    await asyncio.sleep(0.5)
+    assert any(k == "json" and d["type"] == "final" for k, d in ws.sent)
+    ws.inbox.put_nowait({"type": "websocket.receive", "text": "x" * 500})
+    await t
+    assert ws.closed == 1009
+
+
+async def test_stalled_client_session_is_closed_1011():
+    m = models([[[fin("q one")], [fin("q two")], [fin("q three")], [fin("q four")]]], tts=FakeTts(chunks=200, delay=0.001))
+    ws, s, sessions = StubWs(send_delay=999), Settings(queue_max=1, stall_timeout_s=0.2), set()
+    t = asyncio.create_task(serve_session(ws, m, s, sessions))
+    await asyncio.sleep(0.02)
+    for _ in range(4):
+        ws.push()
+        await asyncio.sleep(0.4)
+    await asyncio.wait_for(t, 5)
+    assert ws.closed == 1011 and sessions == set()

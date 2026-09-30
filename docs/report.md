@@ -31,7 +31,7 @@ One WebSocket per user carries audio up and both JSON events (`partial`, `final`
 
 ## 2. Streaming implementation
 
-**Partial ASR.** The recognizer is fed 100 ms frames. Every changed hypothesis is sent as a `partial`. A hypothesis unchanged for two frames is marked `stable`. The endpoint rule (0.4 s trailing silence after text) produces the `final`. The stream gets 0.8 s of leading silence because the small zipformers drop the first words of abruptly starting audio: with beam search, a 0.8 s lead cut LibriSpeech WER from 26.6% (greedy, no lead) to 8.2% in a 50-clip sweep.
+**Partial ASR.** The recognizer is fed 100 ms frames. Every changed hypothesis is sent as a `partial`. A hypothesis unchanged for two frames is marked `stable`. The endpoint rule (0.4 s trailing silence after text) produces the `final`. The stream gets 0.8 s of leading silence because the small zipformers drop the first words of abruptly starting audio: in a 50-clip LibriSpeech sweep, beam search alone cut WER from 26.6% to 16.6%, and a 0.8 s lead then cut it to 8.2%.
 
 **Real-time RAG (speculative).** On a stable partial of at least 6 characters, retrieval starts on its own thread, at most once per 500 ms. If the final text is at least 70% similar to the prefetched text, the prefetched hits are reused, so retrieval usually costs nothing after the user stops. ASR-mangled product names are fuzzy-mapped to a glossary ("vora x 200" becomes "VORA-X200") before search. A minimum hybrid score, calibrated on a dev set, rejects off-topic questions; the LLM is not called and a fixed "not sure" reply is spoken.
 
@@ -40,25 +40,26 @@ One WebSocket per user carries audio up and both JSON events (`partial`, `final`
 ## 3. Performance analysis
 
 <!-- TABLES:START -->
-*Host: macOS-26.6.2-arm64-arm-64bit, 8 cores, CPU-only. Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N=30 turns.*
+*Host: macOS-26.6.2-arm64-arm-64bit, 8 cores, CPU-only, 1-min load average 6.0 (other apps were running: numbers are noisy). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N=30 turns from 12 distinct questions (each repeated).*
 
 **Latency (ms, p50 / p95)**
 
 | Stage | Budget | Measured |
 |---|---|---|
-| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | 302 / 605 |
-| Retrieval + LLM first token (oracle text) | ≤500 | 329 / 503 |
-| TTS first chunk (oracle text) | ≤200 | 217 / 533 |
-| RAG+LLM+TTS after final text (oracle) | | 502 / 964 |
-| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **804 / 1570** |
-| End-to-end measured on synthetic speech | ≤1500 | 965 / 1242 *(biased low: ASR errors on synthetic zh audio trigger the fast 'not sure' reply)* |
+| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | 822 / 1022 |
+| Retrieval + LLM first token (oracle text) | ≤500 | 363 / 1453 |
+| TTS first chunk (oracle text) | ≤200 | 228 / 896 |
+| RAG+LLM+TTS after final text (oracle) | | 536 / 2144 |
+| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **1358 / 3166** |
+| End-to-end measured, English audio only (n=18) | ≤1500 | 1583 / 2293 |
+| End-to-end measured, Chinese audio (n=12) | ≤1500 | not meaningful: 0 of 12 turns retrieved anything (the ASR misheard the synthetic Chinese speech), so all took the fast 'not sure' path |
 
 **Streaming vs batch baseline (same models, same questions)**
 
 | | p50 | p95 |
 |---|---|---|
-| Batch: endpoint + retrieve + full LLM + full TTS | 1571 | 2982 |
-| Streaming (estimate) | 804 | 1570 |
+| Batch: endpoint + retrieve + full LLM + full TTS | 2209 | 3080 |
+| Streaming (estimate) | 1358 | 3166 |
 
 **ASR accuracy (streaming wrapper, 50 clips per set)**
 
@@ -97,13 +98,14 @@ One WebSocket per user carries audio up and both JSON events (`partial`, `final`
 <!-- TABLES:END -->
 
 **Reading the results.**
-- Median end-to-end latency meets the 1.5 s target on the M2 when models are warm; the p95 estimate is at or slightly above 1.5 s. The host was busy with other apps (load average about 9 on 8 cores) during these runs, so treat spread as noisy. The cold first call takes several seconds, so `/health` returns 503 until a warm-up has run.
+- **The 1.5 s target is met only at the median.** `speech_end` is the last input frame with energy, so the endpoint wait includes the 0.4 s trailing-silence rule plus the ASR's lookahead: measured at about 0.8 s. Adding the warm RAG + LLM + TTS time gives a median estimate near 1.4 s. English audio measured end to end is slightly above 1.5 s at the median, and p95 is well above (2-3 s). The host was busy with other apps (see the table caption), so the spread is noisy.
+- The cold first call takes several seconds, so `/health` returns 503 until a warm-up has run.
 - One engineering fix mattered more than any model choice: llama.cpp defaults its prefill thread count to all 8 logical cores, and the M2's efficiency cores slowed prompt evaluation about tenfold (22 vs 374 tokens/s). Pinning prefill to 4 threads brought a new prompt's first token from seconds to a few hundred ms. Latency numbers gathered before this fix were inflated by repeated-prompt cache hits and are not used.
-- The English TTS voice in int8 takes about 220 ms for a short first chunk on the M2 versus about 80 ms in fp32. ONNX Runtime int8 convolutions are slow on ARM. So the brief's 200 ms first-chunk target is missed for English, and met for Chinese.
+- The English TTS voice in int8 takes about 230-260 ms for a first chunk on the M2 versus about 80 ms in fp32 for a short phrase. ONNX Runtime int8 convolutions are slow on ARM. So the brief's 200 ms first-chunk target is missed for English, and met for Chinese.
 - ASR meets WER ≤15% on clean LibriSpeech only. It misses on FLEURS and in noise, and Chinese CER is also above 15%.
 - The RAG top-3 target is met on both splits. The KB and questions are ours, so treat this as optimistic.
 - The MOS figure is an automatic predictor (UTMOS22, trained on English), not a listening test.
-- The batch baseline is slower than streaming at both percentiles, because it waits for the whole answer and the whole audio.
+- The batch baseline (endpoint + retrieve + full answer + full audio) has a higher median than the streaming estimate. Its p95 is lower only because the streaming p95 above carries outliers from the busy host; do not read this table as a p95 win for streaming.
 
 ## 4. Deployment guide
 
@@ -120,12 +122,13 @@ The Docker image, compose file and CI workflow are written but **were not built 
 ## 5. Honest limitations
 
 - **No Raspberry Pi was available**, so RTF and latency on Pi 4 are unmeasured. The RAG plus LLM first-token target of 500 ms is not realistic on a Pi 4 (prompt evaluation of a 0.5B model runs at tens of tokens per second on 4×A72). Every number above is from an Apple-Silicon Mac.
-- **Memory target missed**: ASR + RAG + TTS measured above 500 MB, before the LLM.
+- **Memory target missed**: ASR + RAG + TTS measured above 500 MB, before the LLM. Untried mitigations: load only the active language's ASR and voice, an int8 embedding model, drop jieba.
 - **Accuracy**: Chinese CER on FLEURS and English WER on FLEURS exceed 15%. Noisy audio (10 dB white noise) degrades both. The small Chinese model failed on synthetic speech, so the audio-mode latency run is biased.
 - **Endpointing**: 0.4 s trailing silence keeps latency low but splits a question at a mid-sentence pause into two questions.
 - **LLM faithfulness**: the 0.5B model sometimes ignores negation ("does it understand Cantonese" was answered "yes" although the KB says no) and sometimes answers "no information". Off-topic questions are blocked by the retrieval threshold, not by the LLM.
 - **Languages**: Mandarin and English only, Cantonese speech is not supported. The Chinese TTS lexicon has out-of-vocabulary characters that are skipped silently, and works best with Simplified Chinese.
 - **Concurrency**: two or more users share one LLM and serialise on it, so a second user waits for the first answer's generation to finish.
+- **Echo**: the browser's echo cancellation is the main defence against the assistant hearing itself. The server also ignores a final that closely matches what it just said. Neither is tested against real speaker-to-mic leakage.
 - **Single turn**: no conversation memory. Long-form speech is cut into utterances at pauses, and a 30 s cap forces a final.
 - **Licences**: both Piper voices have non-permissive or unknown dataset licences (`docs/licenses.md`).
 - **LLM runtime**: the live path uses GGUF. The ONNX int8 export is benchmarked, not shipped.

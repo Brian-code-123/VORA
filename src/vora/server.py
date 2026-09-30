@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any, Callable
 
 import numpy as np
@@ -12,7 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from vora.config import ROOT, Settings
-from vora.pipeline import Executors, Pipeline
+from vora.pipeline import ClientStalled, Executors, Pipeline
 
 log = logging.getLogger("vora")
 
@@ -80,9 +81,14 @@ async def serve_session(ws, models: Models, s: Settings, sessions: set) -> None:
                     break
                 await pipe.on_audio(msg["bytes"])
             elif msg.get("text"):
+                if len(msg["text"]) > s.max_text_frame_bytes:
+                    await ws.close(code=1009)
+                    break
                 try:
                     d = json.loads(msg["text"])
                 except ValueError:
+                    continue
+                if not isinstance(d, dict):
                     continue
                 if d.get("type") == "stop":
                     break
@@ -92,6 +98,8 @@ async def serve_session(ws, models: Models, s: Settings, sessions: set) -> None:
                     pipe.asr = models.make_asr(lang)
     except asyncio.TimeoutError:
         await ws.close(code=1000)
+    except ClientStalled:  # client keeps the socket open but never reads: free the slot
+        await ws.close(code=1011)
     except WebSocketDisconnect:
         pass
     finally:
@@ -106,11 +114,15 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        app.state.ready, app.state.models, app.state.sessions = False, models, set()
+        app.state.ready, app.state.models, app.state.sessions, app.state.error = False, models, set(), None
 
         async def load():
-            app.state.models = await asyncio.to_thread(loader or Models.load, s) if models is None else models
-            app.state.ready = True
+            try:
+                app.state.models = await asyncio.to_thread(loader or Models.load, s) if models is None else models
+                app.state.ready = True
+            except Exception as e:  # noqa: BLE001 - surfaced on /health and in the log, never a silent 503 forever
+                log.exception("model load failed")
+                app.state.error = f"{type(e).__name__}: {e}"
 
         task = asyncio.create_task(load())  # not awaited: /health answers 503 while models warm up
         yield
@@ -120,10 +132,17 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
 
     @app.get("/health")
     async def health():
-        return JSONResponse({"ready": app.state.ready}, status_code=200 if app.state.ready else 503)
+        body = {"ready": app.state.ready}
+        if app.state.error:
+            body["error"] = app.state.error
+        return JSONResponse(body, status_code=200 if app.state.ready else 503)
 
     @app.websocket("/ws")
     async def ws_endpoint(ws: WebSocket):
+        origin = ws.headers.get("origin")
+        if origin and urlparse(origin).netloc != ws.headers.get("host") and origin not in s.allowed_origins:
+            await ws.close(code=1008)   # any web page could otherwise drive a localhost server from the user's browser
+            return
         if not app.state.ready:
             await ws.close(code=1013)
             return

@@ -50,7 +50,7 @@ def test_offtopic_returns_empty(r):
 
 
 @pytest.mark.perf
-def test_search_under_20ms(r):
+def test_search_under_50ms(r):
     r.search("warm up")
     t = []
     for _ in range(20):
@@ -58,4 +58,4 @@ def test_search_under_20ms(r):
         r.search("how long is the warranty")
         t.append((time.perf_counter() - t0) * 1000)
     t.sort()
-    assert t[int(0.95 * len(t)) - 1] < 50, t  # embed+faiss+bm25 all-in; plan target 20 ms is for faiss alone
+    assert t[int(0.95 * len(t)) - 1] < 50, t  # embed+faiss+bm25 all-in; plan target of 20 ms applies to faiss alone

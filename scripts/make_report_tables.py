@@ -18,14 +18,21 @@ def ms(d: dict, key: str) -> str:
 def tables() -> str:
     b, base, asr, rag, mos, mem, onnx = (j(x) for x in ("bench.json", "baseline.json", "asr.json", "rag.json", "tts_mos.json", "memory.json", "llm_onnx_vs_gguf.json"))
     a, o = b["latency_ms_audio_mode"], b["latency_ms_oracle_text"]
-    out = [f"*Host: {b['host']['system']}, {b['host']['cores']} cores, CPU-only. Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N={b['n']} turns.*", "",
+    en = [x for x in b["rows"] if x["lang"] == "en"]
+    zh = [x for x in b["rows"] if x["lang"] == "zh"]
+    ent = sorted(x["total"] for x in en)
+    en_p50, en_p95 = ent[len(ent) // 2], ent[max(0, int(len(ent) * 0.95) - 1)]
+    zh_ok = sum(bool(x["context"]) for x in zh)
+    distinct = len({x["q"] for x in b["rows"]})
+    out = [f"*Host: {b['host']['system']}, {b['host']['cores']} cores, CPU-only, 1-min load average {b['host'].get('loadavg_1m', '?')} (other apps were running: numbers are noisy). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N={b['n']} turns from {distinct} distinct questions (each repeated).*", "",
            "**Latency (ms, p50 / p95)**", "", "| Stage | Budget | Measured |", "|---|---|---|",
            f"| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | {ms(a, 'asr_final')} |",
            f"| Retrieval + LLM first token (oracle text) | ≤500 | {ms(o, 'rag_first_token')} |",
            f"| TTS first chunk (oracle text) | ≤200 | {ms(o, 'tts_first_chunk')} |",
            f"| RAG+LLM+TTS after final text (oracle) | | {ms(o, 'total')} |",
            f"| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **{b['estimated_total_ms']['p50']:.0f} / {b['estimated_total_ms']['p95']:.0f}** |",
-           f"| End-to-end measured on synthetic speech | ≤1500 | {ms(a, 'first_content_audio_ms')} *(biased low: ASR errors on synthetic zh audio trigger the fast 'not sure' reply)* |",
+           f"| End-to-end measured, English audio only (n={len(en)}) | ≤1500 | {en_p50:.0f} / {en_p95:.0f} |",
+           f"| End-to-end measured, Chinese audio (n={len(zh)}) | ≤1500 | not meaningful: {zh_ok} of {len(zh)} turns retrieved anything (the ASR misheard the synthetic Chinese speech), so all took the fast 'not sure' path |",
            "", "**Streaming vs batch baseline (same models, same questions)**", "", "| | p50 | p95 |", "|---|---|---|",
            f"| Batch: endpoint + retrieve + full LLM + full TTS | {base['batch_total_ms']['p50']:.0f} | {base['batch_total_ms']['p95']:.0f} |",
            f"| Streaming (estimate) | {base['streaming_total_estimated_ms']['p50']:.0f} | {base['streaming_total_estimated_ms']['p95']:.0f} |",

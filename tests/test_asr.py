@@ -93,3 +93,16 @@ def test_chunk_decode_under_300ms(recs):
     pcm = read(S.models_dir / "asr_en/test_wavs/1.wav")
     _, _, lat = stream_wav(AsrSession(recs, "en"), pcm)
     assert np.percentile(lat, 95) < 300
+
+
+def test_second_utterance_in_same_session_is_not_clipped(recs):
+    """The 0.8 s leading-silence pre-roll must also follow a reset, not only the session start."""
+    p = S.models_dir / "asr_en/test_wavs"
+    a, b = read(p / "0.wav"), read(p / "1.wav")
+    ref = dict(l.split(" ", 1) for l in (p / "trans.txt").read_text().splitlines())["1.wav"].lower()
+    gap = np.zeros(int(0.5 * SR), dtype=np.int16)   # user starts the next question right after the endpoint
+    sess = AsrSession(recs, "en")
+    ev, _, _ = stream_wav(sess, np.concatenate([a, gap, b]), tail_s=1.5, chunk=int(0.1 * SR))
+    finals = [e.text for e in ev if e.kind == "final"]
+    assert len(finals) >= 2
+    assert wer(ref, " ".join(finals[1:])) <= 0.15, finals

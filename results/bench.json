@@ -1,0 +1,1034 @@
+{
+ "host": {
+  "cpu": "arm",
+  "machine": "arm64",
+  "system": "macOS-26.6.2-arm64-arm-64bit",
+  "cores": 8,
+  "loadavg_1m": 6.0,
+  "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+ },
+ "n": 30,
+ "skipped": 0,
+ "latency_ms_audio_mode": {
+  "asr_final": {
+   "p50": 821.9,
+   "p95": 1022.3
+  },
+  "first_content_audio_ms": {
+   "p50": 1261.3,
+   "p95": 2208.5
+  },
+  "rag_first_token": {
+   "p50": 97.0,
+   "p95": 577.6
+  },
+  "total": {
+   "p50": 1261.3,
+   "p95": 2208.5
+  },
+  "ttfa_ms": {
+   "p50": 1261.3,
+   "p95": 2208.5
+  },
+  "tts_first_chunk": {
+   "p50": 224.3,
+   "p95": 616.2
+  }
+ },
+ "latency_ms_oracle_text": {
+  "asr_final": {
+   "p50": 0.0,
+   "p95": 0.1
+  },
+  "first_content_audio_ms": {
+   "p50": 535.6,
+   "p95": 2144.0
+  },
+  "rag_first_token": {
+   "p50": 362.8,
+   "p95": 1453.4
+  },
+  "total": {
+   "p50": 535.6,
+   "p95": 2144.0
+  },
+  "ttfa_ms": {
+   "p50": 535.6,
+   "p95": 2144.0
+  },
+  "tts_first_chunk": {
+   "p50": 228.3,
+   "p95": 896.4
+  }
+ },
+ "estimated_total_ms": {
+  "p50": 1357.5,
+  "p95": 3166.3
+ },
+ "rss_mb_after_load": 1139,
+ "rss_delta_load_mb": 993,
+ "rows": [
+  {
+   "type": "metrics",
+   "asr_final": 816.8,
+   "rag_first_token": 1948.5,
+   "tts_first_chunk": 478.8,
+   "total": 3244.1,
+   "ttfa_ms": 3244.1,
+   "first_content_audio_ms": 3244.1,
+   "heard": "how long is the warranty on the vorac's two hundred",
+   "context": [
+    "E03",
+    "E06",
+    "E08"
+   ],
+   "q": "how long is the warranty on the vora x200",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1012.2,
+   "rag_first_token": 343.2,
+   "tts_first_chunk": 937.6,
+   "total": 2293.0,
+   "ttfa_ms": 2293.0,
+   "first_content_audio_ms": 2293.0,
+   "heard": "ra x two hundred warranty period",
+   "context": [
+    "E03",
+    "E18",
+    "E16"
+   ],
+   "q": "vora x 200 warranty period",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 815.1,
+   "rag_first_token": 8.7,
+   "tts_first_chunk": 89.4,
+   "total": 913.2,
+   "ttfa_ms": 913.2,
+   "first_content_audio_ms": 913.2,
+   "heard": "包酒气多久",
+   "context": [],
+   "q": "X200保修期多久",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 915.2,
+   "rag_first_token": 398.1,
+   "tts_first_chunk": 323.4,
+   "total": 1636.7,
+   "ttfa_ms": 1636.7,
+   "first_content_audio_ms": 1636.7,
+   "heard": "and one hundred warrant he how many years",
+   "context": [
+    "E03",
+    "E14",
+    "E12"
+   ],
+   "q": "m100 warranty how many years",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 719.2,
+   "rag_first_token": 6.1,
+   "tts_first_chunk": 91.2,
+   "total": 816.6,
+   "ttfa_ms": 816.6,
+   "first_content_audio_ms": 816.6,
+   "heard": "其事几年",
+   "context": [],
+   "q": "保修期是几年",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 817.8,
+   "rag_first_token": 0.1,
+   "tts_first_chunk": 279.1,
+   "total": 1097.1,
+   "ttfa_ms": 1097.1,
+   "first_content_audio_ms": 1097.1,
+   "heard": "what is the way coward",
+   "context": [],
+   "q": "what is the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 827.9,
+   "rag_first_token": 316.1,
+   "tts_first_chunk": 728.6,
+   "total": 1872.6,
+   "ttfa_ms": 1872.6,
+   "first_content_audio_ms": 1872.6,
+   "heard": "o how do i change the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E15"
+   ],
+   "q": "how do i change the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 818.9,
+   "rag_first_token": 8.8,
+   "tts_first_chunk": 224.3,
+   "total": 1051.9,
+   "ttfa_ms": 1051.9,
+   "first_content_audio_ms": 1051.9,
+   "heard": "心使神木耳",
+   "context": [],
+   "q": "唤醒词是什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1019.9,
+   "rag_first_token": 7.0,
+   "tts_first_chunk": 182.7,
+   "total": 1209.6,
+   "ttfa_ms": 1209.6,
+   "first_content_audio_ms": 1209.6,
+   "heard": "该换性",
+   "context": [],
+   "q": "怎么修改唤醒词",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 820.7,
+   "rag_first_token": 370.3,
+   "tts_first_chunk": 224.3,
+   "total": 1415.2,
+   "ttfa_ms": 1415.2,
+   "first_content_audio_ms": 1415.2,
+   "heard": "what does the red light mean",
+   "context": [
+    "E18",
+    "E05",
+    "E16"
+   ],
+   "q": "what does the red light mean",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1025.6,
+   "rag_first_token": 0.3,
+   "tts_first_chunk": 88.1,
+   "total": 1114.0,
+   "ttfa_ms": 1114.0,
+   "first_content_audio_ms": 1114.0,
+   "heard": "蓝色代表神木",
+   "context": [],
+   "q": "led 蓝色代表什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1020.9,
+   "rag_first_token": 413.5,
+   "tts_first_chunk": 238.8,
+   "total": 1673.3,
+   "ttfa_ms": 1673.3,
+   "first_content_audio_ms": 1673.3,
+   "heard": "why is the light flashing white",
+   "context": [
+    "E05",
+    "E09",
+    "E08"
+   ],
+   "q": "why is the light flashing white",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 820.6,
+   "rag_first_token": 363.5,
+   "tts_first_chunk": 203.0,
+   "total": 1387.1,
+   "ttfa_ms": 1387.1,
+   "first_content_audio_ms": 1387.1,
+   "heard": "how long is the warranty on the vorac's two hundred",
+   "context": [
+    "E03",
+    "E06",
+    "E08"
+   ],
+   "q": "how long is the warranty on the vora x200",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1022.0,
+   "rag_first_token": 305.0,
+   "tts_first_chunk": 262.5,
+   "total": 1589.4,
+   "ttfa_ms": 1589.4,
+   "first_content_audio_ms": 1589.4,
+   "heard": "ra x two hundred warranty period",
+   "context": [
+    "E03",
+    "E18",
+    "E16"
+   ],
+   "q": "vora x 200 warranty period",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 821.8,
+   "rag_first_token": 8.8,
+   "tts_first_chunk": 93.2,
+   "total": 923.8,
+   "ttfa_ms": 923.8,
+   "first_content_audio_ms": 923.8,
+   "heard": "包酒气多久",
+   "context": [],
+   "q": "X200保修期多久",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 918.6,
+   "rag_first_token": 359.0,
+   "tts_first_chunk": 305.4,
+   "total": 1583.0,
+   "ttfa_ms": 1583.0,
+   "first_content_audio_ms": 1583.0,
+   "heard": "and one hundred warrant he how many years",
+   "context": [
+    "E03",
+    "E14",
+    "E12"
+   ],
+   "q": "m100 warranty how many years",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 722.6,
+   "rag_first_token": 6.8,
+   "tts_first_chunk": 86.5,
+   "total": 816.0,
+   "ttfa_ms": 816.0,
+   "first_content_audio_ms": 816.0,
+   "heard": "其事几年",
+   "context": [],
+   "q": "保修期是几年",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 819.7,
+   "rag_first_token": 0.3,
+   "tts_first_chunk": 288.8,
+   "total": 1108.8,
+   "ttfa_ms": 1108.8,
+   "first_content_audio_ms": 1108.8,
+   "heard": "what is the way coward",
+   "context": [],
+   "q": "what is the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 820.1,
+   "rag_first_token": 185.3,
+   "tts_first_chunk": 307.8,
+   "total": 1313.1,
+   "ttfa_ms": 1313.1,
+   "first_content_audio_ms": 1313.1,
+   "heard": "o how do i change the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E15"
+   ],
+   "q": "how do i change the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 821.7,
+   "rag_first_token": 7.2,
+   "tts_first_chunk": 85.6,
+   "total": 914.5,
+   "ttfa_ms": 914.5,
+   "first_content_audio_ms": 914.5,
+   "heard": "心使神木耳",
+   "context": [],
+   "q": "唤醒词是什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1021.9,
+   "rag_first_token": 5.8,
+   "tts_first_chunk": 81.4,
+   "total": 1109.1,
+   "ttfa_ms": 1109.1,
+   "first_content_audio_ms": 1109.1,
+   "heard": "该换性",
+   "context": [],
+   "q": "怎么修改唤醒词",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 820.5,
+   "rag_first_token": 365.2,
+   "tts_first_chunk": 211.7,
+   "total": 1397.3,
+   "ttfa_ms": 1397.3,
+   "first_content_audio_ms": 1397.3,
+   "heard": "what does the red light mean",
+   "context": [
+    "E18",
+    "E05",
+    "E16"
+   ],
+   "q": "what does the red light mean",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1022.6,
+   "rag_first_token": 0.2,
+   "tts_first_chunk": 94.8,
+   "total": 1117.6,
+   "ttfa_ms": 1117.6,
+   "first_content_audio_ms": 1117.6,
+   "heard": "蓝色代表神木",
+   "context": [],
+   "q": "led 蓝色代表什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1021.9,
+   "rag_first_token": 711.8,
+   "tts_first_chunk": 371.7,
+   "total": 2105.3,
+   "ttfa_ms": 2105.3,
+   "first_content_audio_ms": 2105.3,
+   "heard": "why is the light flashing white",
+   "context": [
+    "E05",
+    "E09",
+    "E08"
+   ],
+   "q": "why is the light flashing white",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 822.2,
+   "rag_first_token": 358.5,
+   "tts_first_chunk": 196.9,
+   "total": 1377.7,
+   "ttfa_ms": 1377.7,
+   "first_content_audio_ms": 1377.7,
+   "heard": "how long is the warranty on the vorac's two hundred",
+   "context": [
+    "E03",
+    "E06",
+    "E08"
+   ],
+   "q": "how long is the warranty on the vora x200",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1015.1,
+   "rag_first_token": 304.5,
+   "tts_first_chunk": 254.2,
+   "total": 1573.9,
+   "ttfa_ms": 1573.9,
+   "first_content_audio_ms": 1573.9,
+   "heard": "ra x two hundred warranty period",
+   "context": [
+    "E03",
+    "E18",
+    "E16"
+   ],
+   "q": "vora x 200 warranty period",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 822.0,
+   "rag_first_token": 7.7,
+   "tts_first_chunk": 84.0,
+   "total": 913.7,
+   "ttfa_ms": 913.7,
+   "first_content_audio_ms": 913.7,
+   "heard": "包酒气多久",
+   "context": [],
+   "q": "X200保修期多久",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 916.3,
+   "rag_first_token": 363.4,
+   "tts_first_chunk": 310.2,
+   "total": 1589.9,
+   "ttfa_ms": 1589.9,
+   "first_content_audio_ms": 1589.9,
+   "heard": "and one hundred warrant he how many years",
+   "context": [
+    "E03",
+    "E14",
+    "E12"
+   ],
+   "q": "m100 warranty how many years",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 721.6,
+   "rag_first_token": 5.8,
+   "tts_first_chunk": 91.0,
+   "total": 818.4,
+   "ttfa_ms": 818.4,
+   "first_content_audio_ms": 818.4,
+   "heard": "其事几年",
+   "context": [],
+   "q": "保修期是几年",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 818.9,
+   "rag_first_token": 0.2,
+   "tts_first_chunk": 265.8,
+   "total": 1084.9,
+   "ttfa_ms": 1084.9,
+   "first_content_audio_ms": 1084.9,
+   "heard": "what is the way coward",
+   "context": [],
+   "q": "what is the wake word",
+   "lang": "en"
+  }
+ ],
+ "oracle_rows": [
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 1368.1,
+   "tts_first_chunk": 969.4,
+   "total": 2337.5,
+   "ttfa_ms": 2337.5,
+   "first_content_audio_ms": 2337.5,
+   "heard": "how long is the warranty on the vora x200",
+   "context": [
+    "E03",
+    "E01",
+    "E12"
+   ],
+   "q": "how long is the warranty on the vora x200",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 996.8,
+   "tts_first_chunk": 834.5,
+   "total": 1831.3,
+   "ttfa_ms": 1831.3,
+   "first_content_audio_ms": 1831.3,
+   "heard": "vora x 200 warranty period",
+   "context": [
+    "E03",
+    "E01",
+    "E12"
+   ],
+   "q": "vora x 200 warranty period",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 1239.2,
+   "tts_first_chunk": 533.0,
+   "total": 1772.2,
+   "ttfa_ms": 1772.2,
+   "first_content_audio_ms": 1772.2,
+   "heard": "X200保修期多久",
+   "context": [
+    "Z03",
+    "Z12",
+    "Z01"
+   ],
+   "q": "X200保修期多久",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 308.6,
+   "tts_first_chunk": 453.8,
+   "total": 762.4,
+   "ttfa_ms": 762.4,
+   "first_content_audio_ms": 762.4,
+   "heard": "m100 warranty how many years",
+   "context": [
+    "E03",
+    "E12",
+    "E02"
+   ],
+   "q": "m100 warranty how many years",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 352.3,
+   "tts_first_chunk": 64.0,
+   "total": 416.3,
+   "ttfa_ms": 416.3,
+   "first_content_audio_ms": 416.3,
+   "heard": "保修期是几年",
+   "context": [
+    "Z03",
+    "E03",
+    "Z13"
+   ],
+   "q": "保修期是几年",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 384.4,
+   "tts_first_chunk": 185.9,
+   "total": 570.4,
+   "ttfa_ms": 570.4,
+   "first_content_audio_ms": 570.4,
+   "heard": "what is the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E17"
+   ],
+   "q": "what is the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 1523.2,
+   "tts_first_chunk": 947.1,
+   "total": 2470.3,
+   "ttfa_ms": 2470.3,
+   "first_content_audio_ms": 2470.3,
+   "heard": "how do i change the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E08"
+   ],
+   "q": "how do i change the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 1755.6,
+   "tts_first_chunk": 152.0,
+   "total": 1907.6,
+   "ttfa_ms": 1907.6,
+   "first_content_audio_ms": 1907.6,
+   "heard": "唤醒词是什么",
+   "context": [
+    "Z04",
+    "Z18",
+    "Z05"
+   ],
+   "q": "唤醒词是什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 765.9,
+   "tts_first_chunk": 264.3,
+   "total": 1030.2,
+   "ttfa_ms": 1030.2,
+   "first_content_audio_ms": 1030.2,
+   "heard": "怎么修改唤醒词",
+   "context": [
+    "Z04",
+    "Z18",
+    "E04"
+   ],
+   "q": "怎么修改唤醒词",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 171.6,
+   "tts_first_chunk": 353.1,
+   "total": 524.8,
+   "ttfa_ms": 524.8,
+   "first_content_audio_ms": 524.8,
+   "heard": "what does the red light mean",
+   "context": [
+    "E18",
+    "E05",
+    "E16"
+   ],
+   "q": "what does the red light mean",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 406.2,
+   "tts_first_chunk": 86.5,
+   "total": 492.8,
+   "ttfa_ms": 492.8,
+   "first_content_audio_ms": 492.8,
+   "heard": "led 蓝色代表什么",
+   "context": [
+    "Z05",
+    "E05",
+    "E08"
+   ],
+   "q": "led 蓝色代表什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 129.6,
+   "tts_first_chunk": 229.1,
+   "total": 358.7,
+   "ttfa_ms": 358.7,
+   "first_content_audio_ms": 358.7,
+   "heard": "why is the light flashing white",
+   "context": [
+    "E05",
+    "E09",
+    "E08"
+   ],
+   "q": "why is the light flashing white",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 334.3,
+   "tts_first_chunk": 186.4,
+   "total": 520.8,
+   "ttfa_ms": 520.8,
+   "first_content_audio_ms": 520.8,
+   "heard": "how long is the warranty on the vora x200",
+   "context": [
+    "E03",
+    "E01",
+    "E12"
+   ],
+   "q": "how long is the warranty on the vora x200",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 308.3,
+   "tts_first_chunk": 383.7,
+   "total": 692.0,
+   "ttfa_ms": 692.0,
+   "first_content_audio_ms": 692.0,
+   "heard": "vora x 200 warranty period",
+   "context": [
+    "E03",
+    "E01",
+    "E12"
+   ],
+   "q": "vora x 200 warranty period",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 428.9,
+   "tts_first_chunk": 291.9,
+   "total": 720.9,
+   "ttfa_ms": 720.9,
+   "first_content_audio_ms": 720.9,
+   "heard": "X200保修期多久",
+   "context": [
+    "Z03",
+    "Z12",
+    "Z01"
+   ],
+   "q": "X200保修期多久",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 302.3,
+   "tts_first_chunk": 200.3,
+   "total": 502.6,
+   "ttfa_ms": 502.6,
+   "first_content_audio_ms": 502.6,
+   "heard": "m100 warranty how many years",
+   "context": [
+    "E03",
+    "E12",
+    "E02"
+   ],
+   "q": "m100 warranty how many years",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 370.2,
+   "tts_first_chunk": 64.5,
+   "total": 434.7,
+   "ttfa_ms": 434.7,
+   "first_content_audio_ms": 434.7,
+   "heard": "保修期是几年",
+   "context": [
+    "Z03",
+    "E03",
+    "Z13"
+   ],
+   "q": "保修期是几年",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 600.5,
+   "tts_first_chunk": 223.9,
+   "total": 824.5,
+   "ttfa_ms": 824.5,
+   "first_content_audio_ms": 824.5,
+   "heard": "what is the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E17"
+   ],
+   "q": "what is the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 182.4,
+   "tts_first_chunk": 317.0,
+   "total": 499.5,
+   "ttfa_ms": 499.5,
+   "first_content_audio_ms": 499.5,
+   "heard": "how do i change the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E08"
+   ],
+   "q": "how do i change the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 368.7,
+   "tts_first_chunk": 48.9,
+   "total": 417.7,
+   "ttfa_ms": 417.7,
+   "first_content_audio_ms": 417.7,
+   "heard": "唤醒词是什么",
+   "context": [
+    "Z04",
+    "Z18",
+    "Z05"
+   ],
+   "q": "唤醒词是什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 214.8,
+   "tts_first_chunk": 22.2,
+   "total": 237.1,
+   "ttfa_ms": 237.1,
+   "first_content_audio_ms": 237.1,
+   "heard": "怎么修改唤醒词",
+   "context": [
+    "Z04",
+    "Z18",
+    "E04"
+   ],
+   "q": "怎么修改唤醒词",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 121.5,
+   "tts_first_chunk": 227.6,
+   "total": 349.2,
+   "ttfa_ms": 349.2,
+   "first_content_audio_ms": 349.2,
+   "heard": "what does the red light mean",
+   "context": [
+    "E18",
+    "E05",
+    "E16"
+   ],
+   "q": "what does the red light mean",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 379.5,
+   "tts_first_chunk": 86.7,
+   "total": 466.2,
+   "ttfa_ms": 466.2,
+   "first_content_audio_ms": 466.2,
+   "heard": "led 蓝色代表什么",
+   "context": [
+    "Z05",
+    "E05",
+    "E08"
+   ],
+   "q": "led 蓝色代表什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 121.1,
+   "tts_first_chunk": 296.4,
+   "total": 417.6,
+   "ttfa_ms": 417.6,
+   "first_content_audio_ms": 417.6,
+   "heard": "why is the light flashing white",
+   "context": [
+    "E05",
+    "E09",
+    "E08"
+   ],
+   "q": "why is the light flashing white",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 321.4,
+   "tts_first_chunk": 193.3,
+   "total": 514.7,
+   "ttfa_ms": 514.7,
+   "first_content_audio_ms": 514.7,
+   "heard": "how long is the warranty on the vora x200",
+   "context": [
+    "E03",
+    "E01",
+    "E12"
+   ],
+   "q": "how long is the warranty on the vora x200",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 311.6,
+   "tts_first_chunk": 372.0,
+   "total": 683.6,
+   "ttfa_ms": 683.6,
+   "first_content_audio_ms": 683.6,
+   "heard": "vora x 200 warranty period",
+   "context": [
+    "E03",
+    "E01",
+    "E12"
+   ],
+   "q": "vora x 200 warranty period",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 424.6,
+   "tts_first_chunk": 261.7,
+   "total": 686.3,
+   "ttfa_ms": 686.3,
+   "first_content_audio_ms": 686.3,
+   "heard": "X200保修期多久",
+   "context": [
+    "Z03",
+    "Z12",
+    "Z01"
+   ],
+   "q": "X200保修期多久",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 301.4,
+   "tts_first_chunk": 244.9,
+   "total": 546.4,
+   "ttfa_ms": 546.4,
+   "first_content_audio_ms": 546.4,
+   "heard": "m100 warranty how many years",
+   "context": [
+    "E03",
+    "E12",
+    "E02"
+   ],
+   "q": "m100 warranty how many years",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 358.1,
+   "tts_first_chunk": 57.8,
+   "total": 415.9,
+   "ttfa_ms": 415.9,
+   "first_content_audio_ms": 415.9,
+   "heard": "保修期是几年",
+   "context": [
+    "Z03",
+    "E03",
+    "Z13"
+   ],
+   "q": "保修期是几年",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 367.4,
+   "tts_first_chunk": 210.1,
+   "total": 577.6,
+   "ttfa_ms": 577.6,
+   "first_content_audio_ms": 577.6,
+   "heard": "what is the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E17"
+   ],
+   "q": "what is the wake word",
+   "lang": "en"
+  }
+ ]
+}

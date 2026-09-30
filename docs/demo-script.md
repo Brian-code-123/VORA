@@ -6,11 +6,11 @@
 | 0:00 | Terminal: `python -m vora.server`, `curl :8000/health` → `{"ready":true}` | "Everything runs locally on CPU, no cloud." |
 | 0:10 | Browser `http://127.0.0.1:8000`, English selected, press Start mic | "Streaming ASR sends partial text while I talk." |
 | 0:20 | Ask: "How long is the warranty on the VORA X200?" | Point at the live transcript growing, then the retrieved chunk ids. |
-| 0:40 | Reply plays; show latency card (green, under 1.5 s) | "Response time: X seconds. First audio starts before the sentence is finished." |
+| 0:40 | Reply plays; show latency card (say the real number) | "Response time: X seconds. First audio starts before the sentence is finished." |
 | 0:55 | Switch to 中文, ask "怎么恢复出厂设置" | "Mandarin uses a separate small streaming model." |
 | 1:15 | Interrupt the reply by speaking | "Barge-in cancels the LLM and TTS and flushes the audio." |
 | 1:30 | Ask something off-topic ("what is the weather") | "No relevant document, so it says it is not sure instead of making something up." |
-| 1:45 | Show `results` table: streaming vs batch baseline | "Same models, batch waits for the whole answer: about twice the delay." |
+| 1:45 | Show `results` table: streaming vs batch baseline | "Same models: batch waits for the whole answer and the whole audio, so the median delay is higher." |
 
 If the microphone is unavailable, use the "Sample question" dropdown (synthetic speech) and say so.
 
