@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VORA Voice</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --fg:#14171c; --mute:#5c6673; --acc:#2453e6; --ok:#137a3b; --warn:#b4530a; --line:#dde1e7; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1216; --card:#181c22; --fg:#eef1f5; --mute:#98a2b0; --acc:#7da2ff; --ok:#4cc37f; --warn:#f0a35c; --line:#2a3039; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 4px; } .sub { color: var(--mute); margin: 0 0 16px; font-size: 14px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  button, select { font:inherit; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--acc); color:#fff; border-color:var(--acc); } button:disabled { opacity:.5; cursor:default; }
+  #status { margin-left:auto; font-size:14px; color:var(--mute); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h2 { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute); margin:0 0 6px; font-weight:600; }
+  .live { min-height:1.5em; } .live.partial { color:var(--mute); }
+  .lat { font-size:28px; font-weight:650; } .lat small { font-size:14px; font-weight:400; color:var(--mute); }
+  .row { display:flex; gap:24px; flex-wrap:wrap; } .row div { min-width:110px; }
+  .k { font-size:12px; color:var(--mute); } .v { font-size:18px; font-variant-numeric: tabular-nums; }
+  .good { color:var(--ok); } .bad { color:var(--warn); }
+  #log p { margin:6px 0; } #log .u { color:var(--mute); } #ctx { font-size:13px; color:var(--mute); }
+  input[type=file] { font-size:13px; max-width:210px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>VORA Voice</h1>
+  <p class="sub">Streaming ASR → RAG → LLM → TTS. Speak, or feed an audio file as the microphone.</p>
+  <div class="bar">
+    <button id="go" class="primary">Start mic</button>
+    <select id="lang" aria-label="Language"><option value="en">English</option><option value="zh">中文</option></select>
+    <label class="k">or file: <input id="file" type="file" accept="audio/*"></label>
+    <select id="sample" aria-label="Sample question"><option value="">Sample question…</option>
+      <option value="q_warranty_en">How long is the X200 warranty? (EN)</option>
+      <option value="q_reset_en">How do I factory reset? (EN)</option>
+      <option value="q_warranty_zh">X200保修期多久？ (中文)</option></select>
+    <span id="status">Idle</span>
+  </div>
+  <div class="card"><h2>You (live)</h2><div id="live" class="live partial">…</div></div>
+  <div class="card"><h2>Retrieved context</h2><div id="ctx">–</div></div>
+  <div class="card"><h2>VORA</h2><div id="reply" class="live">…</div></div>
+  <div class="card"><h2>Latency</h2>
+    <div class="lat" id="resp">– <small>response time</small></div>
+    <div class="row">
+      <div><div class="k">ASR endpoint</div><div class="v" id="m_asr">–</div></div>
+      <div><div class="k">RAG + first token</div><div class="v" id="m_llm">–</div></div>
+      <div><div class="k">TTS first chunk</div><div class="v" id="m_tts">–</div></div>
+      <div><div class="k">Total</div><div class="v" id="m_total">–</div></div>
+    </div>
+  </div>
+  <div class="card"><h2>Conversation</h2><div id="log"></div></div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let ws, ctx, micNode, stream, playAt = 0, sources = [], running = false, reply = "";
+
+function setStatus(t) { $("status").textContent = t; }
+function fmt(ms) { return ms == null ? "–" : (ms / 1000).toFixed(2) + " s"; }
+
+function stopPlayback() {
+  sources.forEach((s) => { try { s.stop(); } catch (e) {} });
+  sources = []; playAt = 0;
+}
+
+function playPcm16(buf) {
+  const i16 = new Int16Array(buf), f32 = new Float32Array(i16.length);
+  for (let i = 0; i < i16.length; i++) f32[i] = i16[i] / 32768;
+  const ab = ctx.createBuffer(1, f32.length, 16000);
+  ab.copyToChannel(f32, 0);
+  const src = ctx.createBufferSource();
+  src.buffer = ab; src.connect(ctx.destination);
+  playAt = Math.max(playAt, ctx.currentTime + 0.08);   // ~80 ms jitter lead
+  src.start(playAt); playAt += ab.duration;
+  sources.push(src);
+  src.onended = () => { sources = sources.filter((s) => s !== src); };
+}
+
+function onEvent(d) {
+  if (d.type === "partial") { $("live").textContent = d.text; $("live").className = "live partial"; }
+  else if (d.type === "final") {
+    $("live").textContent = d.text; $("live").className = "live";
+    $("log").insertAdjacentHTML("beforeend", `<p class="u"></p>`); $("log").lastChild.textContent = "You: " + d.text;
+    reply = ""; $("reply").textContent = "…"; $("ctx").textContent = "…";
+  }
+  else if (d.type === "context") $("ctx").textContent = d.ids.length ? d.ids.join(", ") : "no relevant document";
+  else if (d.type === "token") { reply += d.text; $("reply").textContent = reply; }
+  else if (d.type === "cancel") { stopPlayback(); }
+  else if (d.type === "metrics") {
+    $("resp").innerHTML = `${fmt(d.first_content_audio_ms)} <small>response time (first audio ${fmt(d.ttfa_ms)})</small>`;
+    $("resp").className = "lat " + (d.first_content_audio_ms <= 1500 ? "good" : "bad");
+    $("m_asr").textContent = fmt(d.asr_final); $("m_llm").textContent = fmt(d.rag_first_token);
+    $("m_tts").textContent = fmt(d.tts_first_chunk); $("m_total").textContent = fmt(d.total);
+    $("log").insertAdjacentHTML("beforeend", `<p></p>`); $("log").lastChild.textContent = "VORA: " + reply;
+  }
+}
+
+function connect() {
+  return new Promise((resolve, reject) => {
+    ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+    ws.binaryType = "arraybuffer";
+    ws.onopen = () => { ws.send(JSON.stringify({ type: "config", lang: $("lang").value })); setStatus("Connected"); resolve(); };
+    ws.onerror = () => reject(new Error("websocket error"));
+    ws.onclose = (e) => { setStatus(e.code === 1013 ? "Server busy or loading" : "Disconnected"); stop(); };
+    ws.onmessage = (m) => (typeof m.data === "string" ? onEvent(JSON.parse(m.data)) : playPcm16(m.data));
+  });
+}
+
+async function ensureCtx() {
+  if (!ctx) { ctx = new AudioContext(); await ctx.audioWorklet.addModule("worklet.js"); }
+  if (ctx.state === "suspended") await ctx.resume();
+}
+
+function attach(sourceNode) {
+  micNode = new AudioWorkletNode(ctx, "pcm16");
+  micNode.port.onmessage = (e) => { if (ws && ws.readyState === 1) ws.send(e.data); };
+  const mute = ctx.createGain(); mute.gain.value = 0;
+  sourceNode.connect(micNode); micNode.connect(mute); mute.connect(ctx.destination);
+}
+
+async function startMic() {
+  try {
+    await ensureCtx(); await connect();
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+    attach(ctx.createMediaStreamSource(stream));
+    running = true; $("go").textContent = "Stop"; setStatus("Listening");
+  } catch (e) { setStatus("Error: " + e.message); stop(); }
+}
+
+async function startFile(file) {
+  try {
+    await ensureCtx(); await connect();
+    const audio = await ctx.decodeAudioData(await file.arrayBuffer());
+    const src = ctx.createBufferSource();
+    // 2 s of silence so the ASR endpoint fires after the file ends
+    const pad = ctx.createBuffer(1, audio.length + Math.floor(audio.sampleRate * 2), audio.sampleRate);
+    pad.copyToChannel(audio.getChannelData(0), 0);
+    src.buffer = pad; attach(src); src.start();
+    running = true; $("go").textContent = "Stop"; setStatus("Streaming file");
+    src.onended = () => setStatus("File finished");
+  } catch (e) { setStatus("Error: " + e.message); stop(); }
+}
+
+function stop() {
+  running = false; $("go").textContent = "Start mic";
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+  if (micNode) { micNode.disconnect(); micNode = null; }
+  if (ws && ws.readyState <= 1) { try { ws.send(JSON.stringify({ type: "stop" })); } catch (e) {} ws.close(); }
+  stopPlayback();
+}
+
+$("go").onclick = () => (running ? stop() : startMic());
+$("sample").onchange = async (e) => {
+  if (!e.target.value) return;
+  $("lang").value = e.target.value.endsWith("_zh") ? "zh" : "en";
+  const r = await fetch(`samples/${e.target.value}.wav`);
+  startFile(new File([await r.arrayBuffer()], "sample.wav"));
+};
+$("file").onchange = (e) => e.target.files[0] && startFile(e.target.files[0]);
+</script>
+</body>
+</html>
