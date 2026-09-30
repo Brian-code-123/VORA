@@ -23,4 +23,6 @@ class Settings(BaseSettings):
     idle_timeout_s: float = 60.0
     asr_threads: int = 2
     llm_threads: int = 4
+    ssl_cert: str = ""
+    ssl_key: str = ""
     tts_en_fp32: bool = False  # int8 en voice meets the 30 MB gate but is ~3x slower on ARM/M2; fp32 is 63 MB

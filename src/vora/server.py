@@ -138,7 +138,8 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
 def main() -> None:
     import uvicorn
     s = Settings()
-    uvicorn.run(create_app(settings=s), host=s.host, port=8000, log_level="info")
+    kw = {"ssl_certfile": s.ssl_cert, "ssl_keyfile": s.ssl_key} if s.ssl_cert else {}
+    uvicorn.run(create_app(settings=s), host=s.host, port=8000, log_level="info", **kw)
 
 
 if __name__ == "__main__":
