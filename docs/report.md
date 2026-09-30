@@ -83,8 +83,8 @@ One WebSocket per user carries audio up and both JSON events (`partial`, `final`
 
 | Component | MB |
 |---|---|
-| ASR + RAG + TTS in one process (incl. shared library imports) | 437 in the latest run (437-638 across runs; target ≤500) |
-| LLM Qwen2.5-0.5B Q4_K_M | 721 |
+| ASR + RAG + TTS in one process (incl. shared library imports) | 604 in the latest run (437-638 across runs; target ≤500) |
+| LLM Qwen2.5-0.5B Q4_K_M | 737 |
 
 **LLM runtime: ONNX vs GGUF (same prompt, M2 CPU)**
 
@@ -102,7 +102,7 @@ One WebSocket per user carries audio up and both JSON events (`partial`, `final`
 - The cold first call takes several seconds, so `/health` returns 503 until a warm-up has run.
 - One engineering fix mattered more than any model choice: llama.cpp defaults its prefill thread count to all 8 logical cores, and the M2's efficiency cores slowed prompt evaluation about tenfold (22 vs 374 tokens/s). Pinning prefill to 4 threads brought a new prompt's first token from seconds to a few hundred ms. Latency numbers gathered before this fix were inflated by repeated-prompt cache hits and are not used.
 - The English TTS voice in int8 takes about 230-260 ms for a first chunk on the M2 versus about 80 ms in fp32 for a short phrase. ONNX Runtime int8 convolutions are slow on ARM. So the brief's 200 ms first-chunk target is missed for English, and met for Chinese.
-- The `perf`-marked LLM latency tests (cold retrieval + first token ≤500 ms, warm ≤300 ms) **fail on this host** (measured 1.25 s and 0.62 s while the load average was about 10) since the prompt cache was removed; the benchmark table above is the better evidence.
+- The `perf`-marked LLM latency tests (cold retrieval + first token ≤500 ms, warm ≤300 ms) are load-sensitive: they failed once (1.25 s and 0.62 s at a load average of about 10) and passed on a later, quieter run. Treat them as pass-on-quiet-machine only.
 - ASR meets WER ≤15% on clean LibriSpeech only. It misses on FLEURS and in noise, and Chinese CER is also above 15%.
 - The RAG top-3 target is met on both splits. The KB and questions are ours, so treat this as optimistic.
 - The MOS figure is an automatic predictor (UTMOS22, trained on English), not a listening test.
