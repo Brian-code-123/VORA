@@ -58,12 +58,15 @@ class FakeTts:
 
     def synth(self, text, cancel=None):
         self.said.append(text)
-        for _ in range(self.chunks):
-            if cancel is not None and cancel.is_set():
+        done = False
+        try:
+            for _ in range(self.chunks):
+                time.sleep(self.delay)
+                yield b"\x01\x00" * 100
+            done = True
+        finally:
+            if not done:  # consumer closed the stream early (turn cancelled / disconnect)
                 self.cancelled += 1
-                return
-            time.sleep(self.delay)
-            yield b"\x01\x00" * 100
 
 
 def P(script, retriever=None, llm=None, tts=None, filler=False, queue_max=64, delay=0.0, clock=time.perf_counter):
