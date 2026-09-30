@@ -1,0 +1,11 @@
+.git
+.venv
+.superpowers
+models
+data
+results
+index
+__pycache__
+*.pyc
+docs
+tests

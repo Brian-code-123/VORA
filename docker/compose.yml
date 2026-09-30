@@ -1,0 +1,12 @@
+services:
+  vora:
+    build: { context: .., dockerfile: docker/Dockerfile }
+    image: vora:latest
+    ports: ["127.0.0.1:8000:8000"]   # loopback only; use scripts/deploy_pi.sh --https for LAN access
+    restart: unless-stopped
+  vora-pi:                           # emulated Raspberry Pi 4 (4 cores, 3 GB): docker compose --profile pi up vora-pi
+    profiles: ["pi"]
+    image: vora:latest
+    ports: ["127.0.0.1:8001:8000"]
+    cpus: 4
+    mem_limit: 3g
