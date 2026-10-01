@@ -12,13 +12,18 @@ def _is_cjk(s: str) -> bool:
 
 
 class SentenceChunker:
-    def __init__(self) -> None:
+    def __init__(self, first_words: int = 4, second_words: int = 0) -> None:
+        self.second_words = second_words   # 0 = off; else the 2nd chunk is cut after this many words, hiding a short 1st chunk
+        self.second_done = False
+        self.first_words = first_words   # first audio chunk = this many Latin words (synth time ~ 0.2x audio length)
         self.buf = ""
         self.first_done = False
 
     def _emit(self, n: int, out: list[str]) -> None:
         chunk, self.buf = self.buf[:n].strip(), self.buf[n:]
         if chunk:
+            if self.first_done:
+                self.second_done = True
             out.append(chunk)
             self.first_done = True
 
@@ -55,10 +60,15 @@ class SentenceChunker:
                         cut = i + 1
                         break
             if cut is None and not self.first_done and not _is_cjk(self.buf):
-                # latency: the first audio chunk is synthesised at ~0.2x real time, so keep it to ~4 words
+                # latency: the first audio chunk is synthesised at ~0.2x real time, so keep it to ~first_words words
+                n = self.first_words
                 w = self.buf.split(" ")
-                if len(w) >= 5 and len(" ".join(w[:4])) >= 16:
-                    cut = len(" ".join(w[:4])) + 1
+                if len(w) >= n + 1 and len(" ".join(w[:n])) >= int(3.5 * n):   # "You can" (7) must split, "Yes it" (6) must not
+                    cut = len(" ".join(w[:n])) + 1
+            if cut is None and self.first_done and not self.second_done and self.second_words and not _is_cjk(self.buf):
+                w = self.buf.split(" ")
+                if len(w) >= self.second_words + 1 and len(" ".join(w[: self.second_words])) >= int(3.5 * self.second_words):
+                    cut = len(" ".join(w[: self.second_words])) + 1
             if cut is None:
                 limit = 60 if _is_cjk(self.buf) else 120
                 if len(self.buf) >= limit:

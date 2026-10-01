@@ -100,3 +100,117 @@ def test_pick_en_model_prefers_int8_and_fp32_flag(tmp_path):
     (tmp_path / "en.int8.onnx").write_bytes(b"x")
     assert pick_en_model(tmp_path, fp32=False).name == "en.int8.onnx"
     assert pick_en_model(tmp_path, fp32=True).name == "en.onnx"           # glob("*.onnx") used to match int8 too
+
+
+ANSWERS_EN = [
+    "The warranty on the VORA X200 is two years.", "Blue means the box is listening.", "Hold the reset button for ten seconds.",
+    "You can import documents up to one gigabyte.", "Please contact support Monday to Friday.", "The speaker is ten watts.",
+    "Firmware updates arrive once a month.", "It does not support Cantonese.", "Return shipping is paid by the buyer.",
+    "The default wake word is Hey Vora.", "The X200 uses a twelve volt adapter.", "Red means the microphone is muted.",
+    "The M100 has two microphones.", "Operating temperature is zero to forty degrees.", "The box draws five watts when idle.",
+    "Support replies within one business day.", "Your data stays on the device.", "Say Hey Vora to wake it up.",
+    "Volume can be set by voice.", "Yes, it works with Wi-Fi six.",
+]
+ANSWERS_ZH = ["X200的保修期是两年。", "蓝色表示正在聆听。", "按住复位键十秒钟。", "不支持粤语。", "固件每月更新一次。", "扬声器是十瓦。"]
+
+
+def first_chunk_text(answer, words):
+    from vora.chunker import SentenceChunker
+    c = SentenceChunker(first_words=words)
+    for ch in answer:
+        out = c.push(ch)
+        if out:
+            return out[0]
+    return (c.flush() or [answer])[0]
+
+
+@needs_models
+@pytest.mark.perf
+def test_first_chunk_p95_le_200ms_real_chunker(tts):
+    """G2: time from first-chunk text to first PCM piece, using the chunker's real first chunk (20 unique en + 6 zh)."""
+    words = S.first_chunk_words
+    list(tts.synth("Hello."))
+    ts = {"en": [], "zh": []}
+    for lang, answers in (("en", ANSWERS_EN), ("zh", ANSWERS_ZH)):
+        for a in answers:
+            text = first_chunk_text(a, words)
+            t0 = time.perf_counter()
+            next(iter(tts.synth(text)))
+            ts[lang].append((time.perf_counter() - t0) * 1000)
+    p95 = {k: sorted(v)[max(0, int(len(v) * 0.95) - 1)] for k, v in ts.items()}
+    print("first-chunk p95 ms:", p95)
+    assert max(p95.values()) <= 200, p95
+
+
+@needs_models
+def test_kb_zh_chars_all_in_lexicon(tts):
+    import re
+    txt = (S.kb_dir / "zh.md").read_text(encoding="utf-8")
+    missing = sorted({c for c in re.findall(r"[一-鿿]", txt) if c not in tts.zh_lexicon})
+    assert missing == [], missing
+
+
+@needs_models
+def test_oov_char_logged_and_counted(tts, caplog):
+    import logging
+    before = tts.oov_total
+    with caplog.at_level(logging.WARNING, logger="vora"):
+        list(tts.synth("这个龼字很有意思"))
+    assert tts.oov_total > before
+    assert any("OOV" in r.message for r in caplog.records)
+
+
+@needs_models
+def test_all_oov_text_does_not_crash(tts):
+    out = list(tts.synth("词词"))   # may be empty audio; must not raise
+    assert isinstance(out, list)
+
+
+def test_ensure_patched_lexicon_drops_tokens_missing_from_tokens_txt(tmp_path):
+    from vora.tts import ensure_patched_lexicon
+    (tmp_path / "tokens.txt").write_text("a 0\nt 1\ns 2\n", encoding="utf-8")
+    (tmp_path / "lexicon.txt").write_text("次 t s a ̪\n词 t s ̪\n", encoding="utf-8")
+    p = ensure_patched_lexicon(tmp_path)
+    lines = p.read_text(encoding="utf-8").splitlines()
+    assert lines == ["次 t s a", "词 t s"]
+    assert ensure_patched_lexicon(tmp_path) == p   # idempotent, original untouched
+    assert "̪" in (tmp_path / "lexicon.txt").read_text(encoding="utf-8")
+
+
+def test_usable_chars_uses_patched_lexicon(tmp_path):
+    from vora.tts import _usable_zh_chars
+    (tmp_path / "tokens.txt").write_text("a 0\nt 1\n", encoding="utf-8")
+    (tmp_path / "lexicon.txt").write_text("次 t a ̪\n", encoding="utf-8")
+    assert _usable_zh_chars(tmp_path) == {"次"}                  # raw lexicon would make it unusable; patched makes it usable
+    assert not (tmp_path / "lexicon.txt").read_text(encoding="utf-8").startswith("次 t a\n")
+
+
+@needs_models
+@pytest.mark.perf
+def test_progressive_chunks_leave_no_long_gap(tts):
+    """With 1-word then 3-word chunks the next chunk must be ready before the current one finishes playing
+    (token arrival excluded). Allows 250 ms of stall at the worst chunk boundary on average."""
+    from vora.chunker import SentenceChunker
+    list(tts.synth("Hello."))
+    worst = []
+    for a in ANSWERS_EN:
+        c = SentenceChunker(first_words=S.first_chunk_words, second_words=S.second_chunk_words)
+        chunks = []
+        for ch in a:
+            chunks += c.push(ch)
+        chunks += c.flush()
+        ready, play_end, gap = 0.0, None, 0.0
+        for txt in chunks:
+            t0 = time.perf_counter()
+            pcm = b"".join(tts.synth(txt))
+            ready += time.perf_counter() - t0
+            dur = len(pcm) / 2 / 16000
+            if play_end is None:
+                play_end = ready + dur
+            else:
+                gap = max(gap, ready - play_end)
+                play_end = max(play_end, ready) + dur
+        worst.append(gap)
+    worst.sort()
+    print("worst gap per answer, p50/p95 s:", worst[len(worst) // 2], worst[int(len(worst) * 0.95) - 1])
+    assert worst[int(len(worst) * 0.95) - 1] <= 0.25, worst
