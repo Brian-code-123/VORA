@@ -13,17 +13,17 @@ pytestmark = [pytest.mark.perf, pytest.mark.skipif(not (S.index_dir / "faiss.ind
 SNIPPET = """
 import gc, json, os, psutil
 p = psutil.Process()
-base = p.memory_info().rss
+base = p.memory_full_info().uss
 from vora.config import Settings
 S = Settings()
 {load}
 gc.collect()
-print(json.dumps({{"delta_mb": (p.memory_info().rss - base) / 2**20}}))
+print(json.dumps({{"delta_mb": (p.memory_full_info().uss - base) / 2**20}}))
 """
 LOADS = {
     "asr_rag_tts": """
 import numpy, sherpa_onnx, onnxruntime, faiss, jieba, fastembed
-imp = p.memory_info().rss
+imp = p.memory_full_info().uss
 from vora.asr import load_recognizers, AsrSession
 r = load_recognizers(S)
 for l in ('en', 'zh'): AsrSession(r, l).feed(b'\\x00\\x00' * 1600)
@@ -47,5 +47,5 @@ def test_asr_rag_tts_rss_under_500mb():
     m = {"asr_rag_tts": measure("asr_rag_tts"), "llm": measure("llm")}
     print("RSS deltas MB:", json.dumps({k: round(v) for k, v in m.items()}))
     (S.models_dir.parent / "results").mkdir(exist_ok=True)
-    (S.models_dir.parent / "results" / "memory.json").write_text(json.dumps({k: round(v, 1) for k, v in m.items()}))
+    (S.models_dir.parent / "results" / "memory.json").write_text(json.dumps({**{k: round(v, 1) for k, v in m.items()}, "metric": "USS"}))
     assert m["asr_rag_tts"] <= 500, m

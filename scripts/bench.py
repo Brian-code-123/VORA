@@ -41,6 +41,15 @@ def make_audio(tts, text: str) -> np.ndarray:
     return np.frombuffer(b"".join(tts.synth(text)), dtype=np.int16)
 
 
+def answerable_questions() -> list[tuple[str, str]]:
+    """All answerable eval questions, each once (no repeats: repeats flatter latency via cache hits)."""
+    out = []
+    for q in load_qa(ROOT / "eval" / "rag_qa.jsonl"):
+        if q["chunk_id"]:
+            out.append(("zh" if any("\u4e00" <= c <= "\u9fff" for c in q["q"]) else "en", q["q"]))
+    return out
+
+
 def questions(tts, n: int) -> list[tuple[str, str, np.ndarray]]:
     qa = [q for q in load_qa(ROOT / "eval" / "rag_qa.jsonl") if q["chunk_id"]]
     out = []
@@ -111,15 +120,21 @@ def summarize(rows: list[dict]) -> dict:
 
 async def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--n", type=int, default=30)
+    ap.add_argument("--n", type=int, default=0, help="0 = every answerable question once")
+    ap.add_argument("--force", action="store_true", help="run on a busy host (results marked quiet=false)")
     ap.add_argument("--out", default=str(ROOT / "results" / "bench.json"))
     a = ap.parse_args()
+    from vora.hostcheck import perf_skip_reason
+    reason = perf_skip_reason()
+    if reason and not a.force:
+        raise SystemExit(f"refusing to benchmark: {reason}. Use --force to record anyway (quiet=false).")
     from vora.server import Models
     s = Settings()
     proc = psutil.Process()
     rss0 = proc.memory_info().rss
     models = Models.load(s)
-    qs = questions(models.tts, 12)
+    qs = questions(models.tts, 10_000)
+    a.n = a.n or len(qs)
     rows, orows, skipped = [], [], 0
     for i in range(a.n):
         lang, text, pcm = qs[i % len(qs)]
@@ -138,7 +153,7 @@ async def main() -> None:
     num = lambda rs: [{k: v for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)} for r in rs]
     lat, olat = summarize(num(rows)), summarize(num(orows))
     est = {"p50": round(lat["asr_final"]["p50"] + olat["total"]["p50"], 1), "p95": round(lat["asr_final"]["p95"] + olat["total"]["p95"], 1)}
-    res = {"host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
+    res = {"quiet": reason is None, "host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
            "rss_delta_load_mb": round((proc.memory_info().rss - rss0) / 2**20), "rows": rows, "oracle_rows": orows}
     p = ROOT / "results"
     p.mkdir(exist_ok=True)

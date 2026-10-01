@@ -1,0 +1,66 @@
+[
+ {
+  "id": "G1",
+  "name": "end-to-end latency (en audio)",
+  "target": "p50 <=1500 ms, p90 <=1800 ms",
+  "measured": "p50 1578 / p90 2162 ms",
+  "ok": false,
+  "quiet": false
+ },
+ {
+  "id": "G2",
+  "name": "TTS first chunk",
+  "target": "p95 <=200 ms",
+  "measured": "p95 896 ms",
+  "ok": false,
+  "quiet": false
+ },
+ {
+  "id": "G3",
+  "name": "ASR+RAG+TTS memory",
+  "target": "<=500 MB (USS)",
+  "measured": "604 MB",
+  "ok": false,
+  "quiet": false
+ },
+ {
+  "id": "G4",
+  "name": "ASR accuracy",
+  "target": "WER/CER <=15%",
+  "measured": "en 9.7%, zh AISHELL missing",
+  "ok": null,
+  "quiet": true
+ },
+ {
+  "id": "G5",
+  "name": "RAG top-3 + faithfulness",
+  "target": "top-3 >=80%, faithfulness >=95%",
+  "measured": "top-3 86%, faithful 90%",
+  "ok": false,
+  "quiet": true
+ },
+ {
+  "id": "G6",
+  "name": "2 concurrent users",
+  "target": "each p50 <=2x single",
+  "measured": "not measured",
+  "ok": null,
+  "quiet": false
+ },
+ {
+  "id": "G7",
+  "name": "Docker + Pi proof",
+  "target": "image builds, health 200, Pi run",
+  "measured": "not built / no Pi",
+  "ok": null,
+  "quiet": true
+ },
+ {
+  "id": "G8",
+  "name": "permissive licences",
+  "target": "no custom/unknown",
+  "measured": "non-permissive: tts_en, tts_zh",
+  "ok": false,
+  "quiet": true
+ }
+]
