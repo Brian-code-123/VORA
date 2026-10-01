@@ -14,7 +14,11 @@ eval = ["jiwer", "datasets", "soundfile", "torch", "onnxruntime", "optimum[onnxr
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
-markers = ["perf: latency/memory tests, need models and real CPU"]
+markers = [
+  "perf: latency/memory tests, need models and a quiet host",
+  "eval: accuracy evaluations, need models and cached datasets",
+  "integration: needs network",
+]
 asyncio_mode = "auto"
 timeout = 120
 
