@@ -302,3 +302,12 @@ async def test_barge_in_with_real_asr_on_real_speech():
             break
     await p.close()
     assert "cancel" in types, "real speech over the reply never interrupted it"
+
+
+async def test_hold_ms_reported_in_metrics():
+    from vora.asr import AsrEvent
+    p = P([[AsrEvent("final", "how long is the", True, held_ms=420.0)]])
+    await feed_all(p, 1)
+    await p.wait_idle()
+    m = [x[1] for x in drain(p) if x[0] == "json" and x[1]["type"] == "metrics"][0]
+    assert m["hold_ms"] == 420.0

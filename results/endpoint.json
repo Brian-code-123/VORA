@@ -1,0 +1,86 @@
+{
+ "rule2=0.4/hold=0/en_librispeech_clean": {
+  "clips": 50,
+  "single_final_clips": 37,
+  "wait_ms_p50": 680.0,
+  "wait_ms_p95": 999.0,
+  "extra_finals_per_clip": 0.34
+ },
+ "rule2=0.4/hold=0/en_fleurs": {
+  "clips": 50,
+  "single_final_clips": 27,
+  "wait_ms_p50": 0.0,
+  "wait_ms_p95": 600.0,
+  "extra_finals_per_clip": 0.7
+ },
+ "rule2=0.4/hold=0/zh_aishell": {
+  "clips": 50,
+  "single_final_clips": 24,
+  "wait_ms_p50": 105.0,
+  "wait_ms_p95": 542.0,
+  "extra_finals_per_clip": 0.88
+ },
+ "rule2=0.4/hold=500/en_librispeech_clean": {
+  "clips": 50,
+  "single_final_clips": 39,
+  "wait_ms_p50": 680.0,
+  "wait_ms_p95": 1076.0,
+  "extra_finals_per_clip": 0.28
+ },
+ "rule2=0.4/hold=500/en_fleurs": {
+  "clips": 50,
+  "single_final_clips": 30,
+  "wait_ms_p50": 0.0,
+  "wait_ms_p95": 768.0,
+  "extra_finals_per_clip": 0.6
+ },
+ "rule2=0.4/hold=500/zh_aishell": {
+  "clips": 50,
+  "single_final_clips": 24,
+  "wait_ms_p50": 212.0,
+  "wait_ms_p95": 569.0,
+  "extra_finals_per_clip": 0.88
+ },
+ "rule2=0.3/hold=0/en_librispeech_clean": {
+  "clips": 50,
+  "single_final_clips": 23,
+  "wait_ms_p50": 450.0,
+  "wait_ms_p95": 679.0,
+  "extra_finals_per_clip": 0.96
+ },
+ "rule2=0.3/hold=0/en_fleurs": {
+  "clips": 50,
+  "single_final_clips": 14,
+  "wait_ms_p50": 0.0,
+  "wait_ms_p95": 250.0,
+  "extra_finals_per_clip": 1.7
+ },
+ "rule2=0.3/hold=0/zh_aishell": {
+  "clips": 50,
+  "single_final_clips": 6,
+  "wait_ms_p50": 40.0,
+  "wait_ms_p95": 274.0,
+  "extra_finals_per_clip": 1.98
+ },
+ "rule2=0.3/hold=500/en_librispeech_clean": {
+  "clips": 50,
+  "single_final_clips": 26,
+  "wait_ms_p50": 528.0,
+  "wait_ms_p95": 1046.0,
+  "extra_finals_per_clip": 0.88
+ },
+ "rule2=0.3/hold=500/en_fleurs": {
+  "clips": 50,
+  "single_final_clips": 16,
+  "wait_ms_p50": 0.0,
+  "wait_ms_p95": 395.0,
+  "extra_finals_per_clip": 1.58
+ },
+ "rule2=0.3/hold=500/zh_aishell": {
+  "clips": 50,
+  "single_final_clips": 6,
+  "wait_ms_p50": 113.0,
+  "wait_ms_p95": 490.0,
+  "extra_finals_per_clip": 1.98
+ }
+}

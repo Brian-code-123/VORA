@@ -27,3 +27,7 @@ Latency scales with audio length (+ small fixed cost): 1 word ~100-170 ms, 2 wor
 | zipformer-small-ctc-zh int8 (2025-04-01, `from_zipformer2_ctc`, greedy) | 26.3 MB | 10.9% | **5.2%** |
 Single continuous stream (no endpoints) with the CTC model: AISHELL 4.7-5.8%, FLEURS zh 14.8-15.4% (was 25.4% with the 14M model). Lead silence 0/0.3/0.8 s makes no clear difference for CTC. `rec.reset()` at every endpoint cost ~6 CER points and ~30% WER on second utterances; pre-roll after reset made it worse (17.5%: more endpoints). => AsrSession no longer resets at endpoints.
 `from_zipformer2_ctc` accepts the endpoint rule kwargs and `decoding_method` (greedy only). AISHELL on HF: `AISHELL/AISHELL-1` mirror only has training speakers; `shenyunhang/AISHELL-1` has per-file test/dev wavs.
+
+## Endpoint rule2 0.4 vs 0.3 and hold (scripts/eval_endpoint.py; 50 clips/set; results/endpoint.json)
+Extra finals per clip (read speech has natural pauses, so >0 is expected): rule2 0.4: LibriSpeech 0.34, FLEURS en 0.70, AISHELL zh 0.88. rule2 0.3: 0.96 / 1.70 / 1.98 (about double). Hold 500 ms at 0.4: 0.28 / 0.60 / 0.88. Wait for single-final clips (p50/p95 ms): rule2 0.4 LibriSpeech 680/999; 0.3 450/679.
+=> keep rule2 = 0.4 (0.3 halves the turn length), hold ON (500 ms, cap 1200 ms). Hold only fires when the text ends mid-sentence, so complete sentences pay nothing.

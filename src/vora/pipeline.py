@@ -139,7 +139,7 @@ class Pipeline:
                     if len(self._change_times) >= BARGE_IN_CHANGES and not self._is_echo(e.text):
                         await self._cancel_turn()  # user talks over the reply
             else:
-                await self._on_final(e.text)
+                await self._on_final(e.text, getattr(e, "held_ms", 0.0))
 
     def _turn_active(self) -> bool:
         return self._turn is not None and not self._turn.done()
@@ -178,7 +178,7 @@ class Pipeline:
         return await self._search(text)
 
     # ---- turns --------------------------------------------------------------------------------
-    async def _on_final(self, text: str) -> None:
+    async def _on_final(self, text: str, held_ms: float = 0.0) -> None:
         text = text.strip()
         speech_end = self._last_voice
         self._change_times.clear()
@@ -196,7 +196,7 @@ class Pipeline:
         trace.mark("final")
         await self._emit({"type": "final", "text": text})
         ev = self._turn_ev = threading.Event()
-        self._turn = self.loop.create_task(self._run_turn(text, trace, ev, prefetched))
+        self._turn = self.loop.create_task(self._run_turn(text, trace, ev, prefetched, held_ms))
 
     async def _cancel_turn(self, announce: bool = True) -> None:
         if not self._turn_active():
@@ -213,7 +213,7 @@ class Pipeline:
                 self.out.get_nowait()
             self.out.put_nowait(("json", {"type": "cancel"}))
 
-    async def _run_turn(self, text: str, trace: LatencyTrace, ev: threading.Event, prefetched) -> None:
+    async def _run_turn(self, text: str, trace: LatencyTrace, ev: threading.Event, prefetched, held_ms: float = 0.0) -> None:
         hits = await self._hits_for(text, prefetched)
         await self._emit_bg({"type": "context", "ids": [h.chunk_id for h in hits]})
         sent_q: queue.Queue = queue.Queue()
@@ -269,6 +269,7 @@ class Pipeline:
             trace.marks["first_audio"] = first_content  # content audio is what the brief's 1.5 s means
         m = trace.report()
         m["tts_oov"] = getattr(self.tts, "oov_total", 0)
+        m["hold_ms"] = held_ms
         se = trace.marks["speech_end"]
         if "first_audio" in stamps:
             m["ttfa_ms"] = round((stamps["first_audio"] - se) * 1000, 1)

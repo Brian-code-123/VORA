@@ -6,6 +6,7 @@ import numpy as np
 import sherpa_onnx
 
 from vora.config import Settings
+from vora.endpoint import looks_incomplete, strip_disfluency
 
 SR = 16000
 MAX_UTTERANCE_S = 30
@@ -16,13 +17,14 @@ class AsrEvent:
     kind: Literal["partial", "final"]
     text: str
     stable: bool = False
+    held_ms: float = 0.0   # final only: how long the endpoint was held because the text looked unfinished
 
 
-def _endpoint_kwargs() -> dict:
+def _endpoint_kwargs(settings: Settings) -> dict:
     return dict(
         enable_endpoint_detection=True,
         rule1_min_trailing_silence=0.6,  # sherpa default 2.4 s would burn the 1.5 s budget
-        rule2_min_trailing_silence=0.4,  # default 1.2 s
+        rule2_min_trailing_silence=settings.endpoint_rule2_s,  # default 1.2 s
         rule3_min_utterance_length=MAX_UTTERANCE_S,
     )
 
@@ -35,7 +37,7 @@ def _transducer(d, settings: Settings):
         joiner=str(next(d.glob("joiner*.int8.onnx"))),
         num_threads=settings.asr_threads,
         decoding_method="modified_beam_search",  # WER 26.6% -> 16.6% vs greedy (LibriSpeech, 50 clips)
-        **_endpoint_kwargs(),
+        **_endpoint_kwargs(settings),
     )
 
 
@@ -45,7 +47,7 @@ def _zipformer2_ctc(d, settings: Settings):
         model=str(d / "model.int8.onnx"),
         num_threads=settings.asr_threads,
         decoding_method="greedy_search",   # CTC: greedy only
-        **_endpoint_kwargs(),
+        **_endpoint_kwargs(settings),
     )
 
 
@@ -68,9 +70,10 @@ class AsrSession:
 
     RESET_AFTER_S = 20
 
-    def __init__(self, recognizers: dict, lang: Literal["zh", "en"] = "en"):
+    def __init__(self, recognizers: dict, lang: Literal["zh", "en"] = "en", hold_ms: int = 500, hold_total_cap_ms: int = 1200):
         self.rec = recognizers[lang]
         self.lang = lang
+        self.hold_ms, self.hold_total_cap_ms = hold_ms, hold_total_cap_ms
         self._new_stream()
 
     def _new_stream(self) -> None:
@@ -86,6 +89,9 @@ class AsrSession:
         self._emitted = ""       # raw recognizer text already sent as finals
         self._stream_samples = 0
         self._since_final = 0
+        self._hold_since = None   # stream-sample mark where the current hold began
+        self._hold_text = ""
+        self._held = 0            # samples held for the current utterance (capped)
 
     def reset(self) -> None:
         self._new_stream()
@@ -117,9 +123,19 @@ class AsrSession:
         self._last = text
         endpoint = self.rec.is_endpoint(self.stream)
         forced = self._since_final > MAX_UTTERANCE_S * SR
+        clean = strip_disfluency(text, self.lang)
         if text and (endpoint or forced):
-            if len(re.sub(r"\W+", "", text)) >= 2:   # a 1-letter "s" final from trailing noise must not start a turn
-                events.append(AsrEvent("final", text, True))
+            if not forced and self.hold_ms > 0 and looks_incomplete(clean, self.lang) and self._held < self.hold_total_cap_ms * SR // 1000:
+                # user stopped mid-sentence: keep decoding the SAME stream and wait up to hold_ms of audio for more words
+                if self._hold_since is None or text != self._hold_text:
+                    self._hold_since, self._hold_text = self._stream_samples, text
+                self._held += x.size
+                if self._stream_samples - self._hold_since < self.hold_ms * SR // 1000:
+                    return events
+            held_ms = round(self._held * 1000 / SR, 1)
+            self._hold_since, self._hold_text, self._held = None, "", 0
+            if len(re.sub(r"\W+", "", clean)) >= 2:   # a 1-letter "s" or a lone "uh" must not start a turn
+                events.append(AsrEvent("final", clean, True, held_ms=held_ms))
             self._emitted, self._last, self._same, self._since_final = raw, "", 0, 0
             if self._stream_samples > self.RESET_AFTER_S * SR:
                 self.rec.reset(self.stream)
