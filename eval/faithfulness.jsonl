@@ -1,0 +1,40 @@
+{"q": "how long is the warranty on the vora x200", "kw": ["2 years", "two years", "2 year"], "neg": false, "split": "dev"}
+{"q": "what is the wake word", "kw": ["hey vora"], "neg": false, "split": "dev"}
+{"q": "what does the red light mean", "kw": ["mute"], "neg": false, "split": "dev"}
+{"q": "how do i factory reset it", "kw": ["10 seconds", "reset button", "10 sec"], "neg": false, "split": "dev"}
+{"q": "how do i contact support", "kw": ["support@vora.example"], "neg": false, "split": "dev"}
+{"q": "does it understand cantonese", "kw": ["not support", "not supported", "no,", "cannot", "doesn't", "does not"], "neg": true, "split": "dev"}
+{"q": "who pays for return shipping", "kw": ["buyer"], "neg": false, "split": "dev"}
+{"q": "how much does the x200 cost", "kw": ["199"], "neg": false, "split": "dev"}
+{"q": "what temperature can it operate in", "kw": ["40"], "neg": false, "split": "dev"}
+{"q": "what power adapter does the x200 use", "kw": ["12 v", "12v"], "neg": false, "split": "dev"}
+{"q": "how many microphones does the x200 have", "kw": ["4", "four"], "neg": false, "split": "dev"}
+{"q": "how loud is the speaker", "kw": ["10 w", "10w", "10 watt"], "neg": false, "split": "dev"}
+{"q": "which file formats can i upload for the knowledge base", "kw": ["markdown", "txt", "pdf"], "neg": false, "split": "dev"}
+{"q": "how often does the firmware update", "kw": ["month"], "neg": false, "split": "dev"}
+{"q": "can i import my own documents", "kw": ["yes", "import", "document"], "neg": false, "split": "dev"}
+{"q": "X200保修期多久", "kw": ["2 年", "2年", "两年"], "neg": false, "split": "dev"}
+{"q": "怎么恢复出厂设置", "kw": ["10 秒", "10秒", "复位"], "neg": false, "split": "dev"}
+{"q": "唤醒词是什么", "kw": ["hey vora"], "neg": false, "split": "dev"}
+{"q": "支持哪些语言", "kw": ["普通话", "英语"], "neg": false, "split": "dev"}
+{"q": "知识库最大能导入多大", "kw": ["1 gb", "1gb"], "neg": false, "split": "dev"}
+{"q": "does the m100 handle cantonese speech", "kw": ["not support", "not supported", "cannot", "doesn't", "no"], "neg": true, "split": "heldout"}
+{"q": "can i talk to it in cantonese", "kw": ["not support", "not supported", "cannot", "no", "doesn't"], "neg": true, "split": "heldout"}
+{"q": "支持说广东话吗", "kw": ["不支持", "不能", "粤语"], "neg": true, "split": "heldout"}
+{"q": "is the x200 able to upload my audio to the cloud", "kw": ["never", "not", "no"], "neg": true, "split": "heldout"}
+{"q": "会把我的录音传到云端吗", "kw": ["不会", "不", "没有"], "neg": true, "split": "heldout"}
+{"q": "does the m100 support 5ghz wifi", "kw": ["2.4", "only", "not"], "neg": true, "split": "heldout"}
+{"q": "m100能连5g的wifi吗", "kw": ["2.4", "只"], "neg": true, "split": "heldout"}
+{"q": "is physical damage covered by the warranty", "kw": ["not covered", "not"], "neg": true, "split": "heldout"}
+{"q": "进水坏了保修吗", "kw": ["不在", "不", "范围"], "neg": true, "split": "heldout"}
+{"q": "will a factory reset delete the firmware", "kw": ["kept", "not", "no", "keep"], "neg": true, "split": "heldout"}
+{"q": "what is the knowledge base limit on the m100", "kw": ["256"], "neg": false, "split": "heldout"}
+{"q": "m100存储空间多大", "kw": ["16"], "neg": false, "split": "heldout"}
+{"q": "how much internal storage does the x200 have", "kw": ["32"], "neg": false, "split": "heldout"}
+{"q": "what hours is support open", "kw": ["9", "18"], "neg": false, "split": "heldout"}
+{"q": "x200是几核处理器", "kw": ["4 核", "4核", "四核"], "neg": false, "split": "heldout"}
+{"q": "how many training recordings does a custom wake word need", "kw": ["3", "three"], "neg": false, "split": "heldout"}
+{"q": "how far can the m100 hear me", "kw": ["3 m", "3m", "3 meter", "3 米", "3米"], "neg": false, "split": "heldout"}
+{"q": "x200 拾音范围", "kw": ["5 米", "5米"], "neg": false, "split": "heldout"}
+{"q": "how many days do i have to return it", "kw": ["30"], "neg": false, "split": "heldout"}
+{"q": "what is the support email", "kw": ["support@vora.example"], "neg": false, "split": "heldout"}

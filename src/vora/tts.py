@@ -27,6 +27,20 @@ def lang_of(text: str) -> Literal["zh", "en"]:
     return "zh" if len(_CJK.findall(text)) >= max(1, len(re.findall(r"[A-Za-z]+", text))) else "en"
 
 
+def zh_numbers(text: str) -> str:
+    """Digits inside a Chinese run -> Chinese numerals (the voice has no digit tokens: they were skipped silently).
+    Up to 4 integer digits read as a number (10 -> 十), longer strings digit by digit, 2.4 -> 二点四."""
+    import cn2an
+
+    def conv(m: re.Match) -> str:
+        t = m.group(0)
+        if "." in t:
+            a, b = t.split(".", 1)
+            return (cn2an.an2cn(a) if len(a) <= 4 else a.translate(_ZH_DIGITS)) + "点" + b.translate(_ZH_DIGITS)
+        return cn2an.an2cn(t) if len(t) <= 4 else t.translate(_ZH_DIGITS)
+    return re.sub(r"\d+(?:\.\d+)?", conv, text)
+
+
 def _zh_digits(s: str) -> str:
     return re.sub(r"\d+(?:\.\d+)?", lambda m: m.group(0).translate(_ZH_DIGITS), s)
 
@@ -138,6 +152,7 @@ class Tts:
             if not re.search(r"\w", run):
                 continue
             if lang == "zh":
+                run = zh_numbers(run)
                 oov = [c for c in run if _CJK.match(c) and c not in self.zh_lexicon]
                 if oov:
                     self.oov_total += len(oov)

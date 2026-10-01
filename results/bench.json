@@ -1,38 +1,47 @@
 {
+ "quiet": true,
  "host": {
   "cpu": "arm",
   "machine": "arm64",
   "system": "macOS-26.6.2-arm64-arm-64bit",
   "cores": 8,
-  "loadavg_1m": 6.0,
+  "loadavg_1m": 5.1,
   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
  },
- "n": 30,
- "skipped": 0,
+ "n": 41,
+ "skipped": 1,
  "latency_ms_audio_mode": {
   "asr_final": {
-   "p50": 821.9,
-   "p95": 1022.3
+   "p50": 927.4,
+   "p95": 1222.5
   },
   "first_content_audio_ms": {
-   "p50": 1261.3,
-   "p95": 2208.5
+   "p50": 1252.0,
+   "p95": 2216.0
+  },
+  "hold_ms": {
+   "p50": 0.0,
+   "p95": 0.0
   },
   "rag_first_token": {
-   "p50": 97.0,
-   "p95": 577.6
+   "p50": 361.6,
+   "p95": 687.2
   },
   "total": {
-   "p50": 1261.3,
-   "p95": 2208.5
+   "p50": 1252.0,
+   "p95": 2216.0
   },
   "ttfa_ms": {
-   "p50": 1261.3,
-   "p95": 2208.5
+   "p50": 1252.0,
+   "p95": 2216.0
   },
   "tts_first_chunk": {
-   "p50": 224.3,
-   "p95": 616.2
+   "p50": 91.3,
+   "p95": 490.1
+  },
+  "tts_oov": {
+   "p50": 0.0,
+   "p95": 0.0
   }
  },
  "latency_ms_oracle_text": {
@@ -41,384 +50,240 @@
    "p95": 0.1
   },
   "first_content_audio_ms": {
-   "p50": 535.6,
-   "p95": 2144.0
+   "p50": 480.2,
+   "p95": 1358.1
+  },
+  "hold_ms": {
+   "p50": 0.0,
+   "p95": 0.0
   },
   "rag_first_token": {
-   "p50": 362.8,
-   "p95": 1453.4
+   "p50": 314.2,
+   "p95": 827.9
   },
   "total": {
-   "p50": 535.6,
-   "p95": 2144.0
+   "p50": 480.2,
+   "p95": 1358.1
   },
   "ttfa_ms": {
-   "p50": 535.6,
-   "p95": 2144.0
+   "p50": 480.2,
+   "p95": 1358.1
   },
   "tts_first_chunk": {
-   "p50": 228.3,
-   "p95": 896.4
+   "p50": 111.0,
+   "p95": 631.0
+  },
+  "tts_oov": {
+   "p50": 0.0,
+   "p95": 0.0
   }
  },
  "estimated_total_ms": {
-  "p50": 1357.5,
-  "p95": 3166.3
+  "p50": 1407.6,
+  "p95": 2580.6
  },
- "rss_mb_after_load": 1139,
- "rss_delta_load_mb": 993,
+ "rss_mb_after_load": 1129,
+ "rss_delta_load_mb": 983,
  "rows": [
   {
    "type": "metrics",
-   "asr_final": 816.8,
-   "rag_first_token": 1948.5,
-   "tts_first_chunk": 478.8,
-   "total": 3244.1,
-   "ttfa_ms": 3244.1,
-   "first_content_audio_ms": 3244.1,
-   "heard": "how long is the warranty on the vorac's two hundred",
+   "asr_final": 717.1,
+   "rag_first_token": 462.1,
+   "tts_first_chunk": 59.8,
+   "total": 1238.9,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1238.9,
+   "first_content_audio_ms": 1238.9,
+   "heard": "how long is the warranty on the vora ex two hundred",
    "context": [
     "E03",
-    "E06",
-    "E08"
+    "E18",
+    "E12"
    ],
    "q": "how long is the warranty on the vora x200",
    "lang": "en"
   },
   {
    "type": "metrics",
-   "asr_final": 1012.2,
-   "rag_first_token": 343.2,
-   "tts_first_chunk": 937.6,
-   "total": 2293.0,
-   "ttfa_ms": 2293.0,
-   "first_content_audio_ms": 2293.0,
-   "heard": "ra x two hundred warranty period",
+   "asr_final": 1021.8,
+   "rag_first_token": 305.5,
+   "tts_first_chunk": 132.8,
+   "total": 1460.1,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1460.1,
+   "first_content_audio_ms": 1460.1,
+   "heard": "ora x two hundred warranty period",
    "context": [
     "E03",
-    "E18",
-    "E16"
+    "E12",
+    "E14"
    ],
    "q": "vora x 200 warranty period",
    "lang": "en"
   },
   {
    "type": "metrics",
-   "asr_final": 815.1,
-   "rag_first_token": 8.7,
-   "tts_first_chunk": 89.4,
-   "total": 913.2,
-   "ttfa_ms": 913.2,
-   "first_content_audio_ms": 913.2,
-   "heard": "包酒气多久",
+   "asr_final": 726.2,
+   "rag_first_token": 11.2,
+   "tts_first_chunk": 91.3,
+   "total": 828.7,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 828.7,
+   "first_content_audio_ms": 828.7,
+   "heard": "<unk> <unk> <unk> 器多久",
    "context": [],
    "q": "X200保修期多久",
    "lang": "zh"
   },
   {
    "type": "metrics",
-   "asr_final": 915.2,
-   "rag_first_token": 398.1,
-   "tts_first_chunk": 323.4,
-   "total": 1636.7,
-   "ttfa_ms": 1636.7,
-   "first_content_audio_ms": 1636.7,
-   "heard": "and one hundred warrant he how many years",
+   "asr_final": 718.6,
+   "rag_first_token": 361.6,
+   "tts_first_chunk": 64.4,
+   "total": 1144.6,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1144.6,
+   "first_content_audio_ms": 1144.6,
+   "heard": "and one hundred warranty how many years",
    "context": [
     "E03",
-    "E14",
-    "E12"
+    "E12",
+    "E18"
    ],
    "q": "m100 warranty how many years",
    "lang": "en"
   },
   {
    "type": "metrics",
-   "asr_final": 719.2,
-   "rag_first_token": 6.1,
-   "tts_first_chunk": 91.2,
-   "total": 816.6,
-   "ttfa_ms": 816.6,
-   "first_content_audio_ms": 816.6,
-   "heard": "其事几年",
-   "context": [],
-   "q": "保修期是几年",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 817.8,
-   "rag_first_token": 0.1,
-   "tts_first_chunk": 279.1,
-   "total": 1097.1,
-   "ttfa_ms": 1097.1,
-   "first_content_audio_ms": 1097.1,
-   "heard": "what is the way coward",
-   "context": [],
-   "q": "what is the wake word",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 827.9,
-   "rag_first_token": 316.1,
-   "tts_first_chunk": 728.6,
-   "total": 1872.6,
-   "ttfa_ms": 1872.6,
-   "first_content_audio_ms": 1872.6,
-   "heard": "o how do i change the wake word",
-   "context": [
-    "E04",
-    "E18",
-    "E15"
-   ],
-   "q": "how do i change the wake word",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 818.9,
-   "rag_first_token": 8.8,
-   "tts_first_chunk": 224.3,
-   "total": 1051.9,
-   "ttfa_ms": 1051.9,
-   "first_content_audio_ms": 1051.9,
-   "heard": "心使神木耳",
-   "context": [],
-   "q": "唤醒词是什么",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 1019.9,
-   "rag_first_token": 7.0,
-   "tts_first_chunk": 182.7,
-   "total": 1209.6,
-   "ttfa_ms": 1209.6,
-   "first_content_audio_ms": 1209.6,
-   "heard": "该换性",
-   "context": [],
-   "q": "怎么修改唤醒词",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 820.7,
-   "rag_first_token": 370.3,
-   "tts_first_chunk": 224.3,
-   "total": 1415.2,
-   "ttfa_ms": 1415.2,
-   "first_content_audio_ms": 1415.2,
-   "heard": "what does the red light mean",
-   "context": [
-    "E18",
-    "E05",
-    "E16"
-   ],
-   "q": "what does the red light mean",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 1025.6,
-   "rag_first_token": 0.3,
-   "tts_first_chunk": 88.1,
-   "total": 1114.0,
-   "ttfa_ms": 1114.0,
-   "first_content_audio_ms": 1114.0,
-   "heard": "蓝色代表神木",
-   "context": [],
-   "q": "led 蓝色代表什么",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 1020.9,
-   "rag_first_token": 413.5,
-   "tts_first_chunk": 238.8,
-   "total": 1673.3,
-   "ttfa_ms": 1673.3,
-   "first_content_audio_ms": 1673.3,
-   "heard": "why is the light flashing white",
-   "context": [
-    "E05",
-    "E09",
-    "E08"
-   ],
-   "q": "why is the light flashing white",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 820.6,
-   "rag_first_token": 363.5,
-   "tts_first_chunk": 203.0,
-   "total": 1387.1,
-   "ttfa_ms": 1387.1,
-   "first_content_audio_ms": 1387.1,
-   "heard": "how long is the warranty on the vorac's two hundred",
-   "context": [
-    "E03",
-    "E06",
-    "E08"
-   ],
-   "q": "how long is the warranty on the vora x200",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 1022.0,
-   "rag_first_token": 305.0,
-   "tts_first_chunk": 262.5,
-   "total": 1589.4,
-   "ttfa_ms": 1589.4,
-   "first_content_audio_ms": 1589.4,
-   "heard": "ra x two hundred warranty period",
-   "context": [
-    "E03",
-    "E18",
-    "E16"
-   ],
-   "q": "vora x 200 warranty period",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 821.8,
-   "rag_first_token": 8.8,
-   "tts_first_chunk": 93.2,
-   "total": 923.8,
-   "ttfa_ms": 923.8,
-   "first_content_audio_ms": 923.8,
-   "heard": "包酒气多久",
-   "context": [],
-   "q": "X200保修期多久",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 918.6,
-   "rag_first_token": 359.0,
-   "tts_first_chunk": 305.4,
-   "total": 1583.0,
-   "ttfa_ms": 1583.0,
-   "first_content_audio_ms": 1583.0,
-   "heard": "and one hundred warrant he how many years",
-   "context": [
-    "E03",
-    "E14",
-    "E12"
-   ],
-   "q": "m100 warranty how many years",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 722.6,
-   "rag_first_token": 6.8,
-   "tts_first_chunk": 86.5,
-   "total": 816.0,
-   "ttfa_ms": 816.0,
-   "first_content_audio_ms": 816.0,
-   "heard": "其事几年",
-   "context": [],
-   "q": "保修期是几年",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 819.7,
-   "rag_first_token": 0.3,
-   "tts_first_chunk": 288.8,
-   "total": 1108.8,
-   "ttfa_ms": 1108.8,
-   "first_content_audio_ms": 1108.8,
-   "heard": "what is the way coward",
-   "context": [],
-   "q": "what is the wake word",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 820.1,
-   "rag_first_token": 185.3,
-   "tts_first_chunk": 307.8,
-   "total": 1313.1,
-   "ttfa_ms": 1313.1,
-   "first_content_audio_ms": 1313.1,
-   "heard": "o how do i change the wake word",
-   "context": [
-    "E04",
-    "E18",
-    "E15"
-   ],
-   "q": "how do i change the wake word",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 821.7,
-   "rag_first_token": 7.2,
-   "tts_first_chunk": 85.6,
-   "total": 914.5,
-   "ttfa_ms": 914.5,
-   "first_content_audio_ms": 914.5,
-   "heard": "心使神木耳",
-   "context": [],
-   "q": "唤醒词是什么",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 1021.9,
-   "rag_first_token": 5.8,
-   "tts_first_chunk": 81.4,
-   "total": 1109.1,
-   "ttfa_ms": 1109.1,
-   "first_content_audio_ms": 1109.1,
-   "heard": "该换性",
-   "context": [],
-   "q": "怎么修改唤醒词",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 820.5,
-   "rag_first_token": 365.2,
-   "tts_first_chunk": 211.7,
-   "total": 1397.3,
-   "ttfa_ms": 1397.3,
-   "first_content_audio_ms": 1397.3,
-   "heard": "what does the red light mean",
-   "context": [
-    "E18",
-    "E05",
-    "E16"
-   ],
-   "q": "what does the red light mean",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 1022.6,
+   "asr_final": 729.1,
    "rag_first_token": 0.2,
-   "tts_first_chunk": 94.8,
-   "total": 1117.6,
-   "ttfa_ms": 1117.6,
-   "first_content_audio_ms": 1117.6,
-   "heard": "蓝色代表神木",
+   "tts_first_chunk": 82.7,
+   "total": 812.1,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 812.1,
+   "first_content_audio_ms": 812.1,
+   "heard": "奥朽起世纪年",
+   "context": [],
+   "q": "保修期是几年",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1213.2,
+   "rag_first_token": 687.2,
+   "tts_first_chunk": 129.5,
+   "total": 2029.9,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 2029.9,
+   "first_content_audio_ms": 2029.9,
+   "heard": "o what is the wake worth",
+   "context": [
+    "E04",
+    "E18",
+    "E17"
+   ],
+   "q": "what is the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 585.3,
+   "rag_first_token": 807.8,
+   "tts_first_chunk": 1355.8,
+   "total": 2749.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 2749.0,
+   "first_content_audio_ms": 2749.0,
+   "heard": "o how do i change the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E15"
+   ],
+   "q": "how do i change the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 831.4,
+   "rag_first_token": 0.2,
+   "tts_first_chunk": 93.2,
+   "total": 924.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 924.8,
+   "first_content_audio_ms": 924.8,
+   "heard": "半性此事什么",
+   "context": [],
+   "q": "唤醒词是什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 726.2,
+   "rag_first_token": 11.0,
+   "tts_first_chunk": 121.1,
+   "total": 858.3,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 858.3,
+   "first_content_audio_ms": 858.3,
+   "heard": "怎么修该换星词",
+   "context": [],
+   "q": "怎么修改唤醒词",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 724.4,
+   "rag_first_token": 359.9,
+   "tts_first_chunk": 72.3,
+   "total": 1156.6,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1156.6,
+   "first_content_audio_ms": 1156.6,
+   "heard": "o what does the red light mean",
+   "context": [
+    "E18",
+    "E05",
+    "E16"
+   ],
+   "q": "what does the red light mean",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1029.1,
+   "rag_first_token": 7.0,
+   "tts_first_chunk": 86.7,
+   "total": 1122.7,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1122.7,
+   "first_content_audio_ms": 1122.7,
+   "heard": "色代表什么",
    "context": [],
    "q": "led 蓝色代表什么",
    "lang": "zh"
   },
   {
    "type": "metrics",
-   "asr_final": 1021.9,
-   "rag_first_token": 711.8,
-   "tts_first_chunk": 371.7,
-   "total": 2105.3,
-   "ttfa_ms": 2105.3,
-   "first_content_audio_ms": 2105.3,
+   "asr_final": 1015.0,
+   "rag_first_token": 432.9,
+   "tts_first_chunk": 58.2,
+   "total": 1506.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1506.0,
+   "first_content_audio_ms": 1506.0,
    "heard": "why is the light flashing white",
    "context": [
     "E05",
@@ -430,104 +295,531 @@
   },
   {
    "type": "metrics",
-   "asr_final": 822.2,
-   "rag_first_token": 358.5,
-   "tts_first_chunk": 196.9,
-   "total": 1377.7,
-   "ttfa_ms": 1377.7,
-   "first_content_audio_ms": 1377.7,
-   "heard": "how long is the warranty on the vorac's two hundred",
+   "asr_final": 919.1,
+   "rag_first_token": 308.6,
+   "tts_first_chunk": 107.3,
+   "total": 1335.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1335.0,
+   "first_content_audio_ms": 1335.0,
+   "heard": "is my audio sent to the cloud",
    "context": [
-    "E03",
     "E06",
-    "E08"
+    "E09",
+    "E11"
    ],
-   "q": "how long is the warranty on the vora x200",
+   "q": "is my audio sent to the cloud",
    "lang": "en"
   },
   {
    "type": "metrics",
-   "asr_final": 1015.1,
-   "rag_first_token": 304.5,
-   "tts_first_chunk": 254.2,
-   "total": 1573.9,
-   "ttfa_ms": 1573.9,
-   "first_content_audio_ms": 1573.9,
-   "heard": "ra x two hundred warranty period",
+   "asr_final": 529.0,
+   "rag_first_token": 413.9,
+   "tts_first_chunk": 117.3,
+   "total": 1060.2,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1060.2,
+   "first_content_audio_ms": 1060.2,
+   "heard": "私音频会上传马",
    "context": [
-    "E03",
-    "E18",
-    "E16"
+    "Z06",
+    "E06",
+    "E17"
    ],
-   "q": "vora x 200 warranty period",
+   "q": "隐私 音频会上传吗",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1019.3,
+   "rag_first_token": 373.0,
+   "tts_first_chunk": 120.2,
+   "total": 1512.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1512.5,
+   "first_content_audio_ms": 1512.5,
+   "heard": "t how does the mutes which work",
+   "context": [
+    "E18",
+    "E15",
+    "E04"
+   ],
+   "q": "how does the mute switch work",
    "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1011.9,
+   "rag_first_token": 411.4,
+   "tts_first_chunk": 422.4,
+   "total": 1845.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1845.8,
+   "first_content_audio_ms": 1845.8,
+   "heard": "o how do i connect the box to wife i",
+   "context": [
+    "E13",
+    "E09",
+    "E11"
+   ],
+   "q": "how do i connect the box to wifi",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 230.3,
+   "rag_first_token": 312.3,
+   "tts_first_chunk": 181.7,
+   "total": 724.3,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 724.3,
+   "first_content_audio_ms": 724.3,
+   "heard": "<unk> <unk> 支持<unk>",
+   "context": [
+    "Z07",
+    "Z02",
+    "Z10"
+   ],
+   "q": "x200 支持 5ghz 吗",
+   "lang": "zh"
   },
   {
    "type": "metrics",
    "asr_final": 822.0,
-   "rag_first_token": 7.7,
-   "tts_first_chunk": 84.0,
-   "total": 913.7,
-   "ttfa_ms": 913.7,
-   "first_content_audio_ms": 913.7,
-   "heard": "包酒气多久",
-   "context": [],
-   "q": "X200保修期多久",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 916.3,
-   "rag_first_token": 363.4,
-   "tts_first_chunk": 310.2,
-   "total": 1589.9,
-   "ttfa_ms": 1589.9,
-   "first_content_audio_ms": 1589.9,
-   "heard": "and one hundred warrant he how many years",
+   "rag_first_token": 366.1,
+   "tts_first_chunk": 63.9,
+   "total": 1252.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1252.0,
+   "first_content_audio_ms": 1252.0,
+   "heard": "ul does the m one hundred support wife i sex",
    "context": [
-    "E03",
-    "E14",
-    "E12"
+    "E13",
+    "E18",
+    "Z13"
    ],
-   "q": "m100 warranty how many years",
+   "q": "does the m100 support wifi 6",
    "lang": "en"
   },
   {
    "type": "metrics",
-   "asr_final": 721.6,
-   "rag_first_token": 5.8,
-   "tts_first_chunk": 91.0,
-   "total": 818.4,
-   "ttfa_ms": 818.4,
-   "first_content_audio_ms": 818.4,
-   "heard": "其事几年",
+   "asr_final": 1222.5,
+   "rag_first_token": 393.2,
+   "tts_first_chunk": 576.8,
+   "total": 2192.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 2192.5,
+   "first_content_audio_ms": 2192.5,
+   "heard": "o how do i factory resent it",
+   "context": [
+    "E08",
+    "E05",
+    "E04"
+   ],
+   "q": "how do i factory reset it",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1028.5,
+   "rag_first_token": 0.2,
+   "tts_first_chunk": 84.5,
+   "total": 1113.1,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1113.1,
+   "first_content_audio_ms": 1113.1,
+   "heard": "你的付出场设置",
    "context": [],
-   "q": "保修期是几年",
+   "q": "怎么恢复出厂设置",
    "lang": "zh"
   },
   {
    "type": "metrics",
-   "asr_final": 818.9,
-   "rag_first_token": 0.2,
-   "tts_first_chunk": 265.8,
-   "total": 1084.9,
-   "ttfa_ms": 1084.9,
-   "first_content_audio_ms": 1084.9,
-   "heard": "what is the way coward",
-   "context": [],
-   "q": "what is the wake word",
+   "asr_final": 719.4,
+   "rag_first_token": 363.9,
+   "tts_first_chunk": 53.2,
+   "total": 1136.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1136.4,
+   "first_content_audio_ms": 1136.4,
+   "heard": "uled resette button how long",
+   "context": [
+    "E08",
+    "E12",
+    "E18"
+   ],
+   "q": "hold reset button how long",
    "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1220.3,
+   "rag_first_token": 404.7,
+   "tts_first_chunk": 52.1,
+   "total": 1677.1,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1677.1,
+   "first_content_audio_ms": 1677.1,
+   "heard": "o how often does the firm wear uptate",
+   "context": [
+    "E18",
+    "E15",
+    "E11"
+   ],
+   "q": "how often does the firmware update",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 927.4,
+   "rag_first_token": 0.1,
+   "tts_first_chunk": 108.7,
+   "total": 1036.3,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1036.3,
+   "first_content_audio_ms": 1036.3,
+   "heard": "的抹剑骨剑耿性",
+   "context": [],
+   "q": "怎么检查固件更新",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1118.8,
+   "rag_first_token": 9.0,
+   "tts_first_chunk": 269.9,
+   "total": 1397.7,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1397.7,
+   "first_content_audio_ms": 1397.7,
+   "heard": "t understand cantoniz",
+   "context": [],
+   "q": "does it understand cantonese",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 826.2,
+   "rag_first_token": 0.1,
+   "tts_first_chunk": 80.5,
+   "total": 906.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 906.8,
+   "first_content_audio_ms": 906.8,
+   "heard": "支持那写预言",
+   "context": [],
+   "q": "支持哪些语言",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 809.9,
+   "rag_first_token": 576.4,
+   "tts_first_chunk": 198.0,
+   "total": 1584.2,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1584.2,
+   "first_content_audio_ms": 1584.2,
+   "heard": "t answer and mix chinese and english",
+   "context": [
+    "E10",
+    "E11",
+    "E02"
+   ],
+   "q": "can it answer in mixed chinese and english",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1122.2,
+   "rag_first_token": 346.8,
+   "tts_first_chunk": 113.3,
+   "total": 1582.3,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1582.3,
+   "first_content_audio_ms": 1582.3,
+   "heard": "can i import my own documents",
+   "context": [
+    "E11",
+    "E08",
+    "E04"
+   ],
+   "q": "can i import my own documents",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 823.1,
+   "rag_first_token": 0.1,
+   "tts_first_chunk": 90.5,
+   "total": 913.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 913.8,
+   "first_content_audio_ms": 913.8,
+   "heard": "只是腤嘴大能道入多大",
+   "context": [],
+   "q": "知识库最大能导入多大",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1115.4,
+   "rag_first_token": 844.3,
+   "tts_first_chunk": 256.3,
+   "total": 2216.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 2216.0,
+   "first_content_audio_ms": 2216.0,
+   "heard": "tille formets cannot load for the knowledge base",
+   "context": [
+    "E11",
+    "E02",
+    "E18"
+   ],
+   "q": "which file formats can i upload for the knowledge base",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1022.1,
+   "rag_first_token": 389.0,
+   "tts_first_chunk": 63.4,
+   "total": 1474.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1474.5,
+   "first_content_audio_ms": 1474.5,
+   "heard": "o how much does the ex two hundred cost",
+   "context": [
+    "E18",
+    "E12",
+    "E15"
+   ],
+   "q": "how much does the x200 cost",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1119.1,
+   "rag_first_token": 419.8,
+   "tts_first_chunk": 99.2,
+   "total": 1638.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1638.0,
+   "first_content_audio_ms": 1638.0,
+   "heard": "who pays for return shipping",
+   "context": [
+    "E12",
+    "E03",
+    "E08"
+   ],
+   "q": "who pays for return shipping",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1114.3,
+   "rag_first_token": 406.3,
+   "tts_first_chunk": 302.1,
+   "total": 1822.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1822.8,
+   "first_content_audio_ms": 1822.8,
+   "heard": "how do i contact support",
+   "context": [
+    "E13",
+    "Z13",
+    "E07"
+   ],
+   "q": "how do i contact support",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 833.2,
+   "rag_first_token": 7.2,
+   "tts_first_chunk": 87.1,
+   "total": 927.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 927.5,
+   "first_content_audio_ms": 927.5,
+   "heard": "客服工作实践念头",
+   "context": [],
+   "q": "客服工作时间",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1402.1,
+   "rag_first_token": 363.7,
+   "tts_first_chunk": 69.1,
+   "total": 1834.9,
+   "tts_oov": 0,
+   "hold_ms": 600.0,
+   "ttfa_ms": 1834.9,
+   "first_content_audio_ms": 1834.9,
+   "heard": "what temperature can it operate in",
+   "context": [
+    "E04",
+    "E18",
+    "E10"
+   ],
+   "q": "what temperature can it operate in",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1217.8,
+   "rag_first_token": 418.2,
+   "tts_first_chunk": 100.5,
+   "total": 1736.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1736.5,
+   "first_content_audio_ms": 1736.5,
+   "heard": "what power adaptor does the ex two hundred use",
+   "context": [
+    "E18",
+    "E15",
+    "E14"
+   ],
+   "q": "what power adapter does the x200 use",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 827.1,
+   "rag_first_token": 10.3,
+   "tts_first_chunk": 88.2,
+   "total": 925.6,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 925.6,
+   "first_content_audio_ms": 925.6,
+   "heard": "济公好多少",
+   "context": [],
+   "q": "待机功耗多少",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1117.0,
+   "rag_first_token": 423.6,
+   "tts_first_chunk": 84.5,
+   "total": 1625.2,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1625.2,
+   "first_content_audio_ms": 1625.2,
+   "heard": "how many microphones does the ex two hundred have",
+   "context": [
+    "E16",
+    "E18",
+    "E06"
+   ],
+   "q": "how many microphones does the x200 have",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 829.4,
+   "rag_first_token": 7.2,
+   "tts_first_chunk": 84.9,
+   "total": 921.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 921.5,
+   "first_content_audio_ms": 921.5,
+   "heard": "是因距离多远呢",
+   "context": [],
+   "q": "拾音距离多远",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 816.7,
+   "rag_first_token": 345.6,
+   "tts_first_chunk": 73.8,
+   "total": 1236.1,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1236.1,
+   "first_content_audio_ms": 1236.1,
+   "heard": "o held out is the speaker",
+   "context": [
+    "E17",
+    "E18",
+    "E08"
+   ],
+   "q": "how loud is the speaker",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 1502.1,
+   "rag_first_token": 416.3,
+   "tts_first_chunk": 490.1,
+   "total": 2408.5,
+   "tts_oov": 0,
+   "hold_ms": 600.0,
+   "ttfa_ms": 2408.5,
+   "first_content_audio_ms": 2408.5,
+   "heard": "the box does not respond what should i do",
+   "context": [
+    "E18",
+    "E09",
+    "E14"
+   ],
+   "q": "the box does not respond what should i do",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 929.8,
+   "rag_first_token": 0.2,
+   "tts_first_chunk": 86.3,
+   "total": 1016.3,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1016.3,
+   "first_content_audio_ms": 1016.3,
+   "heard": "没反应增模办",
+   "context": [],
+   "q": "没反应怎么办",
+   "lang": "zh"
   }
  ],
  "oracle_rows": [
   {
    "type": "metrics",
    "asr_final": 0.0,
-   "rag_first_token": 1368.1,
-   "tts_first_chunk": 969.4,
-   "total": 2337.5,
-   "ttfa_ms": 2337.5,
-   "first_content_audio_ms": 2337.5,
+   "rag_first_token": 380.9,
+   "tts_first_chunk": 78.0,
+   "total": 459.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 459.0,
+   "first_content_audio_ms": 459.0,
    "heard": "how long is the warranty on the vora x200",
    "context": [
     "E03",
@@ -540,11 +832,13 @@
   {
    "type": "metrics",
    "asr_final": 0.0,
-   "rag_first_token": 996.8,
-   "tts_first_chunk": 834.5,
-   "total": 1831.3,
-   "ttfa_ms": 1831.3,
-   "first_content_audio_ms": 1831.3,
+   "rag_first_token": 723.0,
+   "tts_first_chunk": 154.2,
+   "total": 877.2,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 877.2,
+   "first_content_audio_ms": 877.2,
    "heard": "vora x 200 warranty period",
    "context": [
     "E03",
@@ -557,417 +851,11 @@
   {
    "type": "metrics",
    "asr_final": 0.0,
-   "rag_first_token": 1239.2,
-   "tts_first_chunk": 533.0,
-   "total": 1772.2,
-   "ttfa_ms": 1772.2,
-   "first_content_audio_ms": 1772.2,
-   "heard": "X200保修期多久",
-   "context": [
-    "Z03",
-    "Z12",
-    "Z01"
-   ],
-   "q": "X200保修期多久",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 308.6,
-   "tts_first_chunk": 453.8,
-   "total": 762.4,
-   "ttfa_ms": 762.4,
-   "first_content_audio_ms": 762.4,
-   "heard": "m100 warranty how many years",
-   "context": [
-    "E03",
-    "E12",
-    "E02"
-   ],
-   "q": "m100 warranty how many years",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 352.3,
-   "tts_first_chunk": 64.0,
-   "total": 416.3,
-   "ttfa_ms": 416.3,
-   "first_content_audio_ms": 416.3,
-   "heard": "保修期是几年",
-   "context": [
-    "Z03",
-    "E03",
-    "Z13"
-   ],
-   "q": "保修期是几年",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 384.4,
-   "tts_first_chunk": 185.9,
-   "total": 570.4,
-   "ttfa_ms": 570.4,
-   "first_content_audio_ms": 570.4,
-   "heard": "what is the wake word",
-   "context": [
-    "E04",
-    "E18",
-    "E17"
-   ],
-   "q": "what is the wake word",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 1523.2,
-   "tts_first_chunk": 947.1,
-   "total": 2470.3,
-   "ttfa_ms": 2470.3,
-   "first_content_audio_ms": 2470.3,
-   "heard": "how do i change the wake word",
-   "context": [
-    "E04",
-    "E18",
-    "E08"
-   ],
-   "q": "how do i change the wake word",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 1755.6,
-   "tts_first_chunk": 152.0,
-   "total": 1907.6,
-   "ttfa_ms": 1907.6,
-   "first_content_audio_ms": 1907.6,
-   "heard": "唤醒词是什么",
-   "context": [
-    "Z04",
-    "Z18",
-    "Z05"
-   ],
-   "q": "唤醒词是什么",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 765.9,
-   "tts_first_chunk": 264.3,
-   "total": 1030.2,
-   "ttfa_ms": 1030.2,
-   "first_content_audio_ms": 1030.2,
-   "heard": "怎么修改唤醒词",
-   "context": [
-    "Z04",
-    "Z18",
-    "E04"
-   ],
-   "q": "怎么修改唤醒词",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 171.6,
-   "tts_first_chunk": 353.1,
-   "total": 524.8,
-   "ttfa_ms": 524.8,
-   "first_content_audio_ms": 524.8,
-   "heard": "what does the red light mean",
-   "context": [
-    "E18",
-    "E05",
-    "E16"
-   ],
-   "q": "what does the red light mean",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 406.2,
-   "tts_first_chunk": 86.5,
-   "total": 492.8,
-   "ttfa_ms": 492.8,
-   "first_content_audio_ms": 492.8,
-   "heard": "led 蓝色代表什么",
-   "context": [
-    "Z05",
-    "E05",
-    "E08"
-   ],
-   "q": "led 蓝色代表什么",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 129.6,
-   "tts_first_chunk": 229.1,
-   "total": 358.7,
-   "ttfa_ms": 358.7,
-   "first_content_audio_ms": 358.7,
-   "heard": "why is the light flashing white",
-   "context": [
-    "E05",
-    "E09",
-    "E08"
-   ],
-   "q": "why is the light flashing white",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 334.3,
-   "tts_first_chunk": 186.4,
-   "total": 520.8,
-   "ttfa_ms": 520.8,
-   "first_content_audio_ms": 520.8,
-   "heard": "how long is the warranty on the vora x200",
-   "context": [
-    "E03",
-    "E01",
-    "E12"
-   ],
-   "q": "how long is the warranty on the vora x200",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 308.3,
-   "tts_first_chunk": 383.7,
-   "total": 692.0,
-   "ttfa_ms": 692.0,
-   "first_content_audio_ms": 692.0,
-   "heard": "vora x 200 warranty period",
-   "context": [
-    "E03",
-    "E01",
-    "E12"
-   ],
-   "q": "vora x 200 warranty period",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 428.9,
-   "tts_first_chunk": 291.9,
-   "total": 720.9,
-   "ttfa_ms": 720.9,
-   "first_content_audio_ms": 720.9,
-   "heard": "X200保修期多久",
-   "context": [
-    "Z03",
-    "Z12",
-    "Z01"
-   ],
-   "q": "X200保修期多久",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 302.3,
-   "tts_first_chunk": 200.3,
-   "total": 502.6,
-   "ttfa_ms": 502.6,
-   "first_content_audio_ms": 502.6,
-   "heard": "m100 warranty how many years",
-   "context": [
-    "E03",
-    "E12",
-    "E02"
-   ],
-   "q": "m100 warranty how many years",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 370.2,
-   "tts_first_chunk": 64.5,
-   "total": 434.7,
-   "ttfa_ms": 434.7,
-   "first_content_audio_ms": 434.7,
-   "heard": "保修期是几年",
-   "context": [
-    "Z03",
-    "E03",
-    "Z13"
-   ],
-   "q": "保修期是几年",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 600.5,
-   "tts_first_chunk": 223.9,
-   "total": 824.5,
-   "ttfa_ms": 824.5,
-   "first_content_audio_ms": 824.5,
-   "heard": "what is the wake word",
-   "context": [
-    "E04",
-    "E18",
-    "E17"
-   ],
-   "q": "what is the wake word",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 182.4,
-   "tts_first_chunk": 317.0,
-   "total": 499.5,
-   "ttfa_ms": 499.5,
-   "first_content_audio_ms": 499.5,
-   "heard": "how do i change the wake word",
-   "context": [
-    "E04",
-    "E18",
-    "E08"
-   ],
-   "q": "how do i change the wake word",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 368.7,
-   "tts_first_chunk": 48.9,
-   "total": 417.7,
-   "ttfa_ms": 417.7,
-   "first_content_audio_ms": 417.7,
-   "heard": "唤醒词是什么",
-   "context": [
-    "Z04",
-    "Z18",
-    "Z05"
-   ],
-   "q": "唤醒词是什么",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 214.8,
-   "tts_first_chunk": 22.2,
-   "total": 237.1,
-   "ttfa_ms": 237.1,
-   "first_content_audio_ms": 237.1,
-   "heard": "怎么修改唤醒词",
-   "context": [
-    "Z04",
-    "Z18",
-    "E04"
-   ],
-   "q": "怎么修改唤醒词",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 121.5,
-   "tts_first_chunk": 227.6,
-   "total": 349.2,
-   "ttfa_ms": 349.2,
-   "first_content_audio_ms": 349.2,
-   "heard": "what does the red light mean",
-   "context": [
-    "E18",
-    "E05",
-    "E16"
-   ],
-   "q": "what does the red light mean",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 379.5,
-   "tts_first_chunk": 86.7,
-   "total": 466.2,
-   "ttfa_ms": 466.2,
-   "first_content_audio_ms": 466.2,
-   "heard": "led 蓝色代表什么",
-   "context": [
-    "Z05",
-    "E05",
-    "E08"
-   ],
-   "q": "led 蓝色代表什么",
-   "lang": "zh"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 121.1,
-   "tts_first_chunk": 296.4,
-   "total": 417.6,
-   "ttfa_ms": 417.6,
-   "first_content_audio_ms": 417.6,
-   "heard": "why is the light flashing white",
-   "context": [
-    "E05",
-    "E09",
-    "E08"
-   ],
-   "q": "why is the light flashing white",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 321.4,
-   "tts_first_chunk": 193.3,
-   "total": 514.7,
-   "ttfa_ms": 514.7,
-   "first_content_audio_ms": 514.7,
-   "heard": "how long is the warranty on the vora x200",
-   "context": [
-    "E03",
-    "E01",
-    "E12"
-   ],
-   "q": "how long is the warranty on the vora x200",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 311.6,
-   "tts_first_chunk": 372.0,
-   "total": 683.6,
-   "ttfa_ms": 683.6,
-   "first_content_audio_ms": 683.6,
-   "heard": "vora x 200 warranty period",
-   "context": [
-    "E03",
-    "E01",
-    "E12"
-   ],
-   "q": "vora x 200 warranty period",
-   "lang": "en"
-  },
-  {
-   "type": "metrics",
-   "asr_final": 0.0,
-   "rag_first_token": 424.6,
-   "tts_first_chunk": 261.7,
+   "rag_first_token": 430.8,
+   "tts_first_chunk": 255.5,
    "total": 686.3,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
    "ttfa_ms": 686.3,
    "first_content_audio_ms": 686.3,
    "heard": "X200保修期多久",
@@ -982,11 +870,13 @@
   {
    "type": "metrics",
    "asr_final": 0.0,
-   "rag_first_token": 301.4,
-   "tts_first_chunk": 244.9,
-   "total": 546.4,
-   "ttfa_ms": 546.4,
-   "first_content_audio_ms": 546.4,
+   "rag_first_token": 172.8,
+   "tts_first_chunk": 76.6,
+   "total": 249.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 249.5,
+   "first_content_audio_ms": 249.5,
    "heard": "m100 warranty how many years",
    "context": [
     "E03",
@@ -999,11 +889,13 @@
   {
    "type": "metrics",
    "asr_final": 0.1,
-   "rag_first_token": 358.1,
-   "tts_first_chunk": 57.8,
-   "total": 415.9,
-   "ttfa_ms": 415.9,
-   "first_content_audio_ms": 415.9,
+   "rag_first_token": 317.9,
+   "tts_first_chunk": 64.5,
+   "total": 382.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 382.4,
+   "first_content_audio_ms": 382.4,
    "heard": "保修期是几年",
    "context": [
     "Z03",
@@ -1015,12 +907,14 @@
   },
   {
    "type": "metrics",
-   "asr_final": 0.1,
-   "rag_first_token": 367.4,
-   "tts_first_chunk": 210.1,
-   "total": 577.6,
-   "ttfa_ms": 577.6,
-   "first_content_audio_ms": 577.6,
+   "asr_final": 0.0,
+   "rag_first_token": 2009.4,
+   "tts_first_chunk": 252.3,
+   "total": 2261.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 2261.8,
+   "first_content_audio_ms": 2261.8,
    "heard": "what is the wake word",
    "context": [
     "E04",
@@ -1029,6 +923,686 @@
    ],
    "q": "what is the wake word",
    "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 833.4,
+   "tts_first_chunk": 805.0,
+   "total": 1638.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1638.5,
+   "first_content_audio_ms": 1638.5,
+   "heard": "how do i change the wake word",
+   "context": [
+    "E04",
+    "E18",
+    "E08"
+   ],
+   "q": "how do i change the wake word",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 408.9,
+   "tts_first_chunk": 71.5,
+   "total": 480.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 480.4,
+   "first_content_audio_ms": 480.4,
+   "heard": "唤醒词是什么",
+   "context": [
+    "Z04",
+    "Z18",
+    "Z05"
+   ],
+   "q": "唤醒词是什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 262.0,
+   "tts_first_chunk": 338.2,
+   "total": 600.3,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 600.3,
+   "first_content_audio_ms": 600.3,
+   "heard": "怎么修改唤醒词",
+   "context": [
+    "Z04",
+    "Z18",
+    "E04"
+   ],
+   "q": "怎么修改唤醒词",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 166.1,
+   "tts_first_chunk": 53.7,
+   "total": 219.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 219.8,
+   "first_content_audio_ms": 219.8,
+   "heard": "what does the red light mean",
+   "context": [
+    "E18",
+    "E05",
+    "E16"
+   ],
+   "q": "what does the red light mean",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 399.1,
+   "tts_first_chunk": 91.2,
+   "total": 490.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 490.4,
+   "first_content_audio_ms": 490.4,
+   "heard": "led 蓝色代表什么",
+   "context": [
+    "Z05",
+    "E05",
+    "E08"
+   ],
+   "q": "led 蓝色代表什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 144.1,
+   "tts_first_chunk": 101.1,
+   "total": 245.2,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 245.2,
+   "first_content_audio_ms": 245.2,
+   "heard": "why is the light flashing white",
+   "context": [
+    "E05",
+    "E09",
+    "E08"
+   ],
+   "q": "why is the light flashing white",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 121.2,
+   "tts_first_chunk": 124.8,
+   "total": 246.1,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 246.1,
+   "first_content_audio_ms": 246.1,
+   "heard": "is my audio sent to the cloud",
+   "context": [
+    "E06",
+    "E09",
+    "E11"
+   ],
+   "q": "is my audio sent to the cloud",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 176.5,
+   "tts_first_chunk": 82.4,
+   "total": 259.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 259.0,
+   "first_content_audio_ms": 259.0,
+   "heard": "隐私 音频会上传吗",
+   "context": [
+    "Z06",
+    "E06",
+    "Z16"
+   ],
+   "q": "隐私 音频会上传吗",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 367.9,
+   "tts_first_chunk": 50.7,
+   "total": 418.7,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 418.7,
+   "first_content_audio_ms": 418.7,
+   "heard": "how does the mute switch work",
+   "context": [
+    "E06",
+    "E18",
+    "E09"
+   ],
+   "q": "how does the mute switch work",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 194.9,
+   "tts_first_chunk": 370.8,
+   "total": 565.7,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 565.7,
+   "first_content_audio_ms": 565.7,
+   "heard": "how do i connect the box to wifi",
+   "context": [
+    "E13",
+    "E09",
+    "E11"
+   ],
+   "q": "how do i connect the box to wifi",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 210.1,
+   "tts_first_chunk": 189.6,
+   "total": 399.7,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 399.7,
+   "first_content_audio_ms": 399.7,
+   "heard": "x200 支持 5ghz 吗",
+   "context": [
+    "Z07",
+    "Z02",
+    "Z01"
+   ],
+   "q": "x200 支持 5ghz 吗",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 310.6,
+   "tts_first_chunk": 384.5,
+   "total": 695.1,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 695.1,
+   "first_content_audio_ms": 695.1,
+   "heard": "does the m100 support wifi 6",
+   "context": [
+    "E13",
+    "E02",
+    "Z02"
+   ],
+   "q": "does the m100 support wifi 6",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 296.4,
+   "tts_first_chunk": 763.1,
+   "total": 1059.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1059.5,
+   "first_content_audio_ms": 1059.5,
+   "heard": "how do i factory reset it",
+   "context": [
+    "E08",
+    "E04",
+    "E18"
+   ],
+   "q": "how do i factory reset it",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 417.0,
+   "tts_first_chunk": 165.4,
+   "total": 582.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 582.5,
+   "first_content_audio_ms": 582.5,
+   "heard": "怎么恢复出厂设置",
+   "context": [
+    "Z08",
+    "Z09",
+    "Z07"
+   ],
+   "q": "怎么恢复出厂设置",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 206.8,
+   "tts_first_chunk": 102.2,
+   "total": 309.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 309.0,
+   "first_content_audio_ms": 309.0,
+   "heard": "hold reset button how long",
+   "context": [
+    "E08",
+    "E12",
+    "E18"
+   ],
+   "q": "hold reset button how long",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 380.7,
+   "tts_first_chunk": 57.6,
+   "total": 438.3,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 438.3,
+   "first_content_audio_ms": 438.3,
+   "heard": "how often does the firmware update",
+   "context": [
+    "E09",
+    "E07",
+    "E18"
+   ],
+   "q": "how often does the firmware update",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 261.8,
+   "tts_first_chunk": 89.8,
+   "total": 351.7,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 351.7,
+   "first_content_audio_ms": 351.7,
+   "heard": "怎么检查固件更新",
+   "context": [
+    "Z09",
+    "Z07",
+    "Z08"
+   ],
+   "q": "怎么检查固件更新",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 426.5,
+   "tts_first_chunk": 113.3,
+   "total": 539.9,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 539.9,
+   "first_content_audio_ms": 539.9,
+   "heard": "does it understand cantonese",
+   "context": [
+    "E18",
+    "E10",
+    "E05"
+   ],
+   "q": "does it understand cantonese",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 590.1,
+   "tts_first_chunk": 140.3,
+   "total": 730.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 730.4,
+   "first_content_audio_ms": 730.4,
+   "heard": "支持哪些语言",
+   "context": [
+    "Z10",
+    "Z02",
+    "Z07"
+   ],
+   "q": "支持哪些语言",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 1042.2,
+   "tts_first_chunk": 328.7,
+   "total": 1370.9,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1370.9,
+   "first_content_audio_ms": 1370.9,
+   "heard": "can it answer in mixed chinese and english",
+   "context": [
+    "E10",
+    "E04",
+    "E11"
+   ],
+   "q": "can it answer in mixed chinese and english",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 110.1,
+   "tts_first_chunk": 108.8,
+   "total": 219.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 219.0,
+   "first_content_audio_ms": 219.0,
+   "heard": "can i import my own documents",
+   "context": [
+    "E11",
+    "E08",
+    "E04"
+   ],
+   "q": "can i import my own documents",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 399.2,
+   "tts_first_chunk": 80.9,
+   "total": 480.1,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 480.1,
+   "first_content_audio_ms": 480.1,
+   "heard": "知识库最大能导入多大",
+   "context": [
+    "Z11",
+    "Z10",
+    "Z08"
+   ],
+   "q": "知识库最大能导入多大",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 211.7,
+   "tts_first_chunk": 566.7,
+   "total": 778.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 778.4,
+   "first_content_audio_ms": 778.4,
+   "heard": "which file formats can i upload for the knowledge base",
+   "context": [
+    "E11",
+    "E02",
+    "E08"
+   ],
+   "q": "which file formats can i upload for the knowledge base",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 187.4,
+   "tts_first_chunk": 64.6,
+   "total": 252.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 252.0,
+   "first_content_audio_ms": 252.0,
+   "heard": "how much does the x200 cost",
+   "context": [
+    "E18",
+    "E12",
+    "E01"
+   ],
+   "q": "how much does the x200 cost",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.1,
+   "rag_first_token": 481.3,
+   "tts_first_chunk": 634.4,
+   "total": 1115.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 1115.8,
+   "first_content_audio_ms": 1115.8,
+   "heard": "退货政策是什么",
+   "context": [
+    "Z12",
+    "Z03",
+    "Z01"
+   ],
+   "q": "退货政策是什么",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 110.1,
+   "tts_first_chunk": 59.5,
+   "total": 169.6,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 169.6,
+   "first_content_audio_ms": 169.6,
+   "heard": "who pays for return shipping",
+   "context": [
+    "E12",
+    "E03",
+    "E08"
+   ],
+   "q": "who pays for return shipping",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 131.0,
+   "tts_first_chunk": 243.7,
+   "total": 374.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 374.8,
+   "first_content_audio_ms": 374.8,
+   "heard": "how do i contact support",
+   "context": [
+    "E13",
+    "Z13",
+    "E07"
+   ],
+   "q": "how do i contact support",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 410.3,
+   "tts_first_chunk": 156.7,
+   "total": 567.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 567.0,
+   "first_content_audio_ms": 567.0,
+   "heard": "客服工作时间",
+   "context": [
+    "Z13",
+    "E13",
+    "E07"
+   ],
+   "q": "客服工作时间",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 109.5,
+   "tts_first_chunk": 56.5,
+   "total": 166.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 166.0,
+   "first_content_audio_ms": 166.0,
+   "heard": "what temperature can it operate in",
+   "context": [
+    "E04",
+    "E18",
+    "E10"
+   ],
+   "q": "what temperature can it operate in",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 455.6,
+   "tts_first_chunk": 65.2,
+   "total": 520.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 520.8,
+   "first_content_audio_ms": 520.8,
+   "heard": "what power adapter does the x200 use",
+   "context": [
+    "E15",
+    "E18",
+    "E01"
+   ],
+   "q": "what power adapter does the x200 use",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 434.7,
+   "tts_first_chunk": 123.6,
+   "total": 558.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 558.4,
+   "first_content_audio_ms": 558.4,
+   "heard": "待机功耗多少",
+   "context": [
+    "Z15",
+    "Z12",
+    "Z17"
+   ],
+   "q": "待机功耗多少",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 165.9,
+   "tts_first_chunk": 57.5,
+   "total": 223.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 223.4,
+   "first_content_audio_ms": 223.4,
+   "heard": "how many microphones does the x200 have",
+   "context": [
+    "E16",
+    "E18",
+    "E01"
+   ],
+   "q": "how many microphones does the x200 have",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 511.9,
+   "tts_first_chunk": 277.5,
+   "total": 789.5,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 789.5,
+   "first_content_audio_ms": 789.5,
+   "heard": "拾音距离多远",
+   "context": [
+    "Z16",
+    "Z18",
+    "Z17"
+   ],
+   "q": "拾音距离多远",
+   "lang": "zh"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 389.6,
+   "tts_first_chunk": 82.2,
+   "total": 471.8,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 471.8,
+   "first_content_audio_ms": 471.8,
+   "heard": "how loud is the speaker",
+   "context": [
+    "E17",
+    "E16",
+    "E18"
+   ],
+   "q": "how loud is the speaker",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 146.8,
+   "tts_first_chunk": 476.2,
+   "total": 623.0,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 623.0,
+   "first_content_audio_ms": 623.0,
+   "heard": "the box does not respond what should i do",
+   "context": [
+    "E18",
+    "E09",
+    "E14"
+   ],
+   "q": "the box does not respond what should i do",
+   "lang": "en"
+  },
+  {
+   "type": "metrics",
+   "asr_final": 0.0,
+   "rag_first_token": 7.4,
+   "tts_first_chunk": 90.0,
+   "total": 97.4,
+   "tts_oov": 0,
+   "hold_ms": 0.0,
+   "ttfa_ms": 97.4,
+   "first_content_audio_ms": 97.4,
+   "heard": "没反应怎么办",
+   "context": [],
+   "q": "没反应怎么办",
+   "lang": "zh"
   }
  ]
 }

@@ -1,17 +1,13 @@
 {
  "top3_dev": {
-  "acc": 0.929,
+  "acc": 1.0,
   "n": 28,
-  "misses": [
-   "how do i connect the box to wifi",
-   "what temperature can it operate in"
-  ]
+  "misses": []
  },
  "top3_heldout": {
-  "acc": 0.857,
+  "acc": 0.929,
   "n": 14,
   "misses": [
-   "does the m100 support wifi 6",
    "没反应怎么办"
   ]
  },
@@ -21,107 +17,289 @@
  },
  "faithfulness": {
   "acc": 0.9,
-  "n": 20,
+  "n": 40,
+  "negation_acc": 0.818,
+  "heldout_acc": 0.8,
   "rows": [
    {
     "q": "how long is the warranty on the vora x200",
-    "answer": "the warranty on the vora-x200 is 2 years.",
-    "ok": true
+    "answer": "the vora-x200 warranty period is 2 years.",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "what is the wake word",
-    "answer": "the wake word is \"hey vora\".",
-    "ok": true
+    "answer": "the default wake word is \"hey vora\".",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "what does the red light mean",
     "answer": "the red light on the box indicates that the microphone is muted.",
-    "ok": true
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "how do i factory reset it",
-    "answer": "to factory reset the device, hold the reset button on the back for 10 seconds until the led flashes white.",
-    "ok": true
+    "answer": "to factory reset your device, hold the reset button on the back for 10 seconds until the led flashes white.",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "how do i contact support",
-    "answer": "to contact support, you should send an email to support@vora.example.",
-    "ok": true
+    "answer": "to contact support, you can send an email to support@vora.example.",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "does it understand cantonese",
-    "answer": "yes, the vora box understands cantonese.",
-    "ok": false
+    "answer": "cantonese speech is not supported.",
+    "ok": true,
+    "neg": true,
+    "split": "dev"
    },
    {
     "q": "who pays for return shipping",
     "answer": "the buyer pays for return shipping.",
-    "ok": true
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "how much does the x200 cost",
     "answer": "the x200 costs 199 usd.",
-    "ok": true
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "what temperature can it operate in",
-    "answer": "the context does not provide information about the operating temperature of the vora box.",
-    "ok": false
+    "answer": "it can operate between 0 and 40 degrees celsius.",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "what power adapter does the x200 use",
     "answer": "the x200 uses a 12 v 2 a usb-c adapter.",
-    "ok": true
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "how many microphones does the x200 have",
-    "answer": "the x200 has 4 microphones.",
-    "ok": true
+    "answer": "the x200 has a 4-microphone array with a pickup range of 5 meters.",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "how loud is the speaker",
-    "answer": "the x200 has a 10 w speaker, while the m100 has a 5 w speaker.",
-    "ok": true
+    "answer": "the x200 has a 10 w speaker, while the m100 has a 5 w speaker. volume is set by voice or in the vora home app.",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "which file formats can i upload for the knowledge base",
     "answer": "you can upload your own documents (markdown, txt, pdf) up to 1 gb on the x200 through the vora home app or a usb drive.",
-    "ok": true
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "how often does the firmware update",
-    "answer": "the firmware update is installed over the air once a month.",
-    "ok": true
+    "answer": "the firmware update is installed over the air once a month. firmware updates: vora box installs firmware over the air once a month.",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "can i import my own documents",
-    "answer": "yes, you can import your own documents.",
-    "ok": true
+    "answer": "custom knowledge base: you can import your own documents (markdown, txt, pdf) up to 1 gb on the x200 through the vora home app or a usb drive.",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "X200保修期多久",
-    "answer": "vora-x200的保修期是2年。",
-    "ok": true
+    "answer": "vora-x200的保修期是2年",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "怎么恢复出厂设置",
-    "answer": "按住背面的复位键 10 秒，直到指示灯白色闪烁。",
-    "ok": true
+    "answer": "如何恢复出厂设置？请按住背面的复位键 10 秒，直到指示灯白色闪烁。",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "唤醒词是什么",
     "answer": "默认唤醒词是“hey vora”。",
-    "ok": true
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "支持哪些语言",
     "answer": "支持普通话和英语。",
-    "ok": true
+    "ok": true,
+    "neg": false,
+    "split": "dev"
    },
    {
     "q": "知识库最大能导入多大",
-    "answer": "知识库最大能导入1gb",
-    "ok": true
+    "answer": "知识库最大能导入1gb的自有文档",
+    "ok": true,
+    "neg": false,
+    "split": "dev"
+   },
+   {
+    "q": "does the m100 handle cantonese speech",
+    "answer": "cantonese speech is not supported.",
+    "ok": true,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "can i talk to it in cantonese",
+    "answer": "i'm not sure about that. could you rephrase?",
+    "ok": true,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "支持说广东话吗",
+    "answer": "不支持粤语。",
+    "ok": true,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "is the x200 able to upload my audio to the cloud",
+    "answer": "audio and transcripts are never uploaded to the cloud.",
+    "ok": true,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "会把我的录音传到云端吗",
+    "answer": "隐私：所有音频都在设备上处理，音频和转写文字不会上传到云端。",
+    "ok": true,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "does the m100 support 5ghz wifi",
+    "answer": "the m100 supports wi-fi 5 on 2.4 ghz only.",
+    "ok": true,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "m100能连5g的wifi吗",
+    "answer": "我不确定，请换个问法。",
+    "ok": false,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "is physical damage covered by the warranty",
+    "answer": "physical damage and water damage are not covered.",
+    "ok": true,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "进水坏了保修吗",
+    "answer": "人为损坏和进水损坏不在保修范围内。",
+    "ok": true,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "will a factory reset delete the firmware",
+    "answer": "factory reset: hold the reset button on the back for 10 seconds until the led flashes white.",
+    "ok": false,
+    "neg": true,
+    "split": "heldout"
+   },
+   {
+    "q": "what is the knowledge base limit on the m100",
+    "answer": "the knowledge base limit on the vora-m100 is 256 mb.",
+    "ok": true,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "m100存储空间多大",
+    "answer": "vora-m100存储容量为16gb。",
+    "ok": true,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "how much internal storage does the x200 have",
+    "answer": "the x200 device has 32 gb internal storage.",
+    "ok": true,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "what hours is support open",
+    "answer": "support hours are monday to friday, 9:00 to 18:00 hong kong time.",
+    "ok": true,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "x200是几核处理器",
+    "answer": "vora-x200是4核处理器",
+    "ok": true,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "how many training recordings does a custom wake word need",
+    "answer": "a custom wake word needs 3 training recordings.",
+    "ok": true,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "how far can the m100 hear me",
+    "answer": "the vora-m100 can hear you within 30 days.",
+    "ok": false,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "x200 拾音范围",
+    "answer": "x200 拾音范围是麦克风拾音范围内。 无响应排查：检查指示灯是否为红色（已静音）；拔掉电源 10 秒后重新插上；靠近到麦克风拾音范围内；并清楚地说出唤醒词“hey vora”。",
+    "ok": false,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "how many days do i have to return it",
+    "answer": "you have 30 days to return the product.",
+    "ok": true,
+    "neg": false,
+    "split": "heldout"
+   },
+   {
+    "q": "what is the support email",
+    "answer": "support contact: email support@vora.example.",
+    "ok": true,
+    "neg": false,
+    "split": "heldout"
    }
   ]
  }

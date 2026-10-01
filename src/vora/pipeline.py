@@ -9,6 +9,7 @@ import queue
 import re
 import threading
 import time
+import logging
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -18,8 +19,10 @@ import numpy as np
 
 from vora.chunker import SentenceChunker
 from vora.config import Settings
+from vora.llm import BUSY
 from vora.metrics import LatencyTrace
 
+log = logging.getLogger("vora")
 OutMsg = tuple[Literal["json", "audio"], Any]
 FILLER = {"zh": "好的，", "en": "Sure, "}
 PREFETCH_MIN_CHARS = 6
@@ -38,12 +41,38 @@ def _alnum(t: str) -> str:
     return re.sub(r"[\W_]+", "", t.lower())
 
 
+class Admission:
+    """Caps in-flight LLM turns (running + queued). Taken BEFORE a turn is submitted to the executor, so a third turn
+    behind a busy model gets the 'busy' reply at once instead of waiting unseen in the executor queue."""
+
+    def __init__(self, max_inflight: int):
+        self.max = max_inflight
+        self._n = 0
+        self._lock = threading.Lock()
+
+    def try_acquire(self) -> bool:
+        with self._lock:
+            if self._n >= self.max:
+                return False
+            self._n += 1
+            return True
+
+    def release(self) -> None:
+        with self._lock:
+            self._n = max(0, self._n - 1)
+
+    @property
+    def waiting(self) -> int:
+        return self._n
+
+
 @dataclass
 class Executors:
     asr: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(2, "asr"))
     rag: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(1, "rag"))
     llm: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(2, "llm"))  # 2nd user reaches Llm.stream and waits on its lock (3 s -> busy reply)
     tts: ThreadPoolExecutor = field(default_factory=lambda: ThreadPoolExecutor(4, "tts"))  # one blocked-on-client worker per session
+    admission: Admission = field(default_factory=lambda: Admission(2))
 
 
 def _lang(text: str) -> str:
@@ -222,7 +251,18 @@ class Pipeline:
             self._spoken.append((self.clock(), FILLER[_lang(text)]))
             sent_q.put((FILLER[_lang(text)], True))
 
+        admitted = self.ex.admission.try_acquire()
+        released = threading.Event()
+
+        def release_once() -> None:   # exactly one release per acquire, whichever path ends the turn first
+            if not released.is_set():
+                released.set()
+                self.ex.admission.release()
+
         def llm_worker() -> None:
+            if ev.is_set():
+                release_once()
+                return
             chunker = SentenceChunker(first_words=self.s.first_chunk_words, second_words=self.s.second_chunk_words)
             try:
                 for tok in self.llm.stream(text, hits, ev):
@@ -237,8 +277,16 @@ class Pipeline:
                 for c in chunker.flush():
                     self._spoken.append((self.clock(), c))
                     sent_q.put((c, False))
+            except Exception:  # noqa: BLE001 - a failing model must not kill the session: log it and say so
+                log.exception("LLM turn failed")
+                sent_q.put((BUSY[_lang(text)], False))
             finally:
+                release_once()
                 sent_q.put(None)
+
+        def busy_worker() -> None:
+            sent_q.put((BUSY[_lang(text)], False))
+            sent_q.put(None)
 
         def tts_worker() -> None:
             while not ev.is_set():
@@ -258,10 +306,14 @@ class Pipeline:
                         stamps.setdefault("first_content", now)
                     asyncio.run_coroutine_threadsafe(self._put_audio(chunk, ev), self.loop).result()
 
-        await asyncio.gather(
-            self.loop.run_in_executor(self.ex.llm, llm_worker),
-            self.loop.run_in_executor(self.ex.tts, tts_worker),
-        )
+        try:
+            await asyncio.gather(
+                self.loop.run_in_executor(self.ex.llm, llm_worker) if admitted else self.loop.run_in_executor(None, busy_worker),
+                self.loop.run_in_executor(self.ex.tts, tts_worker),
+            )
+        finally:
+            if admitted:
+                release_once()   # cancelled before the worker started, or it died: free the slot
         if ev.is_set():
             return
         first_content = stamps.get("first_content", stamps.get("first_audio"))

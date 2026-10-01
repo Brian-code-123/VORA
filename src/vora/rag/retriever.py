@@ -37,6 +37,8 @@ class Retriever:
         self.bm25 = BM25Okapi([tokenize(c["text"]) for c in self.chunks])
         gpath = settings.kb_dir / "glossary.json"
         self.glossary = json.loads(gpath.read_text(encoding="utf-8")) if gpath.exists() else {}
+        spath = settings.kb_dir / "synonyms.json"
+        self.synonyms = json.loads(spath.read_text(encoding="utf-8")) if spath.exists() else {}
         self._variants = [(canon, _compact(v)) for canon, vs in self.glossary.items() for v in [canon, *vs]]
 
     def normalize_query(self, text: str) -> str:
@@ -63,6 +65,16 @@ class Retriever:
             return " ".join(out)
         return _LATIN_RUN.sub(fix, text)
 
+    def expand_query(self, text: str) -> str:
+        """Append domain wording for colloquial terms ("temperature" -> "operating conditions degrees Celsius"):
+        the KB says "degrees Celsius", users say "temperature". Query untouched when no synonym matches."""
+        low, extra = text.lower(), []
+        for key, add in self.synonyms.items():
+            hit = key in low if re.search(r"[\u4e00-\u9fff]", key) else re.search(rf"\b{re.escape(key)}\b", low)
+            if hit and add not in extra:
+                extra.append(add)
+        return text if not extra else f"{text} {' '.join(extra)}"
+
     def _dense(self, q: str) -> np.ndarray:
         v = np.array(list(self.emb.embed([q])), dtype=np.float32)
         v /= np.linalg.norm(v, axis=1, keepdims=True) + 1e-9
@@ -73,7 +85,7 @@ class Retriever:
 
     def search(self, query: str, k: int | None = None) -> list[Hit]:
         k = k or self.s.top_k
-        q = self.normalize_query(query)
+        q = self.expand_query(self.normalize_query(query))
         dense = np.clip(self._dense(q), 0, 1)
         bm = self.bm25.get_scores(tokenize(q))
         bm = bm / bm.max() if bm.max() > 0 else bm
@@ -84,7 +96,7 @@ class Retriever:
         return [Hit(self.chunks[i]["id"], self.chunks[i]["text"], float(score[i])) for i in order]
 
     def best_score(self, query: str) -> float:
-        q = self.normalize_query(query)
+        q = self.expand_query(self.normalize_query(query))
         bm = self.bm25.get_scores(tokenize(q))
         bm = bm / bm.max() if bm.max() > 0 else bm
         return float((0.7 * np.clip(self._dense(q), 0, 1) + 0.3 * bm).max())

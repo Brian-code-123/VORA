@@ -59,3 +59,16 @@ def test_search_under_50ms(r):
         t.append((time.perf_counter() - t0) * 1000)
     t.sort()
     assert t[int(0.95 * len(t)) - 1] < 50, t  # embed+faiss+bm25 all-in; plan target of 20 ms applies to faiss alone
+
+
+def test_synonym_expansion_adds_domain_terms(r):
+    q = r.expand_query("what temperature can it operate in")
+    assert "degrees" in q.lower() and q.lower().startswith("what temperature")
+    assert r.expand_query("how long is the warranty") == "how long is the warranty"   # no synonym -> untouched
+
+
+def test_synonyms_do_not_hurt_retrieval(r):
+    acc_dev, miss = top3(r, "dev")
+    assert acc_dev >= 0.92, miss
+    acc_ho, miss_ho = top3(r, "heldout")
+    assert acc_ho >= 0.85, miss_ho

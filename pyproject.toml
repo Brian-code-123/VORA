@@ -5,7 +5,7 @@ requires-python = ">=3.11,<3.13"
 dependencies = [
   "sherpa-onnx", "numpy", "scipy", "faiss-cpu", "fastembed", "rank_bm25", "jieba",
   "rapidfuzz", "llama-cpp-python", "fastapi", "uvicorn[standard]", "websockets",
-  "pydantic-settings", "psutil", "huggingface_hub", "onnx", "onnxruntime",
+  "pydantic-settings", "psutil", "huggingface_hub", "onnx", "onnxruntime", "cn2an",
 ]
 
 [project.optional-dependencies]
