@@ -35,7 +35,7 @@ class Models:
         from vora.tts import Tts
 
         recs = load_recognizers(s)
-        m = cls(lambda lang: AsrSession(recs, lang), Retriever(s), Llm(s), Tts(s), Executors())
+        m = cls(lambda lang: AsrSession(recs, lang, hold_ms=s.hold_ms, hold_total_cap_ms=s.hold_total_cap_ms), Retriever(s), Llm(s), Tts(s), Executors())
         # warmup: first real call pays page-in / graph init (measured 3-8 s for the LLM)
         for lang in ("en", "zh"):
             m.make_asr(lang).feed(np.zeros(1600, dtype=np.int16).tobytes())
