@@ -15,6 +15,17 @@ def ms(d: dict, key: str) -> str:
     return f"{d[key]['p50']:.0f} / {d[key]['p95']:.0f}"
 
 
+def gates_table() -> str:
+    from scripts.report_gates import evaluate
+    before = {g["id"]: g for g in json.loads((R / "gates_before.json").read_text())} if (R / "gates_before.json").exists() else {}
+    sym = {True: "PASS", False: "FAIL", None: "UNVERIFIED"}
+    out = ["**Gates (brief targets) before → after this remediation**", "", "| Gate | Target | Before | Now | Measured now |", "|---|---|---|---|---|"]
+    for g in evaluate(R):
+        b = before.get(g.id)
+        out.append(f"| {g.id} {g.name} | {g.target} | {sym[b['ok']] if b else '-'} | **{sym[g.ok]}**{'' if g.quiet else ' (busy host)'} | {g.measured} |")
+    return "\n".join(out)
+
+
 def tables() -> str:
     b, base, asr, rag, mos, mem, onnx = (j(x) for x in ("bench.json", "baseline.json", "asr.json", "rag.json", "tts_mos.json", "memory.json", "llm_onnx_vs_gguf.json"))
     a, o = b["latency_ms_audio_mode"], b["latency_ms_oracle_text"]
@@ -24,7 +35,7 @@ def tables() -> str:
     en_p50, en_p95 = ent[len(ent) // 2], ent[max(0, int(len(ent) * 0.95) - 1)]
     zh_ok = sum(bool(x["context"]) for x in zh)
     distinct = len({x["q"] for x in b["rows"]})
-    out = [f"*Host: {b['host']['system']}, {b['host']['cores']} cores, CPU-only, 1-min load average {b['host'].get('loadavg_1m', '?')} (other apps were running: numbers are noisy). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N={b['n']} turns from {distinct} distinct questions (each repeated).*", "",
+    out = [f"*Host: {b['host']['system']}, {b['host']['cores']} cores, CPU-only, 1-min load average {b['host'].get('loadavg_1m', '?')} ({'quiet host' if b.get('quiet') else 'BUSY host: numbers are noisy'}). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N={b['n']} turns, {distinct} distinct questions, each asked once.*", "",
            "**Latency (ms, p50 / p95)**", "", "| Stage | Budget | Measured |", "|---|---|---|",
            f"| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | {ms(a, 'asr_final')} |",
            f"| Retrieval + LLM first token (oracle text) | ≤500 | {ms(o, 'rag_first_token')} |",
@@ -37,24 +48,32 @@ def tables() -> str:
            f"| Batch: endpoint + retrieve + full LLM + full TTS | {base['batch_total_ms']['p50']:.0f} | {base['batch_total_ms']['p95']:.0f} |",
            f"| Streaming (estimate) | {base['streaming_total_estimated_ms']['p50']:.0f} | {base['streaming_total_estimated_ms']['p95']:.0f} |",
            "", "**ASR accuracy (streaming wrapper, 50 clips per set)**", "", "| Set | Metric | Clean | 10 dB noise | RTF |", "|---|---|---|---|---|"]
-    for k in ("en_librispeech_clean", "en_fleurs", "zh_fleurs"):
+    for k in ("en_librispeech_clean", "en_fleurs", "zh_aishell", "zh_fleurs"):
+        if f"{k}/clean" not in asr:
+            continue
         c, n = asr[f"{k}/clean"], asr[f"{k}/noisy_10dB"]
         out.append(f"| {k} | {c['metric']} | {c['value']*100:.1f}% | {n['value']*100:.1f}% | {c['rtf']} |")
     out += ["", "**RAG and TTS**", "", "| Metric | Result | Target |", "|---|---|---|",
             f"| Top-3 retrieval, dev (n={rag['top3_dev']['n']}) | {rag['top3_dev']['acc']*100:.1f}% | ≥80% |",
             f"| Top-3 retrieval, held-out reworded (n={rag['top3_heldout']['n']}) | {rag['top3_heldout']['acc']*100:.1f}% | ≥80% |",
             f"| Off-topic queries rejected (n={rag['offtopic_rejected']['n']}) | {rag['offtopic_rejected']['rate']*100:.0f}% | – |",
-            f"| Answer keyword faithfulness (n={rag['faithfulness']['n']}) | {rag['faithfulness']['acc']*100:.0f}% | – |",
+            f"| Answer faithfulness, keyword check (n={rag['faithfulness']['n']}) | {rag['faithfulness']['acc']*100:.0f}% | ≥95% |",
+            f"| – of which negation questions / blind held-out | {rag['faithfulness'].get('negation_acc', 0)*100:.0f}% / {rag['faithfulness'].get('heldout_acc', 0)*100:.0f}% | – |",
             f"| TTS MOS proxy (UTMOS22) en / zh | {mos['en']['mean_mos_proxy']} / {mos['zh']['mean_mos_proxy']} | ≥3.5 |",
-            "", "**Memory (RSS added by loading, M2)**", "", "| Component | MB |", "|---|---|",
-            f"| ASR + RAG + TTS in one process (incl. shared library imports) | {mem['asr_rag_tts']:.0f} in the latest run (437-638 across runs; target ≤500) |",
+            "", "**Memory (USS = unique set size added by loading; median of 3 fresh processes)**", "", "| Component | MB |", "|---|---|",
+            f"| ASR + RAG + TTS in one process (incl. shared library imports; target ≤500) | {mem['asr_rag_tts']:.0f} (runs {', '.join(str(x) for x in mem.get('asr_rag_tts_runs', []))}) |",
             f"| LLM Qwen2.5-0.5B Q4_K_M | {mem['llm']:.0f} |",
             "", "**LLM runtime: ONNX vs GGUF (same prompt, M2 CPU)**", "", "| Runtime | First token (ms) | Decode tok/s | Size |", "|---|---|---|---|",
             f"| ONNX fp32 (optimum) | {onnx['onnx_fp32']['first_token_ms_median']:.0f} | {onnx['onnx_fp32']['decode_tok_s_median']:.1f} | – |",
             f"| ONNX int8 (optimum) | {onnx['onnx_int8']['first_token_ms_median']:.0f} | {onnx['onnx_int8']['decode_tok_s_median']:.1f} | {onnx['onnx_file_mb']['model_quantized.onnx']:.0f} MB |",
             f"| GGUF Q4_K_M (llama.cpp, live path) | {onnx['gguf_q4_k_m']['first_token_ms_median']:.0f} | {onnx['gguf_q4_k_m']['decode_tok_s_median']:.1f}* | 469 MB |",
             "", "*GGUF tok/s includes prefill in its denominator, ONNX excludes first token: not like for like.*"]
-    return "\n".join(out)
+    conc = (R / "concurrent.json")
+    if conc.exists():
+        c = json.loads(conc.read_text())
+        out += ["", "**Two users at once (shared models)**", "", "| | p50 ms |", "|---|---|", f"| single user | {c['single_p50_ms']} |",
+                f"| two users (each) | {c['concurrent_p50_ms']} (x{c['ratio']}, USS +{c['uss_delta_mb']} MB) |"]
+    return gates_table() + "\n\n" + "\n".join(out)
 
 
 def main() -> None:
