@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     max_ctx_tokens: int = 90
     queue_max: int = 8
     filler: bool = False
+    speculate: bool = False          # start the answer on a stable partial before the endpoint; default decided by bench A/B
+    speculate_min_cores: int = 6     # shadow prefill + TTS must not starve ASR on small CPUs
     yes_no_extractive: bool = True   # yes/no questions are answered by quoting the best text sentence, not the 0.5B model
     first_chunk_words: int = 1   # Latin words in the first TTS chunk (G2: 1 word p95 148 ms vs 2 words 225 ms on M2)
     second_chunk_words: int = 3  # then 3 words, so chunk 2 is ready before the 1-word chunk 1 finishes playing

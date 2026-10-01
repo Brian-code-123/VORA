@@ -121,6 +121,8 @@ def summarize(rows: list[dict]) -> dict:
 async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=0, help="0 = every answerable question once")
+    ap.add_argument("--speculate", choices=["on", "off", "default", "ab"], default="default", help="A/B the shadow turn")
+    ap.add_argument("--audio-only", action="store_true", help="skip the oracle-text pass (A/B runs)")
     ap.add_argument("--force", action="store_true", help="run on a busy host (results marked quiet=false)")
     ap.add_argument("--out", default=str(ROOT / "results" / "bench.json"))
     a = ap.parse_args()
@@ -129,32 +131,35 @@ async def main() -> None:
     if reason and not a.force:
         raise SystemExit(f"refusing to benchmark: {reason}. Use --force to record anyway (quiet=false).")
     from vora.server import Models
-    s = Settings()
+    s = Settings() if a.speculate == "default" else Settings(speculate=(a.speculate == "on"))
     proc = psutil.Process()
     rss0 = proc.memory_info().rss
     models = Models.load(s)
     qs = questions(models.tts, 10_000)
     a.n = a.n or len(qs)
     rows, orows, skipped = [], [], 0
+    arms = [("off", Settings(speculate=False)), ("on", Settings(speculate=True))] if a.speculate == "ab" else [(None, s)]
     for i in range(a.n):
         lang, text, pcm = qs[i % len(qs)]
-        m = await one_turn(models, s, lang, pcm)
-        if m is None:
-            skipped += 1
-        else:
-            m["q"], m["lang"] = text, lang
+        order = arms if i % 2 == 0 else arms[::-1]     # alternate which arm runs first: drift hits both arms equally
+        for arm, st in order:
+            m = await one_turn(models, st, lang, pcm)
+            if m is None:
+                skipped += 1
+                continue
+            m["q"], m["lang"], m["arm"] = text, lang, arm
             rows.append(m)
-            print(f"audio  {i:2d} {lang} heard={m.get('heard')!r} ctx={m.get('context')} total={m.get('total')} asr={m.get('asr_final')} llm={m.get('rag_first_token')} tts={m.get('tts_first_chunk')}")
-        o = await oracle_turn(models, s, lang, text)
+            print(f"audio  {i:2d} {arm} {lang} heard={m.get('heard')!r} ctx={m.get('context')} total={m.get('total')} asr={m.get('asr_final')} llm={m.get('rag_first_token')} tts={m.get('tts_first_chunk')}")
+        o = None if a.audio_only else await oracle_turn(models, s, lang, text)
         if o:
             o["q"], o["lang"] = text, lang
             orows.append(o)
             print(f"oracle {i:2d} {lang} ctx={o.get('context')} total={o.get('total')} llm={o.get('rag_first_token')} tts={o.get('tts_first_chunk')}")
     num = lambda rs: [{k: v for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)} for r in rs]
     lat, olat = summarize(num(rows)), summarize(num(orows))
-    est = {"p50": round(lat["asr_final"]["p50"] + olat["total"]["p50"], 1), "p95": round(lat["asr_final"]["p95"] + olat["total"]["p95"], 1)}
+    est = {"p50": round(lat["asr_final"]["p50"] + olat["total"]["p50"], 1), "p95": round(lat["asr_final"]["p95"] + olat["total"]["p95"], 1)} if olat else {}
     from vora.hostcheck import is_quiet
-    res = {"quiet": is_quiet(), "host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
+    res = {"quiet": is_quiet(), "host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "speculate": a.speculate, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
            "rss_delta_load_mb": round((proc.memory_info().rss - rss0) / 2**20), "rows": rows, "oracle_rows": orows}
     p = ROOT / "results"
     p.mkdir(exist_ok=True)

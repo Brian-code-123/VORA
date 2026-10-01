@@ -33,7 +33,17 @@ def sha(p: Path) -> str:
     return h.hexdigest()
 
 
+def dry_run() -> None:
+    """List what would be downloaded as repo@revision (no network)."""
+    for name, spec in SPECS.items():
+        print(f"{name}: {spec['repo']}@{REV[spec['repo']]}")
+    print(f"llm: {LLM['repo']}@{LLM_REV}")
+
+
 def main() -> None:
+    if "--dry-run" in sys.argv:
+        dry_run()
+        return
     manifest = {}
     for name, s in SPECS.items():
         d = ROOT / name

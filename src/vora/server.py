@@ -66,7 +66,8 @@ async def serve_session(ws, models: Models, s: Settings, sessions: set) -> None:
     if len(sessions) >= s.max_sessions:
         await ws.close(code=1013)
         return
-    pipe = Pipeline(models.make_asr("en"), models.retriever, models.llm, models.tts, s, models.executors)
+    pipe = Pipeline(models.make_asr("en"), models.retriever, models.llm, models.tts, s, models.executors,
+                    active_sessions=lambda: len(sessions))
     sessions.add(pipe)
     sender = asyncio.create_task(_send_loop(ws, pipe))
     lang = "en"
