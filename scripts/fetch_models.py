@@ -7,7 +7,7 @@ from pathlib import Path
 from huggingface_hub import snapshot_download, hf_hub_download
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-REV = {'csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17': 'd42f2d9f7ca24806fb667456a18a9f1b60f70d16', 'csukuangfj/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23': '204ad334e2e683fd295359930cc16fc0432a23ac', 'csukuangfj/vits-piper-en_US-lessac-low': '7f5edb341cadf35daab356f857ed5ae8545d22bf', 'csukuangfj/vits-piper-zh_CN-huayan-x_low': 'bf8284cf534fd7328467afd3c8b3eb992eedc02a'}  # pinned commits (checked 2026-10-01)
+REV = {"csukuangfj/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01": "a5f60fe00dcfbaf68fcc1c6b5cf53061e144d6da", 'csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17': 'd42f2d9f7ca24806fb667456a18a9f1b60f70d16', 'csukuangfj/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23': '204ad334e2e683fd295359930cc16fc0432a23ac', 'csukuangfj/vits-piper-en_US-lessac-low': '7f5edb341cadf35daab356f857ed5ae8545d22bf', 'csukuangfj/vits-piper-zh_CN-huayan-x_low': 'bf8284cf534fd7328467afd3c8b3eb992eedc02a'}  # pinned commits (checked 2026-10-01)
 LLM_REV = "9217f5db79a29953eb74d5343926648285ec7e67"
 ROOT = Path(__file__).resolve().parent.parent / "models"
 SPECS = {
@@ -15,6 +15,8 @@ SPECS = {
                    allow=["*.int8.onnx", "tokens.txt", "test_wavs/*"], ignore=["*epoch-99-avg-1.onnx"]),
     "asr_zh": dict(repo="csukuangfj/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23", license="Apache-2.0",
                    allow=["*.int8.onnx", "tokens.txt", "test_wavs/*"], ignore=[]),
+    "asr_zh_ctc": dict(repo="csukuangfj/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01", license="Apache-2.0",
+                       allow=["model.int8.onnx", "tokens.txt", "test_wavs/*"], ignore=[]),
     "tts_en": dict(repo="csukuangfj/vits-piper-en_US-lessac-low", license="Piper MIT; voice dataset: Blizzard 2013 Lessac licence (custom, not OSI/CC)",
                    allow=["*.onnx", "tokens.txt", "espeak-ng-data/*", "MODEL_CARD"], ignore=[]),
     "tts_zh": dict(repo="csukuangfj/vits-piper-zh_CN-huayan-x_low", license="Piper MIT; voice dataset licence UNKNOWN per Piper model card",

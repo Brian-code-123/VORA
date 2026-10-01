@@ -106,3 +106,38 @@ def test_second_utterance_in_same_session_is_not_clipped(recs):
     finals = [e.text for e in ev if e.kind == "final"]
     assert len(finals) >= 2
     assert wer(ref, " ".join(finals[1:])) <= 0.15, finals
+
+
+def test_second_final_contains_only_new_words(recs):
+    """No reset at an endpoint: the stream keeps its context and each final is only the text since the previous one."""
+    p = S.models_dir / "asr_en/test_wavs"
+    a, b = read(p / "0.wav"), read(p / "1.wav")
+    gap = np.zeros(int(0.8 * SR), dtype=np.int16)
+    sess = AsrSession(recs, "en")
+    ev, _, _ = stream_wav(sess, np.concatenate([a, gap, b]), tail_s=1.5, chunk=int(0.1 * SR))
+    finals = [e.text for e in ev if e.kind == "final"]
+    assert len(finals) >= 2                                   # clip 1 has pauses: it may split into several finals
+    assert "yellow" in finals[0] and not any("yellow" in f for f in finals[1:])
+    assert "consequence" in " ".join(finals[1:]) and "consequence" not in finals[0]
+    assert finals[1].startswith("god")                         # leading word no longer clipped after an endpoint
+
+
+def test_partials_after_a_final_start_fresh(recs):
+    p = S.models_dir / "asr_en/test_wavs"
+    a, b = read(p / "0.wav"), read(p / "1.wav")
+    sess = AsrSession(recs, "en")
+    ev, _, _ = stream_wav(sess, np.concatenate([a, np.zeros(int(0.8 * SR), dtype=np.int16), b]), tail_s=1.5, chunk=int(0.1 * SR))
+    first_final = next(i for i, e in enumerate(ev) if e.kind == "final")
+    later = [e for e in ev[first_final + 1:] if e.kind == "partial"]
+    assert later and "yellow" not in later[0].text   # partial display restarts after the final
+
+
+def test_stream_resets_after_20s_of_audio_at_a_final(recs):
+    p = S.models_dir / "asr_en/test_wavs"
+    a = read(p / "0.wav")
+    sess = AsrSession(recs, "en")
+    x = np.concatenate([np.concatenate([a, np.zeros(SR, dtype=np.int16)]) for _ in range(4)])   # ~30 s, 4 utterances
+    ev, _, _ = stream_wav(sess, x, tail_s=1.5, chunk=int(0.1 * SR))
+    finals = [e.text for e in ev if e.kind == "final"]
+    assert len(finals) == 4, finals                           # no spurious one-letter final from trailing noise
+    assert sess._stream_samples < 20 * SR

@@ -19,3 +19,11 @@ Latency scales with audio length (+ small fixed cost): 1 word ~100-170 ms, 2 wor
 => G2 approach: 1-word first chunk, 3-word second chunk (chunker `first_words=1, second_words=3`); measured stall between chunks p95 0.12 s.
 ## zh TTS lexicon defect (huayan x_low)
 `lexicon.txt` uses the phoneme U+032A (combining bridge) that `tokens.txt` lacks, so sherpa skipped every z/c/s syllable (自 次 词 子 字 私 …). `ensure_patched_lexicon` drops tokens missing from tokens.txt (derived `lexicon.patched.txt`). ASR round-trip on "这个词很有意思": before "这歌很有意有意", after "这个词汉有意思".
+
+## zh ASR (AISHELL-1 test subset: 60 clips over 20 speakers, `shenyunhang/AISHELL-1` rev 2724409, Apache-2.0)
+| Model | Size | CER via wrapper (reset at endpoint) | CER via wrapper (no reset, final = new text) |
+|---|---|---|---|
+| zipformer-zh-14M transducer int8 | 25.3 MB | 16.0% | 16.7% |
+| zipformer-small-ctc-zh int8 (2025-04-01, `from_zipformer2_ctc`, greedy) | 26.3 MB | 10.9% | **5.2%** |
+Single continuous stream (no endpoints) with the CTC model: AISHELL 4.7-5.8%, FLEURS zh 14.8-15.4% (was 25.4% with the 14M model). Lead silence 0/0.3/0.8 s makes no clear difference for CTC. `rec.reset()` at every endpoint cost ~6 CER points and ~30% WER on second utterances; pre-roll after reset made it worse (17.5%: more endpoints). => AsrSession no longer resets at endpoints.
+`from_zipformer2_ctc` accepts the endpoint rule kwargs and `decoding_method` (greedy only). AISHELL on HF: `AISHELL/AISHELL-1` mirror only has training speakers; `shenyunhang/AISHELL-1` has per-file test/dev wavs.
