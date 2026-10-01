@@ -1,0 +1,25 @@
+{
+ "metric": "USS",
+ "base_mb": 14.2,
+ "steps_mb": {
+  "import numpy": 14.4,
+  "import scipy.signal": 67.1,
+  "import onnxruntime": 5.8,
+  "import sherpa_onnx": 1.6,
+  "import faiss": 14.3,
+  "import jieba": 8.5,
+  "import rank_bm25": 0.0,
+  "import tokenizers": 0.7,
+  "import fastembed": 7.1,
+  "import llama_cpp": 5.3,
+  "asr en": 52.9,
+  "asr zh": 1.5,
+  "rag (embedder + index + bm25)": 141.9,
+  "tts en": 52.4,
+  "tts zh": 5.7,
+  "llm": 643.2
+ },
+ "asr_rag_tts_total_mb": 379.4,
+ "load1": 3.94189453125,
+ "ts": 1790825228.887687
+}
