@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     max_ctx_tokens: int = 120
     queue_max: int = 8
     filler: bool = False
+    first_chunk_words: int = 1   # Latin words in the first TTS chunk (G2: 1 word p95 148 ms vs 2 words 225 ms on M2)
+    second_chunk_words: int = 3  # then 3 words, so chunk 2 is ready before the 1-word chunk 1 finishes playing
     host: str = "127.0.0.1"
     max_sessions: int = 4
     max_frame_bytes: int = 64 * 1024

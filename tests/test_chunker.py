@@ -57,3 +57,49 @@ def test_first_chunk_split_after_four_words_when_no_punctuation():
 def test_short_first_words_not_split():
     out, tail = run(list("It is on a red day."))
     assert out + tail == ["It is on a red day."]
+
+
+def test_first_chunk_words_is_configurable():
+    c = SentenceChunker(first_words=2)
+    out = []
+    for t in "The warranty on the VORA-X200 is two years.":
+        out += c.push(t)
+    assert out[0] == "The warranty"
+    assert " ".join(out + c.flush()) == "The warranty on the VORA-X200 is two years."
+
+
+def test_first_words_two_does_not_split_short_answers():
+    out, tail = [], []
+    c = SentenceChunker(first_words=2)
+    for t in "Yes it is.":
+        out += c.push(t)
+    assert out + c.flush() == ["Yes it is."]
+
+
+def test_short_first_words_still_split_when_seven_chars():
+    for text, first in (("You can import documents.", "You can"), ("The box draws five watts.", "The box"),
+                        ("It does not support Cantonese.", "It does")):
+        c = SentenceChunker(first_words=2)
+        out = []
+        for t in text:
+            out += c.push(t)
+        assert out[0] == first, (text, out)
+
+
+def test_progressive_chunks_one_then_three_words():
+    c = SentenceChunker(first_words=1, second_words=3)
+    out = []
+    for t in "The warranty on the VORA-X200 is two years. Anything else?":
+        out += c.push(t)
+    assert out[:2] == ["The", "warranty on the"]
+    assert " ".join(out + c.flush()) == "The warranty on the VORA-X200 is two years. Anything else?"
+
+
+def test_progressive_does_not_split_after_sentence_end_or_short_tail():
+    c = SentenceChunker(first_words=1, second_words=3)
+    out = []
+    for t in "The warranty is long. Yes it is.":
+        out += c.push(t)
+    tail = c.flush()
+    assert " ".join(out + tail) == "The warranty is long. Yes it is."
+    assert out[0] == "The"

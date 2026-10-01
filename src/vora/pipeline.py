@@ -223,7 +223,7 @@ class Pipeline:
             sent_q.put((FILLER[_lang(text)], True))
 
         def llm_worker() -> None:
-            chunker = SentenceChunker()
+            chunker = SentenceChunker(first_words=self.s.first_chunk_words, second_words=self.s.second_chunk_words)
             try:
                 for tok in self.llm.stream(text, hits, ev):
                     if ev.is_set():
@@ -268,6 +268,7 @@ class Pipeline:
         if first_content is not None:
             trace.marks["first_audio"] = first_content  # content audio is what the brief's 1.5 s means
         m = trace.report()
+        m["tts_oov"] = getattr(self.tts, "oov_total", 0)
         se = trace.marks["speech_end"]
         if "first_audio" in stamps:
             m["ttfa_ms"] = round((stamps["first_audio"] - se) * 1000, 1)

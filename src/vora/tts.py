@@ -75,6 +75,34 @@ def pick_en_model(d: Path, fp32: bool) -> Path:
     return int8[0]
 
 
+def ensure_patched_lexicon(zh_dir: Path) -> Path:
+    """Derived `lexicon.patched.txt`: drop phoneme tokens absent from tokens.txt (only U+032A, a combining mark, in
+    huayan x_low). Without it every z/c/s syllable (自 次 词 子 字 私 ...) was silently skipped. The original stays."""
+    out = zh_dir / "lexicon.patched.txt"
+    if out.exists():
+        return out
+    tokens = {l.split(" ")[0] for l in (zh_dir / "tokens.txt").read_text(encoding="utf-8").splitlines() if l.strip()}
+    lines = []
+    for line in (zh_dir / "lexicon.txt").read_text(encoding="utf-8").splitlines():
+        parts = line.split()
+        if len(parts) >= 2:
+            parts = [parts[0]] + [t for t in parts[1:] if t in tokens]
+        lines.append(" ".join(parts))
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return out
+
+
+def _usable_zh_chars(zh_dir: Path) -> set[str]:
+    """Characters the zh voice can really say, from the patched lexicon (phonemes must all be in tokens.txt)."""
+    tokens = {l.split(" ")[0] for l in (zh_dir / "tokens.txt").read_text(encoding="utf-8").splitlines() if l.strip()}
+    out = set()
+    for line in ensure_patched_lexicon(zh_dir).read_text(encoding="utf-8").splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and all(p in tokens for p in parts[1:]):
+            out.add(parts[0])
+    return out
+
+
 def _voice(model: str, tokens: str, data_dir: str = "", lexicon: str = "", threads: int = 2):
     cfg = sherpa_onnx.OfflineTtsConfig(
         model=sherpa_onnx.OfflineTtsModelConfig(
@@ -92,8 +120,10 @@ class Tts:
         zh = d / "tts_zh"
         self.voices = {
             "en": _voice(str(pick_en_model(en, settings.tts_en_fp32)), str(en / "tokens.txt"), data_dir=str(en / "espeak-ng-data")),
-            "zh": _voice(str(next(zh.glob("*.onnx"))), str(zh / "tokens.txt"), lexicon=str(zh / "lexicon.txt")),
+            "zh": _voice(str(next(zh.glob("*.onnx"))), str(zh / "tokens.txt"), lexicon=str(ensure_patched_lexicon(zh))),
         }
+        self.zh_lexicon = _usable_zh_chars(zh)
+        self.oov_total = 0   # zh characters the voice cannot say (counted, logged, exposed as metrics tts_oov)
         self._cancel = threading.Event()
         self._lock = threading.Lock()  # sherpa OfflineTts.generate is not documented thread-safe; held only while generating
 
@@ -107,10 +137,17 @@ class Tts:
         for lang, run in split_by_script(sanitize_for_tts(text)):
             if not re.search(r"\w", run):
                 continue
+            if lang == "zh":
+                oov = [c for c in run if _CJK.match(c) and c not in self.zh_lexicon]
+                if oov:
+                    self.oov_total += len(oov)
+                    log.warning("TTS OOV: zh voice cannot say %s (skipped)", "".join(sorted(set(oov))))
             v = self.voices[lang]
             with self._lock:  # released before chunks are yielded: a slow client must not hold the voice
                 audio = v.generate(run.strip(), sid=0, speed=1.0, callback=lambda s, p: 0 if cancel.is_set() else 1)  # sherpa 1.13: 1 = continue, 0 = stop (its docstring says the reverse)
             x = np.asarray(audio.samples, dtype=np.float32)
+            if x.size == 0 or audio.sample_rate <= 0:   # all-OOV run: nothing to say (used to crash in resample)
+                continue
             if audio.sample_rate != SR:
                 x = resample_poly(x, SR, audio.sample_rate).astype(np.float32)
             pcm = (np.clip(x, -1, 1) * 32767).astype(np.int16)
