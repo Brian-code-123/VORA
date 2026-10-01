@@ -214,3 +214,19 @@ def test_progressive_chunks_leave_no_long_gap(tts):
     worst.sort()
     print("worst gap per answer, p50/p95 s:", worst[len(worst) // 2], worst[int(len(worst) * 0.95) - 1])
     assert worst[int(len(worst) * 0.95) - 1] <= 0.25, worst
+
+
+def test_zh_run_numbers_are_read_not_skipped():
+    from vora.tts import zh_numbers
+    assert zh_numbers("按住复位键 10 秒") == "按住复位键 十 秒"
+    assert zh_numbers("价格 199 美元") == "价格 一百九十九 美元"
+    assert zh_numbers("版本 2.4 GHz") == "版本 二点四 GHz"
+    assert zh_numbers("序列号 123456 位") == "序列号 一二三四五六 位"      # long digit strings: digit by digit
+    assert zh_numbers("没有数字") == "没有数字"
+
+
+@needs_models
+def test_zh_digits_with_spaces_do_not_hit_the_voice_as_oov(tts, capfd):
+    pcm = b"".join(tts.synth("按住复位键 10 秒"))
+    assert len(pcm) > 16000
+    assert "OOV 10" not in capfd.readouterr().err

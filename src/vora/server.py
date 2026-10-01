@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from vora.config import ROOT, Settings
-from vora.pipeline import ClientStalled, Executors, Pipeline
+from vora.pipeline import Admission, ClientStalled, Executors, Pipeline
 
 log = logging.getLogger("vora")
 
@@ -35,7 +35,7 @@ class Models:
         from vora.tts import Tts
 
         recs = load_recognizers(s)
-        m = cls(lambda lang: AsrSession(recs, lang, hold_ms=s.hold_ms, hold_total_cap_ms=s.hold_total_cap_ms), Retriever(s), Llm(s), Tts(s), Executors())
+        m = cls(lambda lang: AsrSession(recs, lang, hold_ms=s.hold_ms, hold_total_cap_ms=s.hold_total_cap_ms), Retriever(s), Llm(s), Tts(s), Executors(admission=Admission(s.max_inflight_turns)))
         # warmup: first real call pays page-in / graph init (measured 3-8 s for the LLM)
         for lang in ("en", "zh"):
             m.make_asr(lang).feed(np.zeros(1600, dtype=np.int16).tobytes())

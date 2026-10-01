@@ -1,0 +1,16 @@
+{
+  "temperature": "operating conditions degrees Celsius humidity heaters",
+  "hot": "operating conditions degrees Celsius heaters",
+  "cold": "operating conditions degrees Celsius",
+  "温度": "使用环境 摄氏度 湿度",
+  "wifi": "Wi-Fi 2.4 GHz 5 GHz wireless network setup pairing",
+  "wi-fi": "Wi-Fi 2.4 GHz 5 GHz wireless network setup pairing",
+  "connect": "pairing setup Add Device app",
+  "price": "price USD returns",
+  "cost": "price USD returns",
+  "how much does": "price USD returns",
+  "多少钱": "售价 美元 退货",
+  "价格": "售价 美元 退货",
+  "muted": "microphone mute switch red LED",
+  "mute": "microphone mute switch red LED"
+}

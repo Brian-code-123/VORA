@@ -7,29 +7,9 @@ from vora.llm import Llm
 from vora.rag.ingest import load_qa
 from vora.rag.retriever import Retriever
 
-# question -> any of these substrings (lowercase) must appear in the spoken answer
-FAITHFUL = {
-    "how long is the warranty on the vora x200": ["2 years", "two years", "2 year"],
-    "what is the wake word": ["hey vora"],
-    "what does the red light mean": ["mute"],
-    "how do i factory reset it": ["10 seconds", "reset button", "10 sec"],
-    "how do i contact support": ["support@vora.example"],
-    "does it understand cantonese": ["not support", "not supported", "no,", "cannot", "doesn't", "does not"],
-    "who pays for return shipping": ["buyer"],
-    "how much does the x200 cost": ["199"],
-    "what temperature can it operate in": ["40"],
-    "what power adapter does the x200 use": ["12 v", "12v"],
-    "how many microphones does the x200 have": ["4", "four"],
-    "how loud is the speaker": ["10 w", "10w", "10 watt"],
-    "which file formats can i upload for the knowledge base": ["markdown", "txt", "pdf"],
-    "how often does the firmware update": ["month"],
-    "can i import my own documents": ["yes", "import", "document"],
-    "X200保修期多久": ["2 年", "2年", "两年"],
-    "怎么恢复出厂设置": ["10 秒", "10秒", "复位"],
-    "唤醒词是什么": ["hey vora"],
-    "支持哪些语言": ["普通话", "英语"],
-    "知识库最大能导入多大": ["1 gb", "1gb"],
-}
+def load_faithfulness() -> list[dict]:
+    """eval/faithfulness.jsonl: q, kw (any substring of the lowercased answer), neg (negation question), split."""
+    return [json.loads(l) for l in (ROOT / "eval" / "faithfulness.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
 def main() -> None:
@@ -46,13 +26,15 @@ def main() -> None:
     res["offtopic_rejected"] = {"rate": round(sum(r.search(q) == [] for q in off) / len(off), 3), "n": len(off)}
     llm = Llm(s)
     rows = []
-    for q, kws in FAITHFUL.items():
-        ans = "".join(llm.stream(q, r.search(q))).lower()
-        rows.append({"q": q, "answer": ans, "ok": any(k in ans for k in kws)})
-    res["faithfulness"] = {"acc": round(sum(x["ok"] for x in rows) / len(rows), 3), "n": len(rows), "rows": rows}
+    for item in load_faithfulness():
+        ans = "".join(llm.stream(item["q"], r.search(item["q"]))).lower()
+        rows.append({"q": item["q"], "answer": ans, "ok": any(k.lower() in ans for k in item["kw"]), "neg": item["neg"], "split": item["split"]})
+    acc = lambda rs: round(sum(x["ok"] for x in rs) / len(rs), 3) if rs else None
+    res["faithfulness"] = {"acc": acc(rows), "n": len(rows), "negation_acc": acc([x for x in rows if x["neg"]]),
+                           "heldout_acc": acc([x for x in rows if x["split"] == "heldout"]), "rows": rows}
     (ROOT / "results").mkdir(exist_ok=True)
     (ROOT / "results" / "rag.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
-    print({k: (v if k.startswith("top3") or k.startswith("off") else {"acc": v["acc"], "n": v["n"]}) for k, v in res.items()})
+    print({k: (v if k.startswith("top3") or k.startswith("off") else {kk: v[kk] for kk in ("acc", "n", "negation_acc", "heldout_acc") if kk in v}) for k, v in res.items()})
     for x in rows:
         if not x["ok"]:
             print("  UNFAITHFUL:", x["q"], "->", x["answer"])

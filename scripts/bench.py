@@ -153,7 +153,8 @@ async def main() -> None:
     num = lambda rs: [{k: v for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)} for r in rs]
     lat, olat = summarize(num(rows)), summarize(num(orows))
     est = {"p50": round(lat["asr_final"]["p50"] + olat["total"]["p50"], 1), "p95": round(lat["asr_final"]["p95"] + olat["total"]["p95"], 1)}
-    res = {"quiet": reason is None, "host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
+    from vora.hostcheck import is_quiet
+    res = {"quiet": is_quiet(), "host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
            "rss_delta_load_mb": round((proc.memory_info().rss - rss0) / 2**20), "rows": rows, "oracle_rows": orows}
     p = ROOT / "results"
     p.mkdir(exist_ok=True)

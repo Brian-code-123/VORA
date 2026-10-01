@@ -19,6 +19,17 @@ def llm():
     return Llm(S)
 
 
+def fake_words(text):
+    """Word-level tokens like a real model (a 6-token head must be able to hold a whole refusal phrase)."""
+    import re
+    toks = re.findall(r"\s*\S+", text)
+
+    def _f(**kw):
+        for t in toks:
+            yield {"choices": [{"delta": {"content": t}}]}
+    return _f
+
+
 def fake_stream(text):
     def _f(**kw):
         for ch in text:
@@ -112,3 +123,78 @@ def test_warm_first_token_under_300ms(llm):
     dt = (time.perf_counter() - t0) * 1000
     list(it)
     assert dt < 300, dt
+
+
+CANT = Hit("E10", "Languages: VORA Box understands and speaks Mandarin Chinese and English. Cantonese speech is not supported.", 0.9)
+
+
+def test_guard_replaces_yes_to_a_negated_fact(llm, monkeypatch):
+    monkeypatch.setattr(llm.llm, "create_chat_completion", fake_words("Yes, the VORA Box understands Cantonese very well."))
+    assert "".join(llm.stream("does it understand cantonese", [CANT])) == "Cantonese speech is not supported."
+
+
+def test_refusal_is_replaced_by_best_sentence(llm, monkeypatch):
+    from vora.guard import best_sentence
+    monkeypatch.setattr(llm.llm, "create_chat_completion",
+                        fake_words("The context does not provide information about the warranty period at all."))
+    out = "".join(llm.stream("how long is the warranty", [WARRANTY_EN]))
+    assert out == best_sentence(WARRANTY_EN.text, "how long is the warranty")
+
+
+def test_decide_buffer_is_6_tokens():
+    import vora.llm as m
+    assert m._DECIDE_TOKENS == 6
+
+
+def test_system_prompt_le_40_tokens(llm):
+    assert len(llm.llm.tokenize(SYSTEM.encode())) <= 40
+
+
+def test_context_trim_keeps_the_answer_sentence(llm):
+    filler = " ".join(f"Sentence number {i} talks about unrelated hardware details." for i in range(30))
+    chunk = Hit("X1", f"{filler} The warranty period is exactly two years. {filler}", 0.9)
+    msgs = llm._messages("what is the warranty period", [chunk])
+    ctx = msgs[1]["content"]
+    assert "warranty period is exactly two years" in ctx
+    assert len(llm.llm.tokenize(ctx.encode())) <= llm.s.max_ctx_tokens + 40
+
+
+@pytest.mark.skipif(not (S.index_dir / "faiss.index").exists(), reason="needs index")
+def test_prompt_tokens_le_170_for_every_eval_question(llm):
+    from vora.config import ROOT
+    from vora.rag.ingest import load_qa
+    from vora.rag.retriever import Retriever
+    r = Retriever(S)
+    worst = 0
+    for q in [x["q"] for x in load_qa(ROOT / "eval" / "rag_qa.jsonl") if x["chunk_id"]]:
+        worst = max(worst, llm.prompt_tokens(q, r.search(q)))
+    assert worst <= 170, worst
+
+
+def test_polarity_checked_against_every_hit(llm, monkeypatch):
+    other = Hit("E01", "VORA-X200 hardware: a 4-core ARM CPU and 4 GB RAM.", 0.95)
+    monkeypatch.setattr(llm.llm, "create_chat_completion", fake_words("Yes, the VORA Box understands Cantonese very well."))
+    out = "".join(llm.stream("does it understand cantonese", [other, CANT]))   # the negating chunk is NOT the top hit
+    assert out == "Cantonese speech is not supported."
+
+
+def test_invented_number_replaced_by_chunk_sentence(llm, monkeypatch):
+    price = Hit("E12", "Price and returns: the VORA-X200 costs 199 USD. You can return either model within 30 days.", 0.9)
+    monkeypatch.setattr(llm.llm, "create_chat_completion", fake_words("The X200 is priced at $1,000 in the store."))
+    out = "".join(llm.stream("how much does the x200 cost", [price]))
+    assert "199" in out and "1,000" not in out
+
+
+def test_yes_no_question_answered_extractively_without_the_model(llm, monkeypatch):
+    def boom(**kw):
+        raise AssertionError("model must not be called for yes/no questions")
+    monkeypatch.setattr(llm.llm, "create_chat_completion", boom)
+    assert "".join(llm.stream("will a factory reset delete the firmware", [Hit("E08", "Factory reset: hold the reset button for 10 seconds. This erases all settings and imported documents. Firmware is kept.", 0.9)])) \
+        .lower().startswith(("factory reset", "firmware is kept", "this erases")) is True
+
+
+def test_quantity_question_without_a_figure_gets_the_sentence_appended(llm, monkeypatch):
+    mic = Hit("E16", "Microphones: the X200 has a 4-microphone array with a pickup range of 5 meters. The M100 has 2 microphones with a range of 3 meters.", 0.9)
+    monkeypatch.setattr(llm.llm, "create_chat_completion", fake_words("The M100 can hear you from quite a distance away."))
+    out = "".join(llm.stream("how far can the m100 hear me", [mic]))
+    assert "3 meters" in out and out.startswith("The M100 can hear you")

@@ -5,18 +5,17 @@ from typing import Iterator
 from llama_cpp import Llama
 
 from vora.config import Settings
+from vora.guard import split_sentences, best_sentence, expects_number, extractive_answer, has_number, is_digitish, is_refusal, is_yes_no_question, numbers_mismatch, polarity_conflict
 from vora.rag.store import Hit
 
 SYSTEM = (
-    "You are the voice assistant of VORA Box. Answer the question using ONLY the context. "
-    "Reply in at most two short sentences in the same language as the question "
-    "(Simplified Chinese for Chinese questions). Start directly with the answer. "
-    "If the context does not contain the answer, say you are not sure."
+    "Answer from the context only, in at most two short sentences, in the question's language "
+    "(Simplified Chinese for Chinese). If the context lacks it, say you are not sure."
 )
 _CJK = re.compile(r"[一-鿿]")
 UNSURE = {"zh": "我不确定，请换个问法。", "en": "I'm not sure about that. Could you rephrase?"}
 BUSY = {"zh": "系统正忙，请稍后再试。", "en": "The system is busy, please try again."}
-_DECIDE_TOKENS = 10  # tokens buffered before the extractive-fallback check
+_DECIDE_TOKENS = 6   # tokens buffered before the guard / extractive-fallback check (was 10)
 
 
 def _lang(text: str) -> str:
@@ -50,24 +49,65 @@ class Llm:
         self._lock = threading.Lock()
         self._cancel = threading.Event()
 
+    @staticmethod
+    def _replacement(question: str, hits: list[Hit], head: str, ref: set[str]) -> str | None:
+        """None = keep the model's answer. Else the text sentence to speak instead: the answer ignored the context,
+        refused although we have hits, said yes to a negated fact (any hit), or invented a number."""
+        chunks = [h.text for h in hits]
+        if any(polarity_conflict(question, c, head) for c in chunks) or numbers_mismatch(" ".join(chunks), head) \
+                or not (_terms(head) & ref) or is_refusal(head):
+            return extractive_answer(question, chunks)
+        return None
+
     def cancel(self) -> None:
         self._cancel.set()
 
-    def _context(self, hits: list[Hit]) -> str:
-        parts, used = [], 0
-        for h in hits:
-            n = len(self.llm.tokenize(h.text.encode()))
-            if parts and used + n > self.s.max_ctx_tokens:
+    def _ntok(self, text: str) -> int:
+        return len(self.llm.tokenize(text.encode(), add_bos=False))
+
+    def _context(self, question: str, hits: list[Hit]) -> str:
+        """Top hit whole if it fits the budget, else its sentences that best match the question (original order);
+        more hits only if they still fit. Keeps prefill (and first-token time) short without cutting the answer."""
+        budget, parts, used = self.s.max_ctx_tokens, [], 0
+        for i, h in enumerate(hits):
+            n = self._ntok(h.text)
+            if used + n <= budget:
+                parts.append(h.text)
+                used += n
+            elif i == 0:
+                sents = split_sentences(h.text)
+                best = best_sentence(h.text, question)
+                keep = {sents.index(best)} if best in sents else {0}
+                used += self._ntok(sents[next(iter(keep))])
+                for j in sorted(range(len(sents)), key=lambda j: abs(j - next(iter(keep)))):   # grow outwards from the best one
+                    if j in keep:
+                        continue
+                    m = self._ntok(sents[j])
+                    if used + m > budget:
+                        break
+                    keep.add(j)
+                    used += m
+                parts.append(" ".join(sents[j] for j in sorted(keep)))
+            else:
                 break
-            parts.append(h.text)
-            used += n
         return "\n".join(f"[{i + 1}] {p}" for i, p in enumerate(parts))
+
+    def _messages(self, question: str, hits: list[Hit]) -> list[dict]:
+        return [{"role": "system", "content": SYSTEM},
+                {"role": "user", "content": f"Context:\n{self._context(question, hits)}\n\nQuestion: {question}"}]
+
+    def prompt_tokens(self, question: str, hits: list[Hit]) -> int:
+        return sum(self._ntok(m["content"]) for m in self._messages(question, hits)) + 20   # chat-template overhead
 
     def stream(self, question: str, hits: list[Hit], cancel: threading.Event | None = None) -> Iterator[str]:
         """`cancel` is a per-turn event (shared instance flag would let one user's barge-in kill another's reply)."""
         lang = _lang(question)
         if not hits:
             yield UNSURE[lang]
+            return
+        if self.s.yes_no_extractive and is_yes_no_question(question):
+            # a 0.5B model ignores negation in yes/no questions (measured: "yes, understands Cantonese"); quote the text
+            yield extractive_answer(question, [h.text for h in hits])
             return
         if not self._lock.acquire(timeout=3.0):
             yield BUSY[lang]
@@ -77,29 +117,62 @@ class Llm:
             cancel.clear()
         gen = None
         try:
-            msgs = [{"role": "system", "content": SYSTEM},
-                    {"role": "user", "content": f"Context:\n{self._context(hits)}\n\nQuestion: {question}"}]
+            msgs = self._messages(question, hits)
             gen = self.llm.create_chat_completion(messages=msgs, stream=True, max_tokens=80, temperature=0.2)
             buf, decided, ref = [], False, _terms(hits[0].text) | _terms(question)
+            pending: list[str] = []          # digit-ish tokens held back until the whole number is known
+            chunks_text = " ".join(h.text for h in hits)
+
+            said: list[str] = []             # everything yielded so far (a number is judged in context: "X" + "200" is a model code)
+
+            def number_ok() -> bool:
+                return not numbers_mismatch(chunks_text, "".join(said) + "".join(pending))
+
+            def decide() -> str | None:
+                """Head = buffered tokens minus a trailing, possibly incomplete number (that moves to `pending`)."""
+                while buf and is_digitish(buf[-1]):
+                    pending.insert(0, buf.pop())
+                return self._replacement(question, hits, "".join(buf), ref)
+
             for ev in gen:
                 if cancel.is_set():
                     return
                 tok = ev["choices"][0]["delta"].get("content")
                 if not tok:
                     continue
-                if decided:
-                    yield tok
-                    continue
-                buf.append(tok)
-                if len(buf) >= _DECIDE_TOKENS:
+                if not decided:
+                    buf.append(tok)
+                    if len(buf) < _DECIDE_TOKENS:
+                        continue
                     decided = True
-                    if not (_terms("".join(buf)) & ref):  # extractive fallback: answer ignores the context
-                        yield _first_sentence(hits[0].text)
+                    fix = decide()
+                    if fix is not None:
+                        yield fix
                         return
+                    said.append("".join(buf))
                     yield "".join(buf)
+                    continue
+                if is_digitish(tok):
+                    pending.append(tok)
+                    continue
+                if pending:
+                    if not number_ok():                      # invented figure: replace the rest with the real sentence
+                        yield extractive_answer(question, [h.text for h in hits])
+                        return
+                    said.append("".join(pending))
+                    yield "".join(pending)
+                    pending.clear()
+                said.append(tok)
+                yield tok
             if not decided and buf:  # short answer that ended before the decision point
-                text = "".join(buf)
-                yield text if (_terms(text) & ref) else _first_sentence(hits[0].text)
+                fix = decide()
+                text = "".join(buf) + "".join(pending)
+                yield text if fix is None and (not pending or number_ok()) else extractive_answer(question, [h.text for h in hits])
+            elif pending:
+                yield "".join(pending) if number_ok() else extractive_answer(question, [h.text for h in hits])
+            if decided and not cancel.is_set() and expects_number(question) and not has_number("".join(said) + "".join(pending)) \
+                    and has_number(chunks_text):
+                yield " " + extractive_answer(question, [h.text for h in hits])   # asked "how far/long/much": the figure is in the text
         finally:
             if gen is not None:
                 gen.close()
