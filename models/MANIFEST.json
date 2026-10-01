@@ -17,6 +17,13 @@
       "joiner-epoch-99-avg-1.int8.onnx": "a7cf9d82757bdcf786059454495a9ca95e4bd7347f72473fc08d794475c36169"
     }
   },
+  "asr_zh_ctc": {
+    "repo": "csukuangfj/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01",
+    "license": "Apache-2.0",
+    "files": {
+      "model.int8.onnx": "68c9c943840f7d9cf3e8a4970ba50f404feb5277f611fa82b7e72267786fa84a"
+    }
+  },
   "tts_en": {
     "repo": "csukuangfj/vits-piper-en_US-lessac-low",
     "license": "Piper MIT; voice dataset: Blizzard 2013 Lessac licence (custom, not OSI/CC)",

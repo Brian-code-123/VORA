@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -27,6 +28,7 @@ class Settings(BaseSettings):
     max_text_frame_bytes: int = 4096
     allowed_origins: tuple[str, ...] = ()   # extra allowed Origin values; same-origin (Origin host == Host) is always allowed
     asr_threads: int = 2
+    asr_zh_model: Literal["zipformer14m", "ctc_small"] = "ctc_small"   # AISHELL-1 CER 10.9% (wrapper, before no-reset) vs 16.0% for the 14M transducer
     llm_threads: int = 4
     ssl_cert: str = ""
     ssl_key: str = ""

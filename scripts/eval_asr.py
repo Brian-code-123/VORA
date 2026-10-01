@@ -5,6 +5,7 @@ import io
 import json
 import re
 import time
+from pathlib import Path
 
 import numpy as np
 import soundfile as sf
@@ -19,13 +20,25 @@ SETS = {
     "en_librispeech_clean": ("openslr/librispeech_asr", "clean", "en", "text"),
     "en_fleurs": ("google/fleurs", "en_us", "en", "transcription"),
     "zh_fleurs": ("google/fleurs", "cmn_hans_cn", "zh", "transcription"),
+    "zh_aishell": ("shenyunhang/AISHELL-1", None, "zh", None),   # Apache-2.0; 20 test speakers, per-file wavs
 }
+AISHELL_REV = "2724409d538167445e43ebf846990319f12a1cbf"
+
+
+def norm_zh(t: str) -> str:
+    """Scoring only: Chinese numerals -> Arabic (FLEURS/AISHELL refs use digits, ASR says 十五), then keep CJK + alnum."""
+    import cn2an
+    try:
+        t = cn2an.transform(t, "cn2an")
+    except Exception:  # noqa: BLE001 - odd numeral strings: score them as-is
+        pass
+    return re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]+", "", t.lower())
 
 
 def norm(t: str, lang: str) -> str:
     t = t.lower()
     if lang == "zh":
-        return re.sub(r"[\s\W_]+", "", t)
+        return norm_zh(t)
     return " ".join(re.sub(r"[^a-z0-9' ]+", " ", t).split())
 
 
@@ -64,7 +77,31 @@ def load(name: str, n: int):
     return out
 
 
+def _stream_aishell(n: int):
+    """n clips spread over the 20 AISHELL-1 test speakers (per-file download, ~150 KB each)."""
+    import collections
+    from huggingface_hub import HfApi, hf_hub_download
+    files = [f for f in HfApi().list_repo_files("shenyunhang/AISHELL-1", repo_type="dataset", revision=AISHELL_REV) if "/wav/test/" in f]
+    by = collections.defaultdict(list)
+    for f in sorted(files):
+        by[f.split("/")[-2]].append(f)
+    per = -(-n // len(by))
+    pick = [f for spk in sorted(by) for f in by[spk][:per]][:n]
+    tr = Path(hf_hub_download("shenyunhang/AISHELL-1", "data_aishell/transcript/aishell_transcript_v0.8.txt", repo_type="dataset", revision=AISHELL_REV))
+    text = {l.split(" ", 1)[0]: l.split(" ", 1)[1].replace(" ", "").strip() for l in tr.read_text(encoding="utf-8").splitlines() if " " in l}
+    out = []
+    for f in pick:
+        p = hf_hub_download("shenyunhang/AISHELL-1", f, repo_type="dataset", revision=AISHELL_REV)
+        x, sr = sf.read(p, dtype="float32")
+        assert sr == SR, sr
+        pcm = (x / (np.abs(x).max() + 1e-9) * 0.5 * 32767).astype(np.int16)
+        out.append((text[Path(f).stem], pcm))
+    return out
+
+
 def _stream(name: str, n: int):
+    if name == "zh_aishell":
+        return _stream_aishell(n)
     repo, cfg, lang, col = SETS[name]
     ds = load_dataset(repo, cfg, split="test", streaming=True).cast_column("audio", Audio(decode=False))
     out = []
