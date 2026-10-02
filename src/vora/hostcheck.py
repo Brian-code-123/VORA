@@ -45,12 +45,28 @@ def write_result(path, obj) -> bool:
     return True
 
 
+_PROCS: dict[int, "psutil.Process"] = {}
+
+
 def _sample() -> tuple[float, float]:
-    """(system CPU %, this process tree's CPU % normalised to the whole machine)."""
-    me = psutil.Process()
-    procs = [me] + me.children(recursive=True)
-    own = sum(p.cpu_percent(interval=None) for p in procs) / (psutil.cpu_count(logical=True) or 1)
-    return psutil.cpu_percent(interval=None), own
+    """(system CPU %, this process tree's CPU % normalised to the whole machine). Process objects are cached because
+    the first cpu_percent() call on a new object always returns 0.0."""
+    me = _PROCS.setdefault(os.getpid(), psutil.Process())
+    alive = {me.pid: me}
+    try:
+        for c in me.children(recursive=True):
+            alive[c.pid] = _PROCS.setdefault(c.pid, c)
+    except psutil.Error:
+        pass
+    for pid in [p for p in _PROCS if p not in alive]:
+        _PROCS.pop(pid, None)
+    own = 0.0
+    for p in alive.values():
+        try:
+            own += p.cpu_percent(interval=None)
+        except psutil.Error:
+            pass
+    return psutil.cpu_percent(interval=None), own / (psutil.cpu_count(logical=True) or 1)
 
 
 class QuietMonitor:

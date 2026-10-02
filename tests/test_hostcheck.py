@@ -67,3 +67,22 @@ def test_write_result_only_when_enabled(tmp_path, monkeypatch):
     assert h.write_result(tmp_path / "x.json", {"a": 1}) is False and not (tmp_path / "x.json").exists()
     monkeypatch.setenv("VORA_WRITE_RESULTS", "1")
     assert h.write_result(tmp_path / "x.json", {"a": 1}) is True and (tmp_path / "x.json").exists()
+
+
+def test_quiet_monitor_attributes_our_children_cpu_to_us():
+    """8 busy child processes are OUR load, not 'other apps': the monitor must not call that run busy. (psutil returns 0.0
+    for the first cpu_percent() call on a Process object, so the monitor has to keep its Process objects.)"""
+    import subprocess
+    import sys
+    import time
+    import vora.hostcheck as h
+    kids = [subprocess.Popen([sys.executable, "-c", "while True: pass"]) for _ in range(8)]
+    try:
+        m = h.QuietMonitor(interval=0.3)
+        m.start()
+        time.sleep(2.0)
+        r = m.stop()
+    finally:
+        for k in kids:
+            k.kill()
+    assert r["p90_other_cpu_pct"] <= 35, r      # system is ~100% busy, but it is all ours
