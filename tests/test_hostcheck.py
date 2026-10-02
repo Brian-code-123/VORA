@@ -31,14 +31,25 @@ def test_is_quiet_uses_instant_cpu_when_load_not_given(monkeypatch):
 
 def test_quiet_monitor_ignores_our_own_cpu_and_flags_other_load(monkeypatch):
     import vora.hostcheck as h
-    seq = iter([(90.0, 85.0), (95.0, 40.0)])            # (system %, own %): first sample is all us, second has 55% from others
+    seq = iter([(90.0, 85.0)] + [(95.0, 40.0)] * 100)    # (system %, own %): first sample is all us, then 55% from others, sustained
 
-    m = h.QuietMonitor(interval=0.01, sampler=lambda: next(seq, (10.0, 5.0)))
+    m = h.QuietMonitor(interval=0.005, sampler=lambda: next(seq, (95.0, 40.0)))
     m.start()
     import time
-    time.sleep(0.2)
+    time.sleep(0.3)
     r = m.stop()
     assert r["max_other_cpu_pct"] == 55.0 and r["quiet"] is False
+
+
+def test_quiet_monitor_one_short_burst_does_not_disqualify_a_run():
+    import time
+    import vora.hostcheck as h
+    seq = iter([(10.0, 5.0)] + [(8.0, 5.0)] * 40 + [(90.0, 10.0)] + [(8.0, 5.0)] * 40)       # one 80% burst of another app
+    m = h.QuietMonitor(interval=0.002, sampler=lambda: next(seq, (8.0, 5.0)))
+    m.start()
+    time.sleep(0.4)
+    r = m.stop()
+    assert r["max_other_cpu_pct"] >= 80 and r["p90_other_cpu_pct"] <= 5 and r["quiet"] is True
 
 
 def test_quiet_monitor_quiet_when_only_we_run():

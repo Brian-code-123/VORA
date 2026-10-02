@@ -43,7 +43,7 @@ async def run(models, s: Settings, n: int) -> dict:
     worst = max(a50, b50)
     return {"single_p50_ms": round(s50), "user_a_p50_ms": round(a50), "user_b_p50_ms": round(b50), "concurrent_p50_ms": round(worst),
             "ratio": round(worst / s50, 2), "n_single": len(single), "n_a": len(pair_a), "n_b": len(pair_b), "n_concurrent": len(pair_a) + len(pair_b),
-            "uss_delta_mb": round(uss_mb() - u0, 1), "quiet": qm["quiet"], "max_other_cpu_pct": qm["max_other_cpu_pct"],
+            "uss_delta_mb": round(uss_mb() - u0, 1), "quiet": qm["quiet"], "max_other_cpu_pct": qm["max_other_cpu_pct"], "p90_other_cpu_pct": qm["p90_other_cpu_pct"],
             "speculation_during_pairs": "off (active_sessions=2)",
             "summary": f"2 users: A p50 {a50:.0f}, B p50 {b50:.0f} ms vs single {s50:.0f} ms (worst x{worst / s50:.2f})", "ok": worst <= 2 * s50}
 
