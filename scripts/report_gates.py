@@ -50,8 +50,13 @@ def evaluate(results_dir: Path) -> list[Gate]:
     else:
         gs.append(Gate("G1", "end-to-end latency (en audio)", "p50 <=1500 ms, p90 <=1800 ms", "no data", None, quiet))
 
-    t = ((bench or {}).get("latency_ms_oracle_text") or {}).get("tts_first_chunk")
-    gs.append(Gate("G2", "TTS first chunk", "p95 <=200 ms", f"p95 {t['p95']:.0f} ms" if t else "no data", (t["p95"] <= 200) if t else None, quiet))
+    tf = _load(d, "tts_first_chunk.json")
+    if tf:   # dedicated test: text of the real first chunk -> first PCM piece (the bench metric also waits for LLM tokens)
+        worst = max(tf["en_p95_ms"], tf["zh_p95_ms"])
+        gs.append(Gate("G2", "TTS first chunk", "p95 <=200 ms", f"en p95 {tf['en_p95_ms']:.0f} / zh {tf['zh_p95_ms']:.0f} ms", worst <= 200, bool(tf.get("quiet"))))
+    else:
+        t = ((bench or {}).get("latency_ms_oracle_text") or {}).get("tts_first_chunk")
+        gs.append(Gate("G2", "TTS first chunk", "p95 <=200 ms", f"p95 {t['p95']:.0f} ms" if t else "no data", (t["p95"] <= 200) if t else None, quiet))
 
     gs.append(Gate("G3", "ASR+RAG+TTS memory", "<=500 MB (USS)", f"{mem['asr_rag_tts']:.0f} MB" if mem else "no data",
                    (mem["asr_rag_tts"] <= 500) if mem else None, quiet))
