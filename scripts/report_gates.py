@@ -93,6 +93,10 @@ def evaluate(results_dir: Path) -> list[Gate]:
         gs.append(Gate("G8", "permissive licences", "no custom/unknown", f"non-permissive: {', '.join(bad) or 'none'}", not bad, True))
     else:
         gs.append(Gate("G8", "permissive licences", "no custom/unknown", "no MANIFEST", None, True))
+    for g in gs:   # a latency number measured while other apps used the CPU proves neither pass nor fail
+        if g.id in ("G1", "G2", "G6") and not g.quiet and g.ok is not None:
+            g.measured = f"busy host, not conclusive ({'would pass' if g.ok else 'would fail'}): {g.measured}"
+            g.ok = None
     return gs
 
 

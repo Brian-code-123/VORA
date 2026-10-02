@@ -45,3 +45,11 @@ def test_report_gates_reads_current_results():
     from pathlib import Path
     gs = evaluate(Path(__file__).resolve().parent.parent / "results")
     assert {g.id for g in gs} == {f"G{i}" for i in range(1, 9)}
+
+
+def test_latency_gates_are_unverified_not_pass_or_fail_on_a_busy_host(tmp_path):
+    base(tmp_path, p50_total=1000, quiet_load=9.0)          # numbers would pass, but the host was busy
+    g = by_id(evaluate(tmp_path))
+    assert g["G1"].ok is None and "busy host" in g["G1"].measured
+    base(tmp_path, p50_total=1700, quiet_load=9.0)          # numbers would fail, but the host was busy
+    assert by_id(evaluate(tmp_path))["G1"].ok is None
