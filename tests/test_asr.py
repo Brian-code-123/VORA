@@ -141,3 +141,30 @@ def test_stream_resets_after_20s_of_audio_at_a_final(recs):
     finals = [e.text for e in ev if e.kind == "final"]
     assert len(finals) == 4, finals                           # no spurious one-letter final from trailing noise
     assert sess._stream_samples < 20 * SR
+
+
+def _session_over_clips(recs, lang, clips, gap_s=1.2):
+    """One AsrSession, many utterances in a row (what a real conversation is). Returns (finals-per-clip, session)."""
+    sess = AsrSession(recs, lang)
+    per_clip, t = [], 0.0
+    for pcm in clips:
+        x = np.concatenate([pcm, np.zeros(int(gap_s * SR), dtype=np.int16)])
+        got = []
+        for i in range(0, len(x), 1600):
+            got += [e.text for e in sess.feed(x[i:i + 1600].tobytes()) if e.kind == "final"]
+        per_clip.append(" ".join(got))
+    return per_clip, sess
+
+
+@pytest.mark.skipif(not (Path(__file__).resolve().parent.parent / "data/eval_cache/en_librispeech_clean.npz").exists(), reason="eval cache missing")
+def test_multi_utterance_english_session_keeps_each_final_clean(recs):
+    """Beam search rewrites the last words after an endpoint; slicing by `raw.startswith(emitted)` then returned the WHOLE
+    text (previous utterance repeated). Eight clips in one session must each yield their own words."""
+    import scripts.eval_asr as E
+    data = E.load("en_librispeech_clean", 8)
+    finals, sess = _session_over_clips(recs, "en", [p for _, p in data])
+    refs = [E.norm(r, "en") for r, _ in data]
+    hyps = [E.norm(f, "en") for f in finals]
+    err = wer(refs, hyps)
+    print("multi-utterance en WER:", round(err, 3), "| rewrites:", sess.rewrites)
+    assert err <= 0.15, (err, list(zip(refs, hyps)))

@@ -52,7 +52,6 @@ def sanitize_for_tts(text: str) -> str:
     # model codes: VORA-X200 -> "VORA X 200" (letters and digits read separately)
     t = re.sub(r"\b([A-Za-z]{2,})-([A-Za-z])(\d+)\b", r"\1 \2 \3", t)
     t = re.sub(r"\b([A-Za-z])(\d+)\b", r"\1 \2", t)
-    t = re.sub(r"(?<=[一-鿿])(\d+(?:\.\d+)?)(?=[一-鿿])", lambda m: _zh_digits(m.group(1)), t)
     return re.sub(r"[ \t]+", " ", t).strip()
 
 

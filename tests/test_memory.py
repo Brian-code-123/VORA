@@ -47,8 +47,8 @@ def test_uss_asr_rag_tts_le_500mb():
     llm = measure("llm")
     m = {"asr_rag_tts": runs[1], "asr_rag_tts_runs": [round(r, 1) for r in runs], "llm": llm}
     print("USS MB:", json.dumps({k: (round(v, 1) if not isinstance(v, list) else v) for k, v in m.items()}))
-    (S.models_dir.parent / "results").mkdir(exist_ok=True)
-    (S.models_dir.parent / "results" / "memory.json").write_text(json.dumps({**{k: (round(v, 1) if not isinstance(v, list) else v) for k, v in m.items()}, "metric": "USS"}))
+    from vora.hostcheck import write_result
+    write_result(S.models_dir.parent / "results" / "memory.json", {**{k: (round(v, 1) if not isinstance(v, list) else v) for k, v in m.items()}, "metric": "USS"})
     assert runs[1] <= 500, m
 
 
