@@ -3,15 +3,15 @@
   "id": "G1",
   "name": "end-to-end latency (en audio)",
   "target": "p50 <=1500 ms, p90 <=1800 ms",
-  "measured": "p50 1124 / p90 1418 ms",
-  "ok": true,
-  "quiet": true
+  "measured": "busy host, not conclusive (would pass): p50 1138 / p90 1570 ms",
+  "ok": null,
+  "quiet": false
  },
  {
   "id": "G2",
   "name": "TTS first chunk",
   "target": "p95 <=200 ms",
-  "measured": "en p95 149 / zh 181 ms",
+  "measured": "en p95 147 / zh 173 ms",
   "ok": true,
   "quiet": true
  },
@@ -19,7 +19,7 @@
   "id": "G3",
   "name": "ASR+RAG+TTS memory",
   "target": "<=500 MB (USS)",
-  "measured": "264 MB",
+  "measured": "272 MB",
   "ok": true,
   "quiet": true
  },
@@ -43,9 +43,9 @@
   "id": "G6",
   "name": "2 concurrent users",
   "target": "each p50 <=2x single",
-  "measured": "\"2 users p50 1298 ms vs single 1193 ms (x1.09)\"",
-  "ok": true,
-  "quiet": true
+  "measured": "busy host, not conclusive (would pass): \"2 users: A p50 1279, B p50 1355 ms vs single 959 ms (worst x1.41)\"",
+  "ok": null,
+  "quiet": false
  },
  {
   "id": "G7",
