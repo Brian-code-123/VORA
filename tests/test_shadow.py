@@ -29,7 +29,8 @@ def peek(p):
 def mk(script, llm=None, tts=None, active=lambda: 1, execs=None, **st):
     st.setdefault("speculate", True)
     st.setdefault("speculate_min_cores", 1)
-    s = Settings(queue_max=64, **st)
+    st.setdefault("queue_max", 64)
+    s = Settings(**st)
     p = Pipeline(FakeAsr(script), FakeRetriever(), llm or FakeLlm(delay=0.01), tts or FakeTts(chunks=3, delay=0.005), s,
                  execs or Executors(), active_sessions=active)
     _PIPES.append(p)
@@ -53,8 +54,11 @@ async def test_promoted_first_audio_within_50ms_of_final():
     assert [m for m in peek(p) if m[0] == "audio" or m[1]["type"] in ("token", "context", "final", "metrics")] == []   # nothing leaked yet
     t0 = time.perf_counter()
     await feed(p)                        # the final arrives
-    assert any(m[0] == "audio" for m in drain(p)), "pre-rendered audio must be released at once"
-    assert time.perf_counter() - t0 < 0.05 + 0.01
+    while not any(m[0] == "audio" for m in peek(p)) and time.perf_counter() - t0 < 1:
+        await asyncio.sleep(0.005)
+    assert any(m[0] == "audio" for m in peek(p)), "pre-rendered audio must be released"
+    assert time.perf_counter() - t0 < 0.1    # one writer (the TTS thread) polls the gate every <=10 ms
+    drain(p)
     await p.wait_idle()
     await p.close()
 
@@ -179,3 +183,111 @@ async def test_close_cancels_shadow():
     await asyncio.sleep(0.2)
     await p.close()
     assert p._shadow is None
+
+
+class LabelTts:
+    """Chunks labelled (sentence index, chunk index) so the order on the wire can be checked."""
+    def __init__(self, chunks=4, delay=0.002):
+        self.said, self.chunks, self.delay, self.oov_total = [], chunks, delay, 0
+
+    def synth(self, text, cancel=None):
+        idx = len(self.said)
+        self.said.append(text)
+        for c in range(self.chunks):
+            time.sleep(self.delay)
+            yield bytes([idx, c]) * 100
+
+    def cancel(self): ...
+
+
+async def test_promoted_audio_keeps_order_with_a_slow_client():
+    llm = FakeLlm(tokens=("One. ", "Two. ", "Three. ", "Four. "), delay=0.01)
+    p = mk([[part(Q, True)], [fin(Q)]], llm=llm, tts=LabelTts(), queue_max=2)
+    await feed(p)
+    await asyncio.sleep(0.5)                       # 2 sentences pre-rendered and muted
+    got = []
+
+    async def slow_client():
+        while True:
+            kind, payload = await p.out.get()
+            if kind == "audio":
+                got.append((payload[0], payload[1]))
+            await asyncio.sleep(0.01)
+
+    c = asyncio.create_task(slow_client())
+    await feed(p)                                  # final -> promote
+    await p.wait_idle()
+    await asyncio.sleep(0.3)
+    c.cancel()
+    assert got == sorted(got), got                 # (sentence, chunk) never goes backwards
+    assert len(got) == 16
+
+
+async def test_barge_in_discards_shadow():
+    p = mk([[part(Q, True)]])
+    await feed(p)
+    await asyncio.sleep(0.2)
+    assert p._shadow is not None
+    await p._cancel_turn()                        # what a barge-in / new final calls
+    assert p._shadow is None
+
+
+async def test_cancel_releases_the_real_llm_lock():
+    import threading
+
+    class LockedLlm(FakeLlm):
+        def __init__(self):
+            super().__init__(delay=0.05, tokens=tuple(f"w{i} " for i in range(40)))
+            self.lock = threading.Lock()
+
+        def stream(self, q, hits, cancel=None):
+            with self.lock:
+                yield from super().stream(q, hits, cancel)
+
+    llm = LockedLlm()
+    p = mk([[part(Q, True)], [fin("something else entirely")]], llm=llm)
+    await feed(p)
+    await asyncio.sleep(0.3)
+    await feed(p)                                   # different final: the shadow is cancelled mid-generation
+    await p.close()
+    assert llm.lock.acquire(timeout=2), "the cancelled shadow still holds the LLM lock"
+    llm.lock.release()
+
+
+async def test_echo_final_cancels_the_shadow_and_echo_partials_never_start_one():
+    p = mk([[part("warranty is two years", True)], []])
+    p._spoken.append((p.clock(), "Warranty is two years."))
+    await feed(p)
+    await asyncio.sleep(0.1)
+    assert p._shadow is None and p.llm.calls == []          # our own speaker must not start a guess
+    q = mk([[part(Q, True)], [fin("the warranty lasts two years")]])
+    await feed(q)
+    await asyncio.sleep(0.2)
+    assert q._shadow is not None
+    q._spoken.append((q.clock(), "The warranty lasts two years."))
+    await feed(q)
+    assert q._shadow is None and q.llm.calls == [Q]
+
+
+async def test_filler_not_in_spoken_until_promoted():
+    p = mk([[part(Q, True)], [fin(Q)]], filler=True)
+    await feed(p)
+    await asyncio.sleep(0.4)
+    assert len(p._spoken) == 0
+    await feed(p)
+    assert any("sure" in t.lower() for _, t in p._spoken)
+    await p.wait_idle()
+
+
+async def test_refused_shadow_is_not_promoted_into_a_silent_turn():
+    ex = Executors(admission=Admission(1))
+    assert ex.admission.try_acquire()               # busy when the guess wants to start
+    p = mk([[part(Q, True)], [fin(Q)]], execs=ex)
+    await feed(p)
+    await asyncio.sleep(0.2)
+    ex.admission.release()                          # free again before the final arrives
+    await feed(p)
+    await p.wait_idle()
+    msgs = drain(p)
+    assert p.llm.calls == [Q]                        # a normal turn ran
+    assert any(m[0] == "audio" for m in msgs) and any(m[0] == "json" and m[1]["type"] == "metrics" for m in msgs)

@@ -20,8 +20,8 @@ def test_sanitize_spells_model_codes():
     assert sanitize_for_tts("VORA-X200") == "VORA X 200"
 
 
-def test_sanitize_zh_digits():
-    assert sanitize_for_tts("保養期3.5年") == "保養期三点五年"
+def test_sanitize_leaves_digits_for_the_zh_number_reader():
+    assert sanitize_for_tts("保養期3.5年") == "保養期3.5年"
 
 
 def test_split_by_script_mixed_sentence():
@@ -143,10 +143,10 @@ def test_first_chunk_p95_le_200ms_real_chunker(tts):
                 ts[lang].append((time.perf_counter() - t0) * 1000)
     p95 = {k: sorted(v)[max(0, int(len(v) * 0.95) - 1)] for k, v in ts.items()}
     print("first-chunk p95 ms:", p95)
-    out = S.models_dir.parent / "results" / "tts_first_chunk.json"
-    out.parent.mkdir(exist_ok=True)
-    out.write_text(json.dumps({"en_p95_ms": round(p95["en"], 1), "zh_p95_ms": round(p95["zh"], 1), "n_en": len(ts["en"]), "n_zh": len(ts["zh"]),
-                               "first_chunk_words": words, "quiet": is_quiet()}))
+    from vora.hostcheck import write_result
+    write_result(S.models_dir.parent / "results" / "tts_first_chunk.json",
+                 {"en_p95_ms": round(p95["en"], 1), "zh_p95_ms": round(p95["zh"], 1), "n_en": len(ts["en"]), "n_zh": len(ts["zh"]),
+                  "first_chunk_words": words, "samples": "3 passes over the same 20 en / 6 zh first-chunk texts", "quiet": is_quiet()})
     assert max(p95.values()) <= 200, p95
 
 
@@ -195,3 +195,52 @@ def test_zh_digits_with_spaces_do_not_hit_the_voice_as_oov(tts, capfd):
     pcm = b"".join(tts.synth("按住复位键 10 秒"))
     assert len(pcm) > 16000
     assert "OOV 10" not in capfd.readouterr().err
+@needs_models
+def test_kb_zh_chars_all_in_lexicon(tts):
+    import re
+    txt = (S.kb_dir / "zh.md").read_text(encoding="utf-8")
+    missing = sorted({c for c in re.findall(r"[一-鿿]", txt) if c not in tts.zh_lexicon})
+    assert missing == [], missing
+
+
+@needs_models
+def test_oov_char_logged_and_counted(tts, caplog):
+    import logging
+    before = tts.oov_total
+    with caplog.at_level(logging.WARNING, logger="vora"):
+        list(tts.synth("这个龼字很有意思"))
+    assert tts.oov_total > before
+    assert any("OOV" in r.message for r in caplog.records)
+
+
+@needs_models
+def test_all_oov_text_does_not_crash(tts):
+    out = list(tts.synth("词词"))   # may be empty audio; must not raise
+    assert isinstance(out, list)
+
+
+def test_ensure_patched_lexicon_drops_tokens_missing_from_tokens_txt(tmp_path):
+    from vora.tts import ensure_patched_lexicon
+    (tmp_path / "tokens.txt").write_text("a 0\nt 1\ns 2\n", encoding="utf-8")
+    (tmp_path / "lexicon.txt").write_text("次 t s a ̪\n词 t s ̪\n", encoding="utf-8")
+    p = ensure_patched_lexicon(tmp_path)
+    lines = p.read_text(encoding="utf-8").splitlines()
+    assert lines == ["次 t s a", "词 t s"]
+    assert ensure_patched_lexicon(tmp_path) == p   # idempotent, original untouched
+    assert "̪" in (tmp_path / "lexicon.txt").read_text(encoding="utf-8")
+
+
+def test_usable_chars_uses_patched_lexicon(tmp_path):
+    from vora.tts import _usable_zh_chars
+    (tmp_path / "tokens.txt").write_text("a 0\nt 1\n", encoding="utf-8")
+    (tmp_path / "lexicon.txt").write_text("次 t a ̪\n", encoding="utf-8")
+    assert _usable_zh_chars(tmp_path) == {"次"}                  # raw lexicon would make it unusable; patched makes it usable
+    assert not (tmp_path / "lexicon.txt").read_text(encoding="utf-8").startswith("次 t a\n")
+
+
+
+def test_unspaced_digits_inside_chinese_are_read_as_numbers_not_digit_by_digit():
+    """sanitize used to turn 续航10小时 into 续航一零小时 before zh_numbers ever saw it."""
+    from vora.tts import sanitize_for_tts, split_by_script, zh_numbers
+    spoken = "".join(zh_numbers(t) if lang == "zh" else t for lang, t in split_by_script(sanitize_for_tts("续航10小时，售价199元，保修3.5年")))
+    assert "续航十小时" in spoken and "一百九十九元" in spoken and "三点五年" in spoken, spoken

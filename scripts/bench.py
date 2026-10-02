@@ -79,9 +79,10 @@ def _finish(metrics: dict | None, seen: dict) -> dict | None:
     return {**metrics, "heard": seen.get("final", {}).get("text"), "context": seen.get("context", {}).get("ids")}
 
 
-async def one_turn(models, s: Settings, lang: str, pcm: np.ndarray, tail_s: float = 1.6) -> dict | None:
+async def one_turn(models, s: Settings, lang: str, pcm: np.ndarray, tail_s: float = 1.6, active_sessions=None) -> dict | None:
     """Audio mode: real ASR on (synthetic) speech, real-time paced. Includes ASR mistakes."""
-    pipe = Pipeline(models.make_asr(lang), models.retriever, models.llm, models.tts, s, models.executors)
+    kw = {"active_sessions": active_sessions} if active_sessions else {}
+    pipe = Pipeline(models.make_asr(lang), models.retriever, models.llm, models.tts, s, models.executors, **kw)
     seen, stop = {}, asyncio.Event()
     col = asyncio.create_task(_collect(pipe, seen, stop))
     x = np.concatenate([np.zeros(SR // 2, dtype=np.int16), pcm, np.zeros(int(tail_s * SR), dtype=np.int16)])
@@ -130,6 +131,9 @@ async def main() -> None:
     reason = perf_skip_reason()
     if reason and not a.force:
         raise SystemExit(f"refusing to benchmark: {reason}. Use --force to record anyway (quiet=false).")
+    from vora.hostcheck import QuietMonitor
+    mon = QuietMonitor()
+    mon.start()
     from vora.server import Models
     s = Settings() if a.speculate == "default" else Settings(speculate=(a.speculate == "on"))
     proc = psutil.Process()
@@ -158,8 +162,8 @@ async def main() -> None:
     num = lambda rs: [{k: v for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)} for r in rs]
     lat, olat = summarize(num(rows)), summarize(num(orows))
     est = {"p50": round(lat["asr_final"]["p50"] + olat["total"]["p50"], 1), "p95": round(lat["asr_final"]["p95"] + olat["total"]["p95"], 1)} if olat else {}
-    from vora.hostcheck import is_quiet
-    res = {"quiet": is_quiet(), "host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "speculate": a.speculate, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
+    qm = mon.stop()
+    res = {"quiet": qm["quiet"], "max_other_cpu_pct": qm["max_other_cpu_pct"], "host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "speculate": a.speculate, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
            "rss_delta_load_mb": round((proc.memory_info().rss - rss0) / 2**20), "rows": rows, "oracle_rows": orows}
     p = ROOT / "results"
     p.mkdir(exist_ok=True)

@@ -1,3 +1,4 @@
+import os
 import re
 from dataclasses import dataclass
 from typing import Literal
@@ -89,6 +90,7 @@ class AsrSession:
         self._emitted = ""       # raw recognizer text already sent as finals
         self._stream_samples = 0
         self._since_final = 0
+        self.rewrites = 0         # frames where the recognizer rewrote text we had already sent as a final
         self._hold_since = None   # stream-sample mark where the current hold began
         self._hold_text = ""
         self._held = 0            # samples held for the current utterance (capped)
@@ -110,7 +112,14 @@ class AsrSession:
         while self.rec.is_ready(self.stream):
             self.rec.decode_stream(self.stream)
         raw = self._raw()
-        new = raw[len(self._emitted):] if raw.startswith(self._emitted) else raw   # CTC/transducer text is append-only
+        if raw.startswith(self._emitted):
+            new = raw[len(self._emitted):]
+        else:                                  # beam search rewrote the tail of what we already sent
+            self.rewrites += 1
+            k = len(os.path.commonprefix([raw, self._emitted]))
+            if " " in raw and k < len(raw):
+                k = raw.rfind(" ", 0, k + 1) + 1       # snap back to a word boundary (English); Chinese has none
+            new = raw[k:]
         text = _norm(new)
         events: list[AsrEvent] = []
         if text and text != self._last:

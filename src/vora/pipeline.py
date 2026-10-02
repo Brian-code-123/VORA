@@ -261,9 +261,11 @@ class Pipeline:
         if not text:
             return
         if self._is_echo(text):
+            await self._cancel_shadow()                # a guess built on our own speaker's echo
             await self._emit({"type": "echo_ignored", "text": text})
             return
-        if self._shadow is not None and _same_text(self._shadow.text, text) and not self._turn_active():
+        if self._shadow is not None and _same_text(self._shadow.text, text) and not self._turn_active() \
+                and not self._shadow.task.done():       # a refused / failed guess has nothing to promote
             await self._promote_shadow(text, speech_end, held_ms)
             return
         await self._cancel_shadow()
@@ -305,7 +307,7 @@ class Pipeline:
         return True
 
     def _maybe_shadow(self, text: str) -> None:
-        if not self._shadow_wanted(text):
+        if not self._shadow_wanted(text) or self._is_echo(text):
             return
         gate, ev = ShadowGate(), threading.Event()
         trace = LatencyTrace(self.clock)
@@ -341,12 +343,7 @@ class Pipeline:
         await self._emit_bg({"type": "context", "ids": g.context_ids})
         for t in tokens:
             await self._emit_bg({"type": "token", "text": t}, droppable=True)
-        for chunk, is_filler in g.take_audio():
-            now = self.clock()
-            g.stamps.setdefault("first_audio", now)
-            if not is_filler:
-                g.stamps.setdefault("first_content", now)
-            await self._put_audio(chunk, sh.ev)
+        # buffered audio is released by the TTS thread (the only writer) or, if it already finished, by _run_turn
 
     async def _run_turn(self, text: str, trace: LatencyTrace, ev: threading.Event, prefetched, held_ms: float = 0.0,
                         gate: ShadowGate | None = None) -> None:
@@ -357,8 +354,16 @@ class Pipeline:
             gate.context_ids = [h.chunk_id for h in hits]
         sent_q: queue.Queue = queue.Queue()
         stamps: dict[str, float] = gate.stamps if gate is not None else {}
+        def record_spoken(sentence: str) -> None:
+            if gate is not None:
+                with gate.lock:
+                    if not gate.open.is_set():
+                        gate.spoken.append((self.clock(), sentence))
+                        return
+            self._spoken.append((self.clock(), sentence))
+
         if self.s.filler:
-            self._spoken.append((self.clock(), FILLER[_lang(text)]))
+            record_spoken(FILLER[_lang(text)])
             sent_q.put((FILLER[_lang(text)], True))
 
         admitted = self.ex.admission.try_acquire()
@@ -370,14 +375,6 @@ class Pipeline:
             if not released.is_set():
                 released.set()
                 self.ex.admission.release()
-
-        def record_spoken(sentence: str) -> None:
-            if gate is not None:
-                with gate.lock:
-                    if not gate.open.is_set():
-                        gate.spoken.append((self.clock(), sentence))
-                        return
-            self._spoken.append((self.clock(), sentence))
 
         def llm_worker() -> None:
             if ev.is_set():
@@ -425,22 +422,32 @@ class Pipeline:
                 stamps.setdefault("first_content", now)
             asyncio.run_coroutine_threadsafe(self._put_audio(chunk, ev), self.loop).result()
 
+        def flush_buffered() -> None:
+            for pc, pf in gate.take_audio():
+                emit_audio(pc, pf)
+
         def tts_worker() -> None:
             while not ev.is_set():
                 try:
-                    item = sent_q.get(timeout=0.05)
+                    item = sent_q.get(timeout=0.01 if gate is not None else 0.05)
                 except queue.Empty:
+                    if gate is not None and gate.open.is_set():
+                        flush_buffered()               # promoted while we were idle: release the pre-rendered audio now
                     continue
                 if item is None:
+                    if gate is not None and gate.open.is_set():
+                        flush_buffered()
                     return
                 sentence, is_filler = item
                 if gate is not None:
                     # muted until promoted: pre-render only the first sentences, then wait for the final text
                     rendered[0] += 1
                     while not gate.open.is_set() and rendered[0] > SHADOW_PRERENDER_SENTENCES and not ev.is_set():
-                        gate.open.wait(0.05)
+                        gate.open.wait(0.01)
                     if ev.is_set():
                         return
+                    if gate.open.is_set():
+                        flush_buffered()
                 for chunk in self.tts.synth(sentence, ev):
                     if ev.is_set():
                         return
@@ -449,8 +456,7 @@ class Pipeline:
                             if not gate.open.is_set():
                                 gate.audio.append((chunk, is_filler))
                                 continue
-                        for pc, pf in gate.take_audio():          # anything pre-rendered goes out first
-                            emit_audio(pc, pf)
+                        flush_buffered()                          # anything pre-rendered goes out first
                     emit_audio(chunk, is_filler)
 
         try:
@@ -464,6 +470,13 @@ class Pipeline:
         if gate is not None:
             while not gate.open.is_set():              # finished early (short answer): wait to be promoted or cancelled
                 await asyncio.sleep(0.01)
+            if not ev.is_set():
+                for pc, pf in gate.take_audio():       # the TTS thread is gone: this coroutine is the only writer
+                    now = self.clock()
+                    stamps.setdefault("first_audio", now)
+                    if not pf:
+                        stamps.setdefault("first_content", now)
+                    await self._put_audio(pc, ev)
         if ev.is_set():
             return
         first_content = stamps.get("first_content", stamps.get("first_audio"))

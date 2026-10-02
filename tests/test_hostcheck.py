@@ -27,3 +27,32 @@ def test_is_quiet_uses_instant_cpu_when_load_not_given(monkeypatch):
     assert h.is_quiet() is True
     monkeypatch.setattr(h.psutil, "cpu_percent", lambda interval=None: 65.0)
     assert h.is_quiet() is False
+
+
+def test_quiet_monitor_ignores_our_own_cpu_and_flags_other_load(monkeypatch):
+    import vora.hostcheck as h
+    seq = iter([(90.0, 85.0), (95.0, 40.0)])            # (system %, own %): first sample is all us, second has 55% from others
+
+    m = h.QuietMonitor(interval=0.01, sampler=lambda: next(seq, (10.0, 5.0)))
+    m.start()
+    import time
+    time.sleep(0.2)
+    r = m.stop()
+    assert r["max_other_cpu_pct"] == 55.0 and r["quiet"] is False
+
+
+def test_quiet_monitor_quiet_when_only_we_run():
+    import time
+    import vora.hostcheck as h
+    m = h.QuietMonitor(interval=0.01, sampler=lambda: (80.0, 78.0))
+    m.start()
+    time.sleep(0.1)
+    assert m.stop()["quiet"] is True
+
+
+def test_write_result_only_when_enabled(tmp_path, monkeypatch):
+    import vora.hostcheck as h
+    monkeypatch.delenv("VORA_WRITE_RESULTS", raising=False)
+    assert h.write_result(tmp_path / "x.json", {"a": 1}) is False and not (tmp_path / "x.json").exists()
+    monkeypatch.setenv("VORA_WRITE_RESULTS", "1")
+    assert h.write_result(tmp_path / "x.json", {"a": 1}) is True and (tmp_path / "x.json").exists()

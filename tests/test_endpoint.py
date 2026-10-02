@@ -18,7 +18,7 @@ def test_looks_incomplete(text, lang, expected):
 
 @pytest.mark.parametrize("text,lang,expected", [
     ("um how long is the warranty uh", "en", "how long is the warranty"), ("uh", "en", ""),
-    ("the umbrella is red", "en", "the umbrella is red"), ("嗯保修期多久呃", "zh", "保修期多久"), ("嗯", "zh", ""),
+    ("the umbrella is red", "en", "the umbrella is red"), ("嗯保修期多久呃", "zh", "保修期多久"), ("嗯", "zh", ""), ("退款金额是多少", "zh", "退款金额是多少"), ("额定功率是多少", "zh", "额定功率是多少"),
 ])
 def test_strip_disfluency(text, lang, expected):
     assert strip_disfluency(text, lang) == expected
@@ -126,3 +126,14 @@ def test_zh_incomplete_ending_is_held():
 def test_hold_disabled_when_zero():
     _, out = run([(1.0, "how long is the", False), (1.5, "how long is the", True)], 3.0, hold_ms=0)
     assert finals(out)[0][0] <= 1.6
+
+
+def test_rewritten_tail_does_not_repeat_the_whole_previous_utterance():
+    """If the recognizer rewrites the last words after a final was sent, only the genuinely new words must come out."""
+    rec, out = run([(1.0, "the cat sat on", False), (1.5, "the cat sat on", True),
+                    (2.4, "the kat sat on the mat today", False), (2.9, "the kat sat on the mat today", True)], 4.0)
+    texts = [e.text for _, e in finals(out)]
+    assert texts[0] == "the cat sat on"
+    assert texts[1] == "kat sat on the mat today"[len("kat sat on"):].strip() or texts[1] in ("the mat today", "kat sat on the mat today")
+    assert "the kat sat on the mat today" != texts[1]          # never the whole new hypothesis from the start
+    assert rec.reset_calls == 0

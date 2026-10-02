@@ -8,7 +8,7 @@ _EN_OPEN = {
 }
 _ZH_OPEN = ("的", "和", "与", "跟", "因为", "如果", "但是", "所以", "那", "然后", "还有", "或者", "在", "把", "被", "对", "给", "是", "能", "可以", "要", "会")
 _EN_FILLER = re.compile(r"\b(?:uh+|um+|erm?|ah+|hmm+|mm+)\b", re.I)
-_ZH_FILLER = re.compile(r"[嗯呃额]+")
+_ZH_FILLER = re.compile(r"[嗯呃]+")   # not 额: it is part of 金额 / 额定 / 额外
 
 
 def strip_disfluency(text: str, lang: str) -> str:
