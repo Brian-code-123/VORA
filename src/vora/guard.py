@@ -128,18 +128,30 @@ def numbers_mismatch(chunk: str, head: str) -> bool:
 
 
 def extractive_answer(question: str, chunks: list[str]) -> str:
-    """Honest answer straight from the text: the sentence that negates the topic if any, else the best-matching one."""
-    for c in chunks:
-        neg = negating_sentence(question, c)
-        if neg and is_yes_no_question(question):
-            return neg
+    """Honest answer straight from the text. Yes/no question: the sentence that negates the topic if any, else the two
+    best-matching sentences in text order (the answer is often the neighbour of the best match: "...erases settings.
+    Firmware is kept."). Other questions: the single best sentence across the chunks."""
+    yes_no = is_yes_no_question(question)
+    if yes_no:
+        for c in chunks:
+            neg = negating_sentence(question, c)
+            if neg:
+                return neg
     kws = set(_keywords(question))
     best, best_score = None, -1
     for c in chunks:
-        sent = best_sentence(c, question)
-        score = sum(1 for k in kws if k in sent.lower())
-        if score > best_score:
-            best, best_score = sent, score
+        sents = split_sentences(c)
+        scored = [(sum(1 for k in kws if k in x.lower()), i) for i, x in enumerate(sents)]
+        if not scored:
+            continue
+        top = max(scored)[0]
+        if top > best_score:
+            if yes_no and len(sents) > 1:
+                order = sorted(sorted(scored, key=lambda t: (-t[0], t[1]))[:2], key=lambda t: t[1])
+                best = " ".join(sents[i] for _, i in order)
+            else:
+                best = sents[[i for sc, i in scored if sc == top][0]] if len(sents) > 1 else c.strip()
+            best_score = top
     return best or (chunks[0] if chunks else "")
 
 
