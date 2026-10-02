@@ -1,11 +1,11 @@
 {
- "single_p50_ms": 1115,
- "concurrent_p50_ms": 1310,
- "ratio": 1.18,
+ "single_p50_ms": 1193,
+ "concurrent_p50_ms": 1298,
+ "ratio": 1.09,
  "n_single": 8,
  "n_concurrent": 16,
- "uss_delta_mb": -49.5,
- "quiet": false,
- "summary": "2 users p50 1310 ms vs single 1115 ms (x1.18)",
+ "uss_delta_mb": 4.6,
+ "quiet": true,
+ "summary": "2 users p50 1298 ms vs single 1193 ms (x1.09)",
  "ok": true
 }
