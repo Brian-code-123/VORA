@@ -46,35 +46,35 @@ One WebSocket per user carries audio up and JSON events (`partial`, `final`, `co
 
 | Gate | Target | Before | Now | Measured now |
 |---|---|---|---|---|
-| G1 end-to-end latency (en audio) | p50 <=1500 ms, p90 <=1800 ms | FAIL | **UNVERIFIED** (busy host) | busy host, not conclusive (would pass): p50 1138 / p90 1570 ms |
+| G1 end-to-end latency (en audio) | p50 <=1500 ms, p90 <=1800 ms | FAIL | **PASS** | p50 1097 / p90 1468 ms |
 | G2 TTS first chunk | p95 <=200 ms | FAIL | **PASS** | en p95 147 / zh 173 ms |
 | G3 ASR+RAG+TTS memory | <=500 MB (USS) | FAIL | **PASS** | 272 MB |
 | G4 ASR accuracy | WER/CER <=15% | UNVERIFIED | **PASS** | en 7.8%, zh AISHELL 6.0% |
 | G5 RAG top-3 + faithfulness | top-3 >=80%, faithfulness >=95% | FAIL | **FAIL** | top-3 93%, faithful 92% |
-| G6 2 concurrent users | each p50 <=2x single | UNVERIFIED | **UNVERIFIED** (busy host) | busy host, not conclusive (would pass): "2 users: A p50 1279, B p50 1355 ms vs single 959 ms (worst x1.41)" |
+| G6 2 concurrent users | each p50 <=2x single | UNVERIFIED | **PASS** | "2 users: A p50 1597, B p50 1326 ms vs single 852 ms (worst x1.87)" |
 | G7 Docker + Pi proof | image builds, health 200, Pi run | UNVERIFIED | **UNVERIFIED** | not built / no Pi |
 | G8 permissive licences | no custom/unknown | FAIL | **FAIL** | non-permissive: tts_en, tts_zh |
 
-*Host: macOS-26.6.2-arm64-arm-64bit, 8 cores, CPU-only, 1-min load average 3.3 (BUSY host: numbers are noisy). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N=42 turns, 42 distinct questions, each asked once.*
+*Host: macOS-26.6.2-arm64-arm-64bit, 8 cores, CPU-only, 1-min load average 3.9 (quiet host). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N=42 turns, 42 distinct questions, each asked once.*
 
 **Latency (ms, p50 / p95)**
 
 | Stage | Budget | Measured |
 |---|---|---|
-| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | 931 / 1386 |
-| Retrieval + LLM first token (oracle text) | ≤500 | 154 / 343 |
-| TTS first chunk (oracle text) | ≤200 | 112 / 713 |
-| RAG+LLM+TTS after final text (oracle) | | 338 / 812 |
-| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **1268 / 2197** |
-| End-to-end measured, English audio only (n=26) | ≤1500 | 1144 / 1588 |
-| End-to-end measured, Chinese audio (n=16) | ≤1500 | not meaningful: 2 of 16 turns retrieved anything (the ASR misheard the synthetic Chinese speech), so all took the fast 'not sure' path |
+| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | 911 / 1309 |
+| Retrieval + LLM first token (oracle text) | ≤500 | 148 / 341 |
+| TTS first chunk (oracle text) | ≤200 | 130 / 663 |
+| RAG+LLM+TTS after final text (oracle) | | 348 / 860 |
+| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **1258 / 2169** |
+| End-to-end measured, English audio only (n=26) | ≤1500 | 1110 / 1532 |
+| End-to-end measured, Chinese audio (n=16) | ≤1500 | not meaningful: 1 of 16 turns retrieved anything (the ASR misheard the synthetic Chinese speech), so all took the fast 'not sure' path |
 
 **Streaming vs batch baseline (same models, same questions)**
 
 | | p50 | p95 |
 |---|---|---|
-| Batch: endpoint + retrieve + full LLM + full TTS | 1827 | 3462 |
-| Streaming (estimate) | 1268 | 2197 |
+| Batch: endpoint + retrieve + full LLM + full TTS | 2017 | 3721 |
+| Streaming (estimate) | 1258 | 2169 |
 
 **ASR accuracy (streaming wrapper, 50 clips per set)**
 
@@ -117,8 +117,8 @@ One WebSocket per user carries audio up and JSON events (`partial`, `final`, `co
 
 | | p50 ms |
 |---|---|
-| single user | 959 |
-| two users (each) | 1355 (x1.41, USS +18.9 MB) |
+| single user | 852 |
+| two users (each) | 1597 (x1.87, USS +-31.6 MB) |
 <!-- TABLES:END -->
 
 **Reading the results.**
