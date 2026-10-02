@@ -48,7 +48,7 @@ def test_best_sentence_prefers_overlap():
     assert best_sentence("Only one sentence", "anything") == "Only one sentence"
 
 
-from vora.guard import is_digitish, is_yes_no_question, numbers_mismatch
+from vora.guard import extractive_answer, is_digitish, is_yes_no_question, numbers_mismatch
 
 
 def test_numbers_mismatch_catches_invented_figures():
@@ -103,3 +103,19 @@ def test_expects_number_and_has_number():
 def test_has_number_ignores_model_code_digits():
     assert not has_number("The M100 and the X200 are loud")
     assert has_number("The M100 reaches 3 meters")
+
+
+def test_yes_no_without_negation_quotes_the_two_best_sentences_in_order():
+    chunk = "Factory reset: hold the reset button for 10 seconds. This erases all settings and imported documents. Firmware is kept."
+    out = extractive_answer("will a factory reset delete the firmware", [chunk])
+    assert out.startswith("Factory reset") and out.endswith("Firmware is kept.")
+
+
+def test_yes_no_with_negation_quotes_only_the_negating_sentence():
+    out = extractive_answer("does it understand cantonese", [CANTONESE_EN])
+    assert out == "Cantonese speech is not supported."
+
+
+def test_non_yes_no_still_one_sentence():
+    chunk = "Support contact: email support@vora.example. Support hours are Monday to Friday."
+    assert extractive_answer("what is the support email", [chunk]) == "Support contact: email support@vora.example."

@@ -16,10 +16,10 @@
   "n": 10
  },
  "faithfulness": {
-  "acc": 0.9,
+  "acc": 0.925,
   "n": 40,
-  "negation_acc": 0.818,
-  "heldout_acc": 0.8,
+  "negation_acc": 0.909,
+  "heldout_acc": 0.85,
   "rows": [
    {
     "q": "how long is the warranty on the vora x200",
@@ -121,7 +121,7 @@
    },
    {
     "q": "can i import my own documents",
-    "answer": "custom knowledge base: you can import your own documents (markdown, txt, pdf) up to 1 gb on the x200 through the vora home app or a usb drive.",
+    "answer": "custom knowledge base: you can import your own documents (markdown, txt, pdf) up to 1 gb on the x200 through the vora home app or a usb drive. the box uses them to answer questions offline.",
     "ok": true,
     "neg": false,
     "split": "dev"
@@ -198,7 +198,7 @@
    },
    {
     "q": "does the m100 support 5ghz wifi",
-    "answer": "the m100 supports wi-fi 5 on 2.4 ghz only.",
+    "answer": "the x200 supports wi-fi 6 on 2.4 ghz and 5 ghz. the m100 supports wi-fi 5 on 2.4 ghz only.",
     "ok": true,
     "neg": true,
     "split": "heldout"
@@ -226,8 +226,8 @@
    },
    {
     "q": "will a factory reset delete the firmware",
-    "answer": "factory reset: hold the reset button on the back for 10 seconds until the led flashes white.",
-    "ok": false,
+    "answer": "factory reset: hold the reset button on the back for 10 seconds until the led flashes white. firmware is kept.",
+    "ok": true,
     "neg": true,
     "split": "heldout"
    },

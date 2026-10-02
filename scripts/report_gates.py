@@ -40,7 +40,8 @@ def evaluate(results_dir: Path) -> list[Gate]:
     quiet = False
     if bench:
         h = bench.get("host", {})
-        quiet = is_quiet(h.get("loadavg_1m", 99.0), h.get("cores"))
+        # bench.json records an instantaneous-CPU verdict; fall back to the load average for older results
+        quiet = bool(bench["quiet"]) if "quiet" in bench else is_quiet(h.get("loadavg_1m", 99.0), h.get("cores"))
     gs: list[Gate] = []
 
     en = [r["total"] for r in (bench or {}).get("rows", []) if r.get("lang") == "en" and "total" in r]
@@ -59,7 +60,7 @@ def evaluate(results_dir: Path) -> list[Gate]:
         gs.append(Gate("G2", "TTS first chunk", "p95 <=200 ms", f"p95 {t['p95']:.0f} ms" if t else "no data", (t["p95"] <= 200) if t else None, quiet))
 
     gs.append(Gate("G3", "ASR+RAG+TTS memory", "<=500 MB (USS)", f"{mem['asr_rag_tts']:.0f} MB" if mem else "no data",
-                   (mem["asr_rag_tts"] <= 500) if mem else None, quiet))
+                   (mem["asr_rag_tts"] <= 500) if mem else None, True))   # USS does not depend on host load
 
     if asr:
         en_w = asr.get("en_librispeech_clean/clean", {}).get("value")
@@ -81,7 +82,7 @@ def evaluate(results_dir: Path) -> list[Gate]:
         gs.append(Gate("G5", "RAG top-3 + faithfulness", "top-3 >=80%, faithfulness >=95%", "no data", None, True))
 
     gs.append(Gate("G6", "2 concurrent users", "each p50 <=2x single", json.dumps(conc.get("summary")) if conc else "not measured",
-                   conc.get("ok") if conc else None, quiet))
+                   conc.get("ok") if conc else None, bool(conc.get("quiet")) if conc else False))
     gs.append(Gate("G7", "Docker + Pi proof", "image builds, health 200, Pi run", json.dumps(docker.get("summary")) if docker else "not built / no Pi",
                    docker.get("ok") if docker else None, True))
 
