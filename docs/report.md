@@ -23,7 +23,7 @@ One WebSocket per user carries audio up and JSON events (`partial`, `final`, `co
 | Part | Choice | Size | Why |
 |---|---|---|---|
 | ASR en | streaming zipformer en-20M, int8 | 41.6 MB | Streaming, ≤50 MB. |
-| ASR zh | streaming zipformer small CTC zh, int8 (2025-04-01) | 25 MB | Beat the 14M transducer on AISHELL-1 test (CER 6.0% vs 16.7% in the same wrapper). The bilingual zh-en model has a 182 MB encoder and fails the limit. |
+| ASR zh | streaming zipformer small CTC zh, int8 (2025-04-01) | 25 MB | Beat the 14M transducer on the same 60 AISHELL-1 test clips in the same wrapper (CER 5.2% vs 16.7%); the final 50-clip evaluation gives 6.0%. The bilingual zh-en model has a 182 MB encoder and fails the limit. |
 | Embedding | bge-small-zh-v1.5 (fastembed, ONNX) | – | Small, handles zh plus English terms. |
 | Vector DB | FAISS flat + BM25 (jieba) + query synonyms | KB is tiny | BM25 keeps product codes such as VORA-X200 retrievable; `kb/synonyms.json` maps user words ("temperature") to KB wording ("degrees Celsius"). |
 | LLM | Qwen2.5-0.5B-Instruct Q4_K_M (llama.cpp) | 469 MB | 0.5B, Apache-2.0. ONNX int8 export is benchmarked, not shipped. |
@@ -33,7 +33,7 @@ One WebSocket per user carries audio up and JSON events (`partial`, `final`, `co
 
 **Partial ASR and endpointing.** The recognizer is fed 100 ms frames. Every changed hypothesis is a `partial`; a hypothesis unchanged for two frames is `stable`. At an endpoint (0.4 s trailing silence) the final is only the text added since the previous final, and the stream is **not reset**: resetting threw away the encoder context and cost about 6 CER points (and about 30% WER on second utterances). If the text ends mid-sentence ("how long is the", "保修期是"), the endpoint is held for up to 500 ms of audio (1.2 s per utterance) in the same stream; filler sounds ("uh", "嗯") are stripped and a lone filler is not a turn. The stream starts with 0.8 s of silence because the small zipformers drop the first words of abruptly starting audio.
 
-**Real-time RAG.** On a stable partial retrieval is prefetched on its own thread; the final reuses it only when the text is exactly equal. ASR-mangled product names are fuzzy-mapped to a glossary, colloquial words get domain synonyms, and a calibrated minimum score rejects off-topic questions (fixed "not sure" reply, no LLM call). An optional speculative **shadow turn** (setting `speculate`, default off) starts the whole answer on a stable partial, muted until the final text matches.
+**Real-time RAG.** On a stable partial retrieval is prefetched on its own thread; the final reuses it only when the text is exactly equal. ASR-mangled product names are fuzzy-mapped to a glossary, colloquial words get domain synonyms, and a calibrated minimum score rejects off-topic questions (fixed "not sure" reply, no LLM call). A speculative **shadow turn** (setting `speculate`, default on with ≥6 cores and a single session) starts the whole answer on a stable partial, muted (no tokens, context, audio or echo bookkeeping) until the final text matches exactly; a different final, a changed partial, a second user or a busy model discards it. In a paired A/B on a quiet host (25 English questions, all promoted) it was faster in 22 of 25 with a median gain of 153 ms (p90 1699 → 1348 ms); the G1 result below includes it.
 
 **Answer guard.** A 0.5B model ignores negation and invents figures, so: yes/no questions are answered by quoting the best sentence of the retrieved text; for other questions the first tokens are checked (refusal phrases, answer contradicting the text, figures not in the text, quantity asked but no figure given) and replaced or completed from the text.
 
@@ -146,12 +146,13 @@ The Docker image, compose file and CI workflow are written and statically checke
 
 - **No Raspberry Pi was available** and Docker was not built, so RTF and latency on a Pi 4 are unmeasured. The retrieval + LLM first-token target of 500 ms is not realistic on a Pi 4 (prompt evaluation of a 0.5B model runs at tens of tokens per second on 4×A72). Every number is from an Apple-Silicon Mac.
 - **English accuracy outside clean read speech is poor**: FLEURS and 10 dB noise are far above 15% WER. A denoiser and an offline second pass were planned and not built because the clean-speech gate was already met.
-- **Mandarin end-to-end latency is not measured**: the ASR does not understand the synthetic Chinese speech used for the benchmark and no real recordings were made.
+- **Mandarin end-to-end latency is not measured**: the ASR does not understand the synthetic Chinese speech used for the benchmark, and the optional real-speech recordings were skipped by choice.
 - **Faithfulness is below the 95% target.** The remaining misses are retrieval (an odd wording finds no chunk or the wrong one) and extractive answers that quote a related but not the best sentence. Yes/no questions read like documentation because they are quoted, not generated.
-- **Speculation is off by default**: the shadow turn works and is tested, but a paired A/B on a busy host showed no measurable gain.
+- **Speculation costs CPU when a guess is wrong** and is disabled with two or more sessions or fewer than 6 cores, so a Raspberry Pi 4 would run without it.
 - **Concurrency**: users share one LLM and serialise on it; a third in-flight turn is told the system is busy.
 - **Endpointing**: 0.4 s trailing silence splits some questions at pauses; the hold only covers text that visibly ends mid-sentence. 0.3 s doubled the splits and was rejected.
 - **Languages**: Mandarin and English only; Cantonese speech and Traditional-Chinese input are not supported. The zh voice and lexicon are Simplified.
 - **Single turn**: no conversation memory; a 30 s utterance cap forces a final.
+- **Evaluation sets are ours.** The KB, the retrieval questions and the 40 faithfulness questions are written by the same author; the "blind held-out" part was written in different wording, but the generic synonym list ("wifi", "temperature", ...) also lifted one held-out question, so its score is mildly optimistic.
 - **Licences**: both Piper voices have non-permissive or unknown dataset licences (`docs/licenses.md`); the zh voice has no permissive alternative under 30 MB that we found.
 - **LLM runtime**: the live path uses GGUF; the ONNX int8 export is benchmarked, not shipped.
