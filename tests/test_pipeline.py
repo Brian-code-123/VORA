@@ -82,6 +82,7 @@ class FakeTts:
 
 
 def P(script, retriever=None, llm=None, tts=None, filler=False, queue_max=64, delay=0.0, clock=time.perf_counter, **st):
+    st.setdefault("speculate", False)   # these tests are about other behaviour; shadow turns have their own file
     s = Settings(filler=filler, queue_max=queue_max, **st)
     asr = FakeAsr(script, delay, clock=clock if isinstance(clock, Clock) else None)
     return Pipeline(asr, retriever or FakeRetriever(), llm or FakeLlm(), tts or FakeTts(), s, Executors(), clock)
