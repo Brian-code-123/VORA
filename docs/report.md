@@ -46,35 +46,35 @@ One WebSocket per user carries audio up and JSON events (`partial`, `final`, `co
 
 | Gate | Target | Before | Now | Measured now |
 |---|---|---|---|---|
-| G1 end-to-end latency (en audio) | p50 <=1500 ms, p90 <=1800 ms | FAIL | **PASS** | p50 1124 / p90 1418 ms |
-| G2 TTS first chunk | p95 <=200 ms | FAIL | **PASS** | en p95 149 / zh 181 ms |
-| G3 ASR+RAG+TTS memory | <=500 MB (USS) | FAIL | **PASS** | 264 MB |
+| G1 end-to-end latency (en audio) | p50 <=1500 ms, p90 <=1800 ms | FAIL | **UNVERIFIED** (busy host) | busy host, not conclusive (would pass): p50 1138 / p90 1570 ms |
+| G2 TTS first chunk | p95 <=200 ms | FAIL | **PASS** | en p95 147 / zh 173 ms |
+| G3 ASR+RAG+TTS memory | <=500 MB (USS) | FAIL | **PASS** | 272 MB |
 | G4 ASR accuracy | WER/CER <=15% | UNVERIFIED | **PASS** | en 7.8%, zh AISHELL 6.0% |
 | G5 RAG top-3 + faithfulness | top-3 >=80%, faithfulness >=95% | FAIL | **FAIL** | top-3 93%, faithful 92% |
-| G6 2 concurrent users | each p50 <=2x single | UNVERIFIED | **PASS** | "2 users p50 1298 ms vs single 1193 ms (x1.09)" |
+| G6 2 concurrent users | each p50 <=2x single | UNVERIFIED | **UNVERIFIED** (busy host) | busy host, not conclusive (would pass): "2 users: A p50 1279, B p50 1355 ms vs single 959 ms (worst x1.41)" |
 | G7 Docker + Pi proof | image builds, health 200, Pi run | UNVERIFIED | **UNVERIFIED** | not built / no Pi |
 | G8 permissive licences | no custom/unknown | FAIL | **FAIL** | non-permissive: tts_en, tts_zh |
 
-*Host: macOS-26.6.2-arm64-arm-64bit, 8 cores, CPU-only, 1-min load average 4.6 (quiet host). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N=42 turns, 42 distinct questions, each asked once.*
+*Host: macOS-26.6.2-arm64-arm-64bit, 8 cores, CPU-only, 1-min load average 3.3 (BUSY host: numbers are noisy). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N=42 turns, 42 distinct questions, each asked once.*
 
 **Latency (ms, p50 / p95)**
 
 | Stage | Budget | Measured |
 |---|---|---|
-| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | 921 / 1396 |
-| Retrieval + LLM first token (oracle text) | ≤500 | 153 / 321 |
-| TTS first chunk (oracle text) | ≤200 | 108 / 595 |
-| RAG+LLM+TTS after final text (oracle) | | 294 / 612 |
-| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **1215 / 2008** |
-| End-to-end measured, English audio only (n=26) | ≤1500 | 1125 / 1424 |
+| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | 931 / 1386 |
+| Retrieval + LLM first token (oracle text) | ≤500 | 154 / 343 |
+| TTS first chunk (oracle text) | ≤200 | 112 / 713 |
+| RAG+LLM+TTS after final text (oracle) | | 338 / 812 |
+| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **1268 / 2197** |
+| End-to-end measured, English audio only (n=26) | ≤1500 | 1144 / 1588 |
 | End-to-end measured, Chinese audio (n=16) | ≤1500 | not meaningful: 2 of 16 turns retrieved anything (the ASR misheard the synthetic Chinese speech), so all took the fast 'not sure' path |
 
 **Streaming vs batch baseline (same models, same questions)**
 
 | | p50 | p95 |
 |---|---|---|
-| Batch: endpoint + retrieve + full LLM + full TTS | 1791 | 3131 |
-| Streaming (estimate) | 1215 | 2008 |
+| Batch: endpoint + retrieve + full LLM + full TTS | 1827 | 3462 |
+| Streaming (estimate) | 1268 | 2197 |
 
 **ASR accuracy (streaming wrapper, 50 clips per set)**
 
@@ -100,8 +100,8 @@ One WebSocket per user carries audio up and JSON events (`partial`, `final`, `co
 
 | Component | MB |
 |---|---|
-| ASR + RAG + TTS in one process (incl. shared library imports; target ≤500) | 264 (runs 258.5, 263.6, 280.3) |
-| LLM Qwen2.5-0.5B Q4_K_M | 672 |
+| ASR + RAG + TTS in one process (incl. shared library imports; target ≤500) | 272 (runs 257.2, 272.5, 274.4) |
+| LLM Qwen2.5-0.5B Q4_K_M | 669 |
 
 **LLM runtime: ONNX vs GGUF (same prompt, M2 CPU)**
 
@@ -117,8 +117,8 @@ One WebSocket per user carries audio up and JSON events (`partial`, `final`, `co
 
 | | p50 ms |
 |---|---|
-| single user | 1193 |
-| two users (each) | 1298 (x1.09, USS +4.6 MB) |
+| single user | 959 |
+| two users (each) | 1355 (x1.41, USS +18.9 MB) |
 <!-- TABLES:END -->
 
 **Reading the results.**
