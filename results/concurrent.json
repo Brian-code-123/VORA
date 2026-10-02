@@ -1,11 +1,17 @@
 {
- "single_p50_ms": 1193,
- "concurrent_p50_ms": 1298,
- "ratio": 1.09,
+ "single_p50_ms": 922,
+ "user_a_p50_ms": 1229,
+ "user_b_p50_ms": 1790,
+ "concurrent_p50_ms": 1790,
+ "ratio": 1.94,
  "n_single": 8,
+ "n_a": 8,
+ "n_b": 8,
  "n_concurrent": 16,
- "uss_delta_mb": 4.6,
- "quiet": true,
- "summary": "2 users p50 1298 ms vs single 1193 ms (x1.09)",
+ "uss_delta_mb": -83.5,
+ "quiet": false,
+ "max_other_cpu_pct": 73.3,
+ "speculation_during_pairs": "off (active_sessions=2)",
+ "summary": "2 users: A p50 1229, B p50 1790 ms vs single 922 ms (worst x1.94)",
  "ok": true
 }

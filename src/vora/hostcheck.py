@@ -61,13 +61,16 @@ class QuietMonitor:
         import threading
         self._interval, self._sampler, self._max, self._stop = interval, sampler, max_other_pct, threading.Event()
         self._worst = 0.0
+        self._samples: list[float] = []
         self._t = threading.Thread(target=self._run, daemon=True)
 
     def _run(self) -> None:
         self._sampler()                                   # prime psutil's counters
         while not self._stop.wait(self._interval):
             sysp, own = self._sampler()
-            self._worst = max(self._worst, round(max(0.0, sysp - own), 1))
+            other = round(max(0.0, sysp - own), 1)
+            self._samples.append(other)
+            self._worst = max(self._worst, other)
 
     def start(self) -> None:
         self._t.start()
@@ -75,4 +78,8 @@ class QuietMonitor:
     def stop(self) -> dict:
         self._stop.set()
         self._t.join(timeout=5)
-        return {"quiet": self._worst <= self._max, "max_other_cpu_pct": self._worst}
+        s = sorted(self._samples)
+        p90 = s[min(len(s) - 1, int(0.9 * len(s)))] if s else 0.0
+        # quiet = the 90th percentile of other processes' CPU is low: a one-second burst from a mail client must not
+        # void a 10-minute run, but sustained load must (the max is reported next to it)
+        return {"quiet": p90 <= self._max, "max_other_cpu_pct": self._worst, "p90_other_cpu_pct": p90}

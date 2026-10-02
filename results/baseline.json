@@ -4,300 +4,300 @@
   "machine": "arm64",
   "system": "macOS-26.6.2-arm64-arm-64bit",
   "cores": 8,
-  "loadavg_1m": 4.7,
+  "loadavg_1m": 4.8,
   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
  },
  "n": 30,
  "endpoint_ms": {
-  "p50": 921.0,
-  "p95": 1395.9
+  "p50": 911.4,
+  "p95": 1311.1
  },
  "batch_after_endpoint_ms": {
-  "p50": 870.4,
-  "p95": 1735.0
+  "p50": 1077.5,
+  "p95": 1949.4
  },
  "streaming_after_endpoint_ms": {
-  "p50": 294.2,
-  "p95": 612.1
+  "p50": 315.8,
+  "p95": 806.7
  },
  "batch_total_ms": {
-  "p50": 1791.4,
-  "p95": 3130.9
+  "p50": 1988.9,
+  "p95": 3260.5
  },
  "streaming_total_estimated_ms": {
-  "p50": 1215.2,
-  "p95": 2008.0
+  "p50": 1227.2,
+  "p95": 2117.8
  },
  "rows": [
   {
    "q": "how long is the warranty on the vora x200",
-   "retrieve_ms": 10.164375067688525,
-   "llm_full_ms": 390.73512493632734,
-   "tts_full_ms": 542.2674580477178,
-   "after_endpoint_ms": 943.1669580517337,
+   "retrieve_ms": 14.759333920665085,
+   "llm_full_ms": 331.1238751048222,
+   "tts_full_ms": 510.5635829968378,
+   "after_endpoint_ms": 856.4467920223251,
    "answer_chars": 41,
-   "audio_bytes": 100864
+   "audio_bytes": 89904
   },
   {
    "q": "vora x 200 warranty period",
-   "retrieve_ms": 8.500333991833031,
-   "llm_full_ms": 251.29979092162102,
-   "tts_full_ms": 530.8773750439286,
-   "after_endpoint_ms": 790.6774999573827,
+   "retrieve_ms": 8.538416004739702,
+   "llm_full_ms": 231.02016700431705,
+   "tts_full_ms": 514.0199579764158,
+   "after_endpoint_ms": 753.5785409854725,
    "answer_chars": 41,
-   "audio_bytes": 94130
+   "audio_bytes": 95232
   },
   {
    "q": "X200保修期多久",
-   "retrieve_ms": 6.4007919281721115,
-   "llm_full_ms": 339.60095804650337,
-   "tts_full_ms": 301.1345419799909,
-   "after_endpoint_ms": 647.1362919546664,
+   "retrieve_ms": 7.7314169611781836,
+   "llm_full_ms": 463.8021250721067,
+   "tts_full_ms": 301.48362496402115,
+   "after_endpoint_ms": 773.017166997306,
    "answer_chars": 16,
-   "audio_bytes": 86888
+   "audio_bytes": 89600
   },
   {
    "q": "m100 warranty how many years",
-   "retrieve_ms": 6.764334044419229,
-   "llm_full_ms": 378.22554097510874,
-   "tts_full_ms": 444.2576669389382,
-   "after_endpoint_ms": 829.2475419584662,
+   "retrieve_ms": 8.332292083650827,
+   "llm_full_ms": 596.6404579812661,
+   "tts_full_ms": 489.1592499334365,
+   "after_endpoint_ms": 1094.1319999983534,
    "answer_chars": 33,
-   "audio_bytes": 84480
+   "audio_bytes": 87552
   },
   {
    "q": "保修期是几年",
-   "retrieve_ms": 4.520666901953518,
-   "llm_full_ms": 228.0877500306815,
-   "tts_full_ms": 69.2734579788521,
-   "after_endpoint_ms": 301.8818749114871,
+   "retrieve_ms": 4.721874953247607,
+   "llm_full_ms": 249.07479202374816,
+   "tts_full_ms": 67.09970801603049,
+   "after_endpoint_ms": 320.89637499302626,
    "answer_chars": 6,
-   "audio_bytes": 46592
+   "audio_bytes": 44032
   },
   {
    "q": "what is the wake word",
-   "retrieve_ms": 4.719124990515411,
-   "llm_full_ms": 253.145124996081,
-   "tts_full_ms": 330.50395804457366,
-   "after_endpoint_ms": 588.3682080311701,
+   "retrieve_ms": 4.7576670767739415,
+   "llm_full_ms": 254.55316598527133,
+   "tts_full_ms": 323.174791992642,
+   "after_endpoint_ms": 582.4856250546873,
    "answer_chars": 36,
-   "audio_bytes": 61440
+   "audio_bytes": 60416
   },
   {
    "q": "how do i change the wake word",
-   "retrieve_ms": 6.473166984505951,
-   "llm_full_ms": 414.0069580171257,
-   "tts_full_ms": 868.1997089879587,
-   "after_endpoint_ms": 1288.6798339895904,
+   "retrieve_ms": 6.5612499602139,
+   "llm_full_ms": 323.2987920055166,
+   "tts_full_ms": 801.5801250003278,
+   "after_endpoint_ms": 1131.4401669660583,
    "answer_chars": 92,
-   "audio_bytes": 140738
+   "audio_bytes": 138962
   },
   {
    "q": "唤醒词是什么",
-   "retrieve_ms": 4.796416964381933,
-   "llm_full_ms": 613.9328330755234,
-   "tts_full_ms": 267.06529199145734,
-   "after_endpoint_ms": 885.7945420313627,
+   "retrieve_ms": 4.719124990515411,
+   "llm_full_ms": 272.22341601736844,
+   "tts_full_ms": 200.4555839812383,
+   "after_endpoint_ms": 477.39812498912215,
    "answer_chars": 17,
-   "audio_bytes": 70144
+   "audio_bytes": 69632
   },
   {
    "q": "怎么修改唤醒词",
-   "retrieve_ms": 7.013708935119212,
-   "llm_full_ms": 1311.2895410740748,
-   "tts_full_ms": 584.9176669726148,
-   "after_endpoint_ms": 1903.2209169818088,
+   "retrieve_ms": 6.0747499810531735,
+   "llm_full_ms": 457.07779203075916,
+   "tts_full_ms": 464.36199999880046,
+   "after_endpoint_ms": 927.5145420106128,
    "answer_chars": 46,
-   "audio_bytes": 182272
+   "audio_bytes": 175104
   },
   {
    "q": "what does the red light mean",
-   "retrieve_ms": 6.5657919039949775,
-   "llm_full_ms": 578.351000091061,
-   "tts_full_ms": 619.7823329130188,
-   "after_endpoint_ms": 1204.6991249080747,
+   "retrieve_ms": 6.8649169988930225,
+   "llm_full_ms": 1241.277665947564,
+   "tts_full_ms": 603.9951250422746,
+   "after_endpoint_ms": 1852.1377079887316,
    "answer_chars": 64,
-   "audio_bytes": 101888
-  },
-  {
-   "q": "led 蓝色代表什么",
-   "retrieve_ms": 6.177500006742775,
-   "llm_full_ms": 282.61120908427984,
-   "tts_full_ms": 274.50245793443173,
-   "after_endpoint_ms": 563.2911670254543,
-   "answer_chars": 12,
-   "audio_bytes": 77824
-  },
-  {
-   "q": "why is the light flashing white",
-   "retrieve_ms": 7.200792082585394,
-   "llm_full_ms": 1683.2445829641074,
-   "tts_full_ms": 1364.538999972865,
-   "after_endpoint_ms": 3054.984375019558,
-   "answer_chars": 134,
-   "audio_bytes": 212362
-  },
-  {
-   "q": "how long is the warranty on the vora x200",
-   "retrieve_ms": 10.024124989286065,
-   "llm_full_ms": 340.5616249656305,
-   "tts_full_ms": 524.0153750637546,
-   "after_endpoint_ms": 874.6011250186712,
-   "answer_chars": 34,
-   "audio_bytes": 80758
-  },
-  {
-   "q": "vora x 200 warranty period",
-   "retrieve_ms": 7.817832985892892,
-   "llm_full_ms": 671.4654579991475,
-   "tts_full_ms": 652.1322500193492,
-   "after_endpoint_ms": 1331.4155410043895,
-   "answer_chars": 49,
    "audio_bytes": 103424
   },
   {
-   "q": "X200保修期多久",
-   "retrieve_ms": 7.203874993138015,
-   "llm_full_ms": 556.2140420079231,
-   "tts_full_ms": 302.7828329941258,
-   "after_endpoint_ms": 866.2007499951869,
-   "answer_chars": 12,
-   "audio_bytes": 80896
-  },
-  {
-   "q": "m100 warranty how many years",
-   "retrieve_ms": 6.636542035266757,
-   "llm_full_ms": 361.52683303225785,
-   "tts_full_ms": 527.7172499336302,
-   "after_endpoint_ms": 895.8806250011548,
-   "answer_chars": 33,
-   "audio_bytes": 80270
-  },
-  {
-   "q": "保修期是几年",
-   "retrieve_ms": 4.509250051341951,
-   "llm_full_ms": 229.41583290230483,
-   "tts_full_ms": 74.7923330636695,
-   "after_endpoint_ms": 308.7174160173163,
-   "answer_chars": 6,
-   "audio_bytes": 43008
-  },
-  {
-   "q": "what is the wake word",
-   "retrieve_ms": 5.370332975871861,
-   "llm_full_ms": 369.2620419897139,
-   "tts_full_ms": 338.34383299108595,
-   "after_endpoint_ms": 712.9762079566717,
-   "answer_chars": 28,
-   "audio_bytes": 51200
-  },
-  {
-   "q": "how do i change the wake word",
-   "retrieve_ms": 6.527625024318695,
-   "llm_full_ms": 549.1074590245262,
-   "tts_full_ms": 849.5548330247402,
-   "after_endpoint_ms": 1405.189917073585,
-   "answer_chars": 88,
-   "audio_bytes": 128570
-  },
-  {
-   "q": "唤醒词是什么",
-   "retrieve_ms": 4.526042030192912,
-   "llm_full_ms": 252.75529106147587,
-   "tts_full_ms": 255.47566695604473,
-   "after_endpoint_ms": 512.7570000477135,
-   "answer_chars": 17,
-   "audio_bytes": 65024
-  },
-  {
-   "q": "怎么修改唤醒词",
-   "retrieve_ms": 6.849167053587735,
-   "llm_full_ms": 704.7305419109762,
-   "tts_full_ms": 540.0854160543531,
-   "after_endpoint_ms": 1251.665125018917,
-   "answer_chars": 46,
-   "audio_bytes": 184832
-  },
-  {
-   "q": "what does the red light mean",
-   "retrieve_ms": 6.470042048022151,
-   "llm_full_ms": 447.1722499001771,
-   "tts_full_ms": 610.5802500387654,
-   "after_endpoint_ms": 1064.2225419869646,
-   "answer_chars": 64,
-   "audio_bytes": 99328
-  },
-  {
    "q": "led 蓝色代表什么",
-   "retrieve_ms": 6.076499936170876,
-   "llm_full_ms": 284.8877500509843,
-   "tts_full_ms": 199.65241698082536,
-   "after_endpoint_ms": 490.61666696798056,
-   "answer_chars": 13,
+   "retrieve_ms": 8.264041971415281,
+   "llm_full_ms": 487.4397909734398,
+   "tts_full_ms": 297.389000072144,
+   "after_endpoint_ms": 793.0928330169991,
+   "answer_chars": 12,
    "audio_bytes": 74240
   },
   {
    "q": "why is the light flashing white",
-   "retrieve_ms": 7.182791945524514,
-   "llm_full_ms": 688.2975411135703,
-   "tts_full_ms": 833.9175839209929,
-   "after_endpoint_ms": 1529.3979169800878,
-   "answer_chars": 80,
-   "audio_bytes": 139652
+   "retrieve_ms": 7.50687497202307,
+   "llm_full_ms": 1262.2525830520317,
+   "tts_full_ms": 1347.7641670033336,
+   "after_endpoint_ms": 2617.5236250273883,
+   "answer_chars": 134,
+   "audio_bytes": 208982
   },
   {
    "q": "how long is the warranty on the vora x200",
-   "retrieve_ms": 9.976958041079342,
-   "llm_full_ms": 359.5318750012666,
-   "tts_full_ms": 564.002083032392,
-   "after_endpoint_ms": 933.5109160747379,
-   "answer_chars": 41,
-   "audio_bytes": 95744
+   "retrieve_ms": 13.08758300729096,
+   "llm_full_ms": 883.3722500130534,
+   "tts_full_ms": 508.8599589653313,
+   "after_endpoint_ms": 1405.3197919856757,
+   "answer_chars": 34,
+   "audio_bytes": 84480
   },
   {
    "q": "vora x 200 warranty period",
-   "retrieve_ms": 7.782458094879985,
-   "llm_full_ms": 224.09599996171892,
-   "tts_full_ms": 578.3972919452935,
-   "after_endpoint_ms": 810.2757500018924,
-   "answer_chars": 41,
-   "audio_bytes": 98816
+   "retrieve_ms": 7.834707968868315,
+   "llm_full_ms": 262.6182499807328,
+   "tts_full_ms": 689.8341670166701,
+   "after_endpoint_ms": 960.2871249662712,
+   "answer_chars": 49,
+   "audio_bytes": 97278
   },
   {
    "q": "X200保修期多久",
-   "retrieve_ms": 6.418374949134886,
-   "llm_full_ms": 318.6341669643298,
-   "tts_full_ms": 307.54537507891655,
-   "after_endpoint_ms": 632.5979169923812,
+   "retrieve_ms": 7.2434579487890005,
+   "llm_full_ms": 941.421875031665,
+   "tts_full_ms": 356.2103749718517,
+   "after_endpoint_ms": 1304.8757079523057,
    "answer_chars": 12,
-   "audio_bytes": 77824
+   "audio_bytes": 69632
   },
   {
    "q": "m100 warranty how many years",
-   "retrieve_ms": 7.61454098392278,
-   "llm_full_ms": 517.5450840033591,
-   "tts_full_ms": 574.6280000312254,
-   "after_endpoint_ms": 1099.7876250185072,
-   "answer_chars": 40,
-   "audio_bytes": 98304
+   "retrieve_ms": 11.126958066597581,
+   "llm_full_ms": 573.2375000370666,
+   "tts_full_ms": 525.2072919392958,
+   "after_endpoint_ms": 1109.57175004296,
+   "answer_chars": 33,
+   "audio_bytes": 83968
   },
   {
    "q": "保修期是几年",
-   "retrieve_ms": 4.482749965973198,
-   "llm_full_ms": 242.54879099316895,
-   "tts_full_ms": 69.91333398036659,
-   "after_endpoint_ms": 316.94487493950874,
+   "retrieve_ms": 4.509167047217488,
+   "llm_full_ms": 781.26900002826,
+   "tts_full_ms": 159.9157080054283,
+   "after_endpoint_ms": 945.6938750809059,
    "answer_chars": 6,
-   "audio_bytes": 40448
+   "audio_bytes": 44032
   },
   {
    "q": "what is the wake word",
-   "retrieve_ms": 5.381708964705467,
-   "llm_full_ms": 304.64550002943724,
-   "tts_full_ms": 339.9414160521701,
-   "after_endpoint_ms": 649.9686250463128,
+   "retrieve_ms": 8.730417001061141,
+   "llm_full_ms": 623.2107499381527,
+   "tts_full_ms": 345.7346250070259,
+   "after_endpoint_ms": 977.6757919462398,
    "answer_chars": 28,
-   "audio_bytes": 46984
+   "audio_bytes": 52736
+  },
+  {
+   "q": "how do i change the wake word",
+   "retrieve_ms": 6.5952499862760305,
+   "llm_full_ms": 1011.7663330165669,
+   "tts_full_ms": 933.509083930403,
+   "after_endpoint_ms": 1951.870666933246,
+   "answer_chars": 88,
+   "audio_bytes": 132958
+  },
+  {
+   "q": "唤醒词是什么",
+   "retrieve_ms": 4.8435000935569406,
+   "llm_full_ms": 769.5118749979883,
+   "tts_full_ms": 286.46262490656227,
+   "after_endpoint_ms": 1060.8179999981076,
+   "answer_chars": 17,
+   "audio_bytes": 64334
+  },
+  {
+   "q": "怎么修改唤醒词",
+   "retrieve_ms": 6.9232500391080976,
+   "llm_full_ms": 1321.4719169773161,
+   "tts_full_ms": 606.2054160283878,
+   "after_endpoint_ms": 1934.600583044812,
+   "answer_chars": 46,
+   "audio_bytes": 184320
+  },
+  {
+   "q": "what does the red light mean",
+   "retrieve_ms": 7.5746249640360475,
+   "llm_full_ms": 953.9190420182422,
+   "tts_full_ms": 683.9285000460222,
+   "after_endpoint_ms": 1645.4221670283005,
+   "answer_chars": 64,
+   "audio_bytes": 96088
+  },
+  {
+   "q": "led 蓝色代表什么",
+   "retrieve_ms": 8.112084004096687,
+   "llm_full_ms": 736.8432080838829,
+   "tts_full_ms": 221.1400419473648,
+   "after_endpoint_ms": 966.0953340353444,
+   "answer_chars": 13,
+   "audio_bytes": 78848
+  },
+  {
+   "q": "why is the light flashing white",
+   "retrieve_ms": 7.332625100389123,
+   "llm_full_ms": 1050.4289160016924,
+   "tts_full_ms": 888.5175419272855,
+   "after_endpoint_ms": 1946.279083029367,
+   "answer_chars": 80,
+   "audio_bytes": 143360
+  },
+  {
+   "q": "how long is the warranty on the vora x200",
+   "retrieve_ms": 10.062500019557774,
+   "llm_full_ms": 348.62666693516076,
+   "tts_full_ms": 581.1080409912392,
+   "after_endpoint_ms": 939.7972079459578,
+   "answer_chars": 41,
+   "audio_bytes": 88576
+  },
+  {
+   "q": "vora x 200 warranty period",
+   "retrieve_ms": 7.832166971638799,
+   "llm_full_ms": 446.58216601237655,
+   "tts_full_ms": 686.168042011559,
+   "after_endpoint_ms": 1140.5823749955744,
+   "answer_chars": 41,
+   "audio_bytes": 92128
+  },
+  {
+   "q": "X200保修期多久",
+   "retrieve_ms": 7.563624996691942,
+   "llm_full_ms": 798.393709002994,
+   "tts_full_ms": 305.78908300958574,
+   "after_endpoint_ms": 1111.7464170092717,
+   "answer_chars": 12,
+   "audio_bytes": 72192
+  },
+  {
+   "q": "m100 warranty how many years",
+   "retrieve_ms": 7.8888749703764915,
+   "llm_full_ms": 900.3585000755265,
+   "tts_full_ms": 613.6066250037402,
+   "after_endpoint_ms": 1521.8540000496432,
+   "answer_chars": 40,
+   "audio_bytes": 90002
+  },
+  {
+   "q": "保修期是几年",
+   "retrieve_ms": 4.529249970801175,
+   "llm_full_ms": 231.6873329691589,
+   "tts_full_ms": 70.18725003581494,
+   "after_endpoint_ms": 306.403832975775,
+   "answer_chars": 6,
+   "audio_bytes": 41984
+  },
+  {
+   "q": "what is the wake word",
+   "retrieve_ms": 5.429124925285578,
+   "llm_full_ms": 1014.9520840495825,
+   "tts_full_ms": 385.294665931724,
+   "after_endpoint_ms": 1405.675874906592,
+   "answer_chars": 28,
+   "audio_bytes": 48768
   }
  ]
 }
