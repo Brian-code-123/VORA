@@ -126,7 +126,7 @@
    },
    {
     "q": "X200保修期多久",
-    "answer": "vora-x200的保修期是2年",
+    "answer": "保修期是2年，电源适配器和数据线保修6个月。",
     "ok": true,
     "neg": false,
     "split": "dev"
@@ -203,7 +203,7 @@
    },
    {
     "q": "m100能连5g的wifi吗",
-    "answer": "wi-fi 设置：打开 vora home 应用，点击“添加设备”并按提示配对。 x200 支持 2.4 ghz 和 5 ghz 的 wi-fi 6，m100 只支持 2.4 ghz 的 wi-fi 5。",
+    "answer": "wi-fi 设置：打开 vora home 应用，点击“添加设备”并按提示配对。 m100 只支持 2.4 ghz 的 wi-fi 5。 wi-fi 仅用于固件更新和应用连接。",
     "ok": true,
     "neg": true,
     "split": "heldout"
@@ -273,14 +273,14 @@
    },
    {
     "q": "how far can the m100 hear me",
-    "answer": "the m100 can hear you up to 3 meters away, while the x200 can hear you up to 5 meters away.",
+    "answer": "the m100 can hear you up to 3 meters away.",
     "ok": true,
     "neg": false,
     "split": "heldout"
    },
    {
     "q": "x200 拾音范围",
-    "answer": "x200 拾音距离为5米。",
+    "answer": "x200 有 4 麦克风阵列，拾音距离 5 米；拾音距离 3 米。",
     "ok": true,
     "neg": false,
     "split": "heldout"
@@ -380,7 +380,7 @@
      "Z16",
      "Z17"
     ],
-    "answer": "vora-m100 能听 vora-m100 硬件：vora-m100（vora box mini）配备 2 核 arm 处理器、2 gb 内存和 16 gb 存储。"
+    "answer": "vora-m100 能听 vora-m100 硬件：vora-m100（vora box mini）配备 2 核 arm 处理器、2 gb 内存和 16 gb 存储。支持英语和普通话，但知识库容量上限较小，只有 256 mb。"
    },
    {
     "q": "能放在零下的户外用吗",
@@ -398,12 +398,12 @@
    }
   ]
  },
- "blind": {
+ "tune4": {
   "n": 60,
   "top3": 0.96,
-  "faith": 0.78,
-  "faith_with_refusals": 0.817,
-  "negation_acc": 0.583,
+  "faith": 0.86,
+  "faith_with_refusals": 0.883,
+  "negation_acc": 0.833,
   "offtopic_rejected": 1.0,
   "misses": [
    {
@@ -434,15 +434,6 @@
     "answer": "try moving within the microphone range and make sure you say the wake word \"hey vora\" clearly."
    },
    {
-    "q": "does the box listen when the mute switch is on",
-    "ctx": [
-     "E06",
-     "E05",
-     "E18"
-    ],
-    "answer": "troubleshooting when the box does not respond: check that the led is not red (muted), unplug the power for 10 seconds and plug it in again, move within the micr"
-   },
-   {
     "q": "can I use it without Wi-Fi at all",
     "ctx": [
      "E07",
@@ -452,45 +443,18 @@
     "answer": "wi-fi setup: open the vora home app, tap add device and follow the pairing steps. the x200 supports wi-fi 6 on 2.4 ghz and 5 ghz."
    },
    {
-    "q": "can the M100 be returned after 45 days",
-    "ctx": [
-     "E03",
-     "E12",
-     "E02"
-    ],
-    "answer": "the vora-m100 warranty period is 1 year. power adapters and cables are covered for 6 months."
-   },
-   {
-    "q": "X200 用的是什么 Wi-Fi",
-    "ctx": [
-     "Z07",
-     "Z01",
-     "Z15"
-    ],
-    "answer": "x200 用的是 2.4 ghz 的 wi-fi 5。"
-   },
-   {
     "q": "怎么重置整个设备",
     "ctx": [
      "Z08",
      "Z07",
      "Z06"
     ],
-    "answer": "如何重置整个设备？"
+    "answer": "如何重置整个设备？ wi-fi 设置：打开 vora home 应用，点击“添加设备”并按提示配对。"
    },
    {
     "q": "盒子不回答我怎么办",
     "ctx": [],
     "answer": ""
-   },
-   {
-    "q": "不连 Wi-Fi 能用吗",
-    "ctx": [
-     "Z07",
-     "Z15",
-     "Z02"
-    ],
-    "answer": "wi-fi 设置：打开 vora home 应用，点击“添加设备”并按提示配对。 x200 支持 2.4 ghz 和 5 ghz 的 wi-fi 6，m100 只支持 2.4 ghz 的 wi-fi 5。"
    },
    {
     "q": "X200 保修超过 2 年吗",
@@ -500,6 +464,111 @@
      "Z15"
     ],
     "answer": "人为损坏和进水损坏不在保修范围内。"
+   }
+  ]
+ },
+ "blind": {
+  "n": 60,
+  "top3": 0.96,
+  "faith": 0.86,
+  "faith_with_refusals": 0.817,
+  "negation_acc": 0.917,
+  "offtopic_rejected": 0.6,
+  "misses": [
+   {
+    "q": "is the adapter under warranty",
+    "ctx": [
+     "E03",
+     "E13",
+     "E15"
+    ],
+    "answer": "warranty: the vora-x200 warranty period is 2 years. the vora-m100 warranty period is 1 year."
+   },
+   {
+    "q": "how do I update the box by hand",
+    "ctx": [],
+    "answer": ""
+   },
+   {
+    "q": "does the warranty cover power cables",
+    "ctx": [
+     "E03",
+     "E09",
+     "E15"
+    ],
+    "answer": "physical damage and water damage are not covered."
+   },
+   {
+    "q": "is the X200 supposed to run above 45 degrees",
+    "ctx": [
+     "E01",
+     "E03",
+     "E12"
+    ],
+    "answer": "vora-x200 hardware: the vora-x200 (also called vora box x200) has a 4-core arm cpu, 4 gb ram and 32 gb internal storage. it is the flagship model and runs all s"
+   },
+   {
+    "q": "how do I convert Celsius to Fahrenheit",
+    "ctx": [
+     "E14",
+     "E15",
+     "E11"
+    ],
+    "answer": ""
+   },
+   {
+    "q": "红灯亮了是什么意思",
+    "ctx": [
+     "Z05",
+     "Z18",
+     "Z09"
+    ],
+    "answer": "红灯亮了表示正在说话"
+   },
+   {
+    "q": "M100 的 Wi-Fi 是什么规格",
+    "ctx": [
+     "Z07",
+     "Z01",
+     "Z02"
+    ],
+    "answer": "m100 的 wi-fi 是 5ghz 5g。"
+   },
+   {
+    "q": "音频会存放在哪里",
+    "ctx": [
+     "Z06",
+     "Z17",
+     "Z16"
+    ],
+    "answer": "音频会存放在机身顶部的硬件静音开关物理断开麦克风的地方。"
+   },
+   {
+    "q": "太阳系有几颗行星",
+    "ctx": [
+     "Z16",
+     "Z14",
+     "Z12"
+    ],
+    "answer": ""
+   },
+   {
+    "q": "苹果公司的 CEO 是谁",
+    "ctx": [
+     "Z01",
+     "Z11",
+     "Z02"
+    ],
+    "answer": ""
+   },
+   {
+    "q": "摄氏度怎么换算成华氏度",
+    "ctx": [
+     "Z14",
+     "Z13",
+     "Z08"
+    ],
+    "answer": ""
    }
   ]
  },
