@@ -39,7 +39,7 @@ def test_lang_of_mixed():
 def test_quantized_models_under_30mb():
     from scripts.check_gates import evaluate, measure
     r = evaluate(measure(S.models_dir))
-    assert r["tts_en"]["ok"] and r["tts_zh"]["ok"]
+    assert r["tts_en_ljspeech"]["ok"] and r["tts_zh"]["ok"]
 
 
 @pytest.fixture(scope="module")

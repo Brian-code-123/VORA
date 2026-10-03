@@ -31,3 +31,14 @@ Single continuous stream (no endpoints) with the CTC model: AISHELL 4.7-5.8%, FL
 ## Endpoint rule2 0.4 vs 0.3 and hold (scripts/eval_endpoint.py; 50 clips/set; results/endpoint.json)
 Extra finals per clip (read speech has natural pauses, so >0 is expected): rule2 0.4: LibriSpeech 0.34, FLEURS en 0.70, AISHELL zh 0.88. rule2 0.3: 0.96 / 1.70 / 1.98 (about double). Hold 500 ms at 0.4: 0.28 / 0.60 / 0.88. Wait for single-final clips (p50/p95 ms): rule2 0.4 LibriSpeech 680/999; 0.3 450/679.
 => keep rule2 = 0.4 (0.3 halves the turn length), hold ON (500 ms, cap 1200 ms). Hold only fires when the text ends mid-sentence, so complete sentences pay nothing.
+
+## T4 English voice (2026-10-03, M2, host load ~3, first-chunk = one word through sherpa-onnx `generate`, 20 words x2-3)
+| Variant | Size | first chunk p50 / p95 |
+|---|---|---|
+| lessac-low int8 (old default, all nodes quantized) | 18.7 MB | 106 / 134 ms (through `Tts.synth`) |
+| ljspeech-medium, all nodes int8 (ConvInteger) | 19.3 MB | 145 / 179-199 ms; QInt8 / per-channel variants 193 / 249 ms |
+| ljspeech-medium fp32 | 63.5 MB | 49-55 / 64-72 ms (over the 30 MB limit) |
+| ljspeech-medium, only MatMul/Gemm quantized | 63.9 MB | 55 / 77 ms (all weights are convolutions: no size gain) |
+| ljspeech-medium, **flows + text encoder + duration predictor int8, HiFi-GAN decoder `/dec/` fp32** | **22.3 MB** | **57 / 79 ms** (through `Tts.synth` incl. resample 22.05→16 kHz: 52 / 65 ms, clause RTF 0.08) |
+Weight bytes: flows 28.4 MB, text encoder 24.8 MB, decoder 7 MB, duration predictor ~2 MB; compute is the other way round. threads=2 is best (4 threads: slower for int8).
+UTMOS22 MOS proxy with the new voice: en mean 4.22 (min 3.33), zh 3.44 (min 2.79; UTMOS is trained on English, zh indicative only).

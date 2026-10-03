@@ -77,6 +77,11 @@ def split_by_script(text: str) -> list[tuple[str, str]]:
     return [(l, t) for l, t in runs]
 
 
+def en_voice_dir(settings: Settings) -> Path:
+    """ljspeech: public-domain voice (default). lessac: the older Blizzard-licensed voice, kept in its original folder."""
+    return settings.models_dir / ("tts_en_ljspeech" if settings.tts_en_voice == "ljspeech" else "tts_en")
+
+
 def pick_en_model(d: Path, fp32: bool) -> Path:
     """int8 voice unless fp32 requested; falls back to fp32 when no int8 file exists (fresh image / fresh checkout)."""
     plain = sorted(p for p in d.glob("*.onnx") if not p.name.endswith(".int8.onnx"))
@@ -129,7 +134,7 @@ class Tts:
 
     def __init__(self, settings: Settings):
         d = settings.models_dir
-        en = d / "tts_en"
+        en = en_voice_dir(settings)
         zh = d / "tts_zh"
         self.voices = {
             "en": _voice(str(pick_en_model(en, settings.tts_en_fp32)), str(en / "tokens.txt"), data_dir=str(en / "espeak-ng-data")),

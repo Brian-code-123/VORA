@@ -24,12 +24,12 @@
       "model.int8.onnx": "68c9c943840f7d9cf3e8a4970ba50f404feb5277f611fa82b7e72267786fa84a"
     }
   },
-  "tts_en": {
-    "repo": "csukuangfj/vits-piper-en_US-lessac-low",
-    "license": "Piper MIT; voice dataset: Blizzard 2013 Lessac licence (custom, not OSI/CC)",
+  "tts_en_ljspeech": {
+    "repo": "csukuangfj/vits-piper-en_US-ljspeech-medium",
+    "license": "Piper MIT; voice dataset LJ Speech: public domain (model card), trained from scratch",
     "files": {
-      "en_US-lessac-low.int8.onnx": "c3ea8ccb87f6b22c052adc385f808391fdb63277819365770a908111ab48bc12",
-      "en_US-lessac-low.onnx": "7552bd58d49baaee47628e945f5045b6876a6af0aa3bb5605efcaa755ea9640f"
+      "en_US-ljspeech-medium.int8.onnx": "206a8403baad4df7642156918a6ebe205798290d82f24d0d0119d7afa8a2738e",
+      "en_US-ljspeech-medium.onnx": "8ceba58a4b540d4e7e7e24ad079cf0d92762a4fd334e059f12940787c6c37b3d"
     }
   },
   "tts_zh": {
