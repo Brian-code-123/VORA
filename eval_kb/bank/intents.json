@@ -1,0 +1,16 @@
+{
+  "abroad": {"chunk_ids": ["B01", "C01"], "kw": {"en": ["travel notice", "150 countries", "1.5%", "60 days"], "zh": ["出行通知", "150", "1.5%", "60 天"]}},
+  "address": {"chunk_ids": ["B02", "C02"], "kw": {"en": ["utility bill", "2 working days", "Profile > Address"], "zh": ["水电费", "2 个工作日", "个人资料"]}},
+  "app_error": {"chunk_ids": ["B03", "C03"], "kw": {"en": ["latest version", "E-502", "0800 123 457", "restart"], "zh": ["最新版本", "E-502", "0800 123 457", "重启"]}},
+  "atm_limit": {"chunk_ids": ["B04", "C04"], "kw": {"en": ["$500", "$1,500", "24 hours"], "zh": ["500 美元", "1500 美元", "24 小时"]}},
+  "balance": {"chunk_ids": ["B05", "C05"], "kw": {"en": ["home screen", "BAL", "70123", "ATM"], "zh": ["应用首页", "BAL", "70123", "自动取款机"]}},
+  "business_loan": {"chunk_ids": ["B06", "C06"], "kw": {"en": ["$5,000", "$250,000", "6.9%", "12 months"], "zh": ["5000 美元", "250000 美元", "6.9%", "12 个月"]}},
+  "card_issues": {"chunk_ids": ["B07", "C07"], "kw": {"en": ["frozen", "5 working days", "Cards > Replace"], "zh": ["冻结", "5 个工作日", "更换"]}},
+  "cash_deposit": {"chunk_ids": ["B08", "C08"], "kw": {"en": ["$2,000", "deposit slot", "no fee"], "zh": ["2000 美元", "存款口", "不收手续费"]}},
+  "direct_debit": {"chunk_ids": ["B09", "C09"], "kw": {"en": ["Direct debits", "immediately", "Guarantee"], "zh": ["直接扣款", "立即生效", "保障"]}},
+  "freeze": {"chunk_ids": ["B10", "C10"], "kw": {"en": ["Cards > Freeze", "0800 123 458", "instant"], "zh": ["冻结", "0800 123 458", "立即生效"]}},
+  "high_value_payment": {"chunk_ids": ["B11", "C11"], "kw": {"en": ["$10,000", "confirmation code", "$50,000", "0800 123 459"], "zh": ["10000 美元", "验证码", "50000 美元", "0800 123 459"]}},
+  "joint_account": {"chunk_ids": ["B12", "C12"], "kw": {"en": ["both holders", "Open joint account", "either can pay"], "zh": ["两位持有人", "联名账户", "任何一人"]}},
+  "latest_transactions": {"chunk_ids": ["B13", "C13"], "kw": {"en": ["Accounts > Activity", "90 days", "7 years"], "zh": ["交易记录", "90 天", "7 年"]}},
+  "pay_bill": {"chunk_ids": ["B14", "C14"], "kw": {"en": ["Pay a bill", "16:00", "reference number", "12 months"], "zh": ["缴费", "16:00", "参考编号", "12 个月"]}}
+}

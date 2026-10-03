@@ -18,11 +18,14 @@ from vora.config import ROOT, Settings
 SR = 16000
 SETS = {
     "en_librispeech_clean": ("openslr/librispeech_asr", "clean", "en", "text"),
+    "en_librispeech_other": ("openslr/librispeech_asr", "other", "en", "text"),   # harder accents / recording conditions
     "en_fleurs": ("google/fleurs", "en_us", "en", "transcription"),
     "zh_fleurs": ("google/fleurs", "cmn_hans_cn", "zh", "transcription"),
     "zh_aishell": ("shenyunhang/AISHELL-1", None, "zh", None),   # Apache-2.0; 20 test speakers, per-file wavs
 }
 AISHELL_REV = "2724409d538167445e43ebf846990319f12a1cbf"
+_PINS = json.loads((ROOT / "eval" / "suites" / "pins.json").read_text())["datasets"]
+REVISION = {p["repo"]: p["revision"] for p in _PINS.values()}   # dataset revisions pinned in eval/suites/pins.json
 
 
 def norm_zh(t: str) -> str:
@@ -57,9 +60,10 @@ def transcribe(recs, lang: str, pcm: np.ndarray) -> tuple[str, float]:
     return ("" if lang == "zh" else " ").join(finals), time.perf_counter() - t0
 
 
-def load(name: str, n: int):
-    """Streams once from HF, then caches to data/eval_cache/<name>.npz (HF streaming is flaky)."""
-    cache = ROOT / "data" / "eval_cache" / f"{name}.npz"
+def load(name: str, n: int, tag: str = ""):
+    """Streams once from HF, then caches to data/eval_cache/<name><tag>.npz (HF streaming is flaky). The suites use a
+    different tag so their bigger sets never change which 50 clips this script's own runs see."""
+    cache = ROOT / "data" / "eval_cache" / f"{name}{tag}.npz"
     if cache.exists():
         z = np.load(cache, allow_pickle=True)
         return list(zip(z["refs"].tolist(), z["pcm"]))[:n]
@@ -103,7 +107,7 @@ def _stream(name: str, n: int):
     if name == "zh_aishell":
         return _stream_aishell(n)
     repo, cfg, lang, col = SETS[name]
-    ds = load_dataset(repo, cfg, split="test", streaming=True).cast_column("audio", Audio(decode=False))
+    ds = load_dataset(repo, cfg, split="test", streaming=True, revision=REVISION.get(repo)).cast_column("audio", Audio(decode=False))
     out = []
     for ex in ds:
         x, sr = sf.read(io.BytesIO(ex["audio"]["bytes"]), dtype="float32")  # FLEURS is float32 wav; dtype=int16 reads it as silence
