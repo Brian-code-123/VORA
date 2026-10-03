@@ -1,6 +1,6 @@
 import pytest
 
-from vora.guard import best_sentence, focus_on_asked_product, is_refusal, polarity_conflict
+from vora.guard import best_sentence, is_refusal, polarity_conflict
 
 CANTONESE_EN = "Languages: VORA Box understands and speaks Mandarin Chinese and English. Cantonese speech is not supported."
 CANTONESE_ZH = "语言：VORA Box 能听懂并说普通话和英语，也能回答中英文混合的句子。不支持粤语。"

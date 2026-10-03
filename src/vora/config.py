@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     top_k: int = 3
     min_score: float = 0.35  # fallback only: the index meta carries a per-language threshold calibrated on dev data
     dense_weight: float = 0.85       # retrieval score = w * dense + (1-w) * bm25 (dense-only measured about 1 pt better on two KBs; the BM25 share keeps rare tokens such as model codes matchable in custom KBs)
+    passage_weight: float = 0.5      # dense score = (1-w) * chunk similarity + w * best sentence similarity (0 = chunk only)
+    context_mode: Literal["chunk", "focus"] = "chunk"   # what the LLM reads: the whole retrieved chunks, or only each hit's best sentence
     bm25_norm: Literal["max", "idf"] = "idf"   # max: best chunk always scores 1.0 (junk queries too). idf: share of the query's information content matched
     max_ctx_tokens: int = 90
     queue_max: int = 8

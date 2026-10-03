@@ -10,16 +10,21 @@ from vora.rag import store
 
 
 def ingest(kb_dir: Path, index_dir: Path) -> None:
-    """One index per language, each with its own embedder (en chunks: bge-small-en, zh chunks: bge-small-zh)."""
+    """One index per language, each with its own embedder (en chunks: bge-small-en, zh chunks: bge-small-zh). Every chunk is
+    also split into sentence passages, embedded alongside, so a question can match the one sentence that answers it."""
     chunks = store.parse_kb(kb_dir)
     for c in chunks:
         c["lang"] = store.lang_of(c["text"])
-    vecs = {}
+    vecs, passages = {}, {}
+    norm = lambda v: v / (np.linalg.norm(v, axis=1, keepdims=True) + 1e-9)
     for lang in sorted({c["lang"] for c in chunks}):
         emb = TextEmbedding(store.LANG_MODELS[lang], threads=2)
-        v = np.array(list(emb.embed([c["text"] for c in chunks if c["lang"] == lang])), dtype=np.float32)
-        vecs[lang] = v / (np.linalg.norm(v, axis=1, keepdims=True) + 1e-9)
-    store.save(index_dir, chunks, vecs, {"embed_models": {l: store.LANG_MODELS[l] for l in vecs}, "n": len(chunks)})
+        mine = [(i, c) for i, c in enumerate(chunks) if c["lang"] == lang]
+        vecs[lang] = norm(np.array(list(emb.embed([c["text"] for _, c in mine])), dtype=np.float32))
+        prow = [(i, sent, text) for i, c in mine for sent, text in store.split_passages(c["text"])]
+        pv = norm(np.array(list(emb.embed([t for _, _, t in prow])), dtype=np.float32))
+        passages[lang] = (pv, [{"chunk": i, "text": t} for i, _, t in prow])
+    store.save(index_dir, chunks, vecs, {"embed_models": {l: store.LANG_MODELS[l] for l in vecs}, "n": len(chunks)}, passages)
 
 
 def load_qa(path: Path) -> list[dict]:

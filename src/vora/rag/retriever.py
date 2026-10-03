@@ -86,14 +86,24 @@ class Retriever:
             self._emb[lang] = TextEmbedding(LANG_MODELS[lang], threads=1)
         return self._emb[lang]
 
-    def _dense(self, q: str, lang: str) -> np.ndarray:
+    def _dense(self, q: str, lang: str) -> tuple[np.ndarray, dict[int, str]]:
+        """Per-chunk similarity: the chunk itself averaged with its best sentence (Settings.passage_weight), and that sentence."""
         v = np.array(list(self._embedder(lang).embed([q])), dtype=np.float32)
         v /= np.linalg.norm(v, axis=1, keepdims=True) + 1e-9
-        index, pos = self.lanes[lang]
-        scores, ids = index.search(v, len(pos))
+        lane = self.lanes[lang]
+        scores, ids = lane.index.search(v, len(lane.pos))
         d = np.zeros(len(self.chunks), dtype=np.float32)
-        d[pos[ids[0]]] = scores[0]
-        return d
+        d[lane.pos[ids[0]]] = scores[0]
+        focus: dict[int, str] = {}
+        if len(lane.psent) and self.s.passage_weight > 0:
+            ps = lane.pvec @ v[0]
+            best = np.full(len(self.chunks), -1.0, dtype=np.float32)
+            for k, c in enumerate(lane.pchunk):
+                if ps[k] > best[c]:
+                    best[c], focus[int(c)] = ps[k], lane.psent[k]
+            has = best > -1.0
+            d[has] = (1 - self.s.passage_weight) * d[has] + self.s.passage_weight * best[has]
+        return d, focus
 
     def _bm25(self, q: str) -> np.ndarray:
         toks = tokenize(q)
@@ -103,18 +113,19 @@ class Retriever:
             return bm / den if den > 0 else bm * 0
         return bm / bm.max() if bm.max() > 0 else bm
 
-    def _score(self, q: str) -> tuple[np.ndarray, str]:
+    def _score(self, q: str) -> tuple[np.ndarray, str, dict[int, str]]:
         lang = self._lane(q)
         w = self.s.dense_weight
-        return w * np.clip(self._dense(q, lang), 0, 1) + (1 - w) * self._bm25(q), lang
+        dense, focus = self._dense(q, lang)
+        return w * np.clip(dense, 0, 1) + (1 - w) * self._bm25(q), lang, focus
 
     def search(self, query: str, k: int | None = None) -> list[Hit]:
         k = k or self.s.top_k
-        score, lang = self._score(self.expand_query(self.normalize_query(query)))
+        score, lang, focus = self._score(self.expand_query(self.normalize_query(query)))
         order = np.argsort(-score)[:k]
         if score[order[0]] < self.min_score.get(lang, self.s.min_score):
             return []
-        return [Hit(self.chunks[i]["id"], self.chunks[i]["text"], float(score[i])) for i in order]
+        return [Hit(self.chunks[i]["id"], self.chunks[i]["text"], float(score[i]), focus.get(int(i), "")) for i in order]
 
     def best_score(self, query: str) -> float:
         return float(self._score(self.expand_query(self.normalize_query(query)))[0].max())
