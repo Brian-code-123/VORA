@@ -1,0 +1,60 @@
+{"q": "what CPU does the flagship have", "lang": "en", "chunk_id": ["E01", "Z01"], "kw": ["4-core", "4 core", "arm"], "neg": false, "kind": "plain"}
+{"q": "how much memory is in the Mini", "lang": "en", "chunk_id": ["E02", "Z02"], "kw": ["2 gb"], "neg": false, "kind": "plain"}
+{"q": "is the adapter under warranty", "lang": "en", "chunk_id": ["E03", "Z03"], "kw": ["6 months"], "neg": false, "kind": "plain"}
+{"q": "what's the default trigger phrase", "lang": "en", "chunk_id": ["E04", "Z04"], "kw": ["hey vora"], "neg": false, "kind": "plain"}
+{"q": "which color shows the box is talking", "lang": "en", "chunk_id": ["E05", "Z05"], "kw": ["green"], "neg": false, "kind": "plain"}
+{"q": "which Wi-Fi bands does the X200 use", "lang": "en", "chunk_id": ["E07", "Z07"], "kw": ["2.4", "5 ghz"], "neg": false, "kind": "plain"}
+{"q": "how long do I hold the back button to erase everything", "lang": "en", "chunk_id": ["E08", "Z08"], "kw": ["10 seconds", "10 second"], "neg": false, "kind": "plain"}
+{"q": "how do I update the box by hand", "lang": "en", "chunk_id": ["E09", "Z09"], "kw": ["check for update"], "neg": false, "kind": "plain"}
+{"q": "does it work in English", "lang": "en", "chunk_id": ["E10", "Z10"], "kw": ["english"], "neg": false, "kind": "plain"}
+{"q": "is there a size limit for my own documents on the X200", "lang": "en", "chunk_id": ["E11", "Z11"], "kw": ["1 gb"], "neg": false, "kind": "plain"}
+{"q": "what does the Mini cost", "lang": "en", "chunk_id": ["E12", "Z12"], "kw": ["99"], "neg": false, "kind": "plain"}
+{"q": "what email do I write to for support", "lang": "en", "chunk_id": ["E13", "Z13"], "kw": ["support@vora.example"], "neg": false, "kind": "plain"}
+{"q": "how cold can it be where I put the box", "lang": "en", "chunk_id": ["E14", "Z14"], "kw": ["40", "0 and 40"], "neg": false, "kind": "plain"}
+{"q": "what power does the X200 take when idle", "lang": "en", "chunk_id": ["E15", "Z15"], "kw": ["5 w", "5w"], "neg": false, "kind": "plain"}
+{"q": "what is the M100's microphone range", "lang": "en", "chunk_id": ["E16", "Z16"], "kw": ["3 meters", "3 m"], "neg": false, "kind": "plain"}
+{"q": "which model has the 10 watt speaker", "lang": "en", "chunk_id": ["E17", "Z17"], "kw": ["x200"], "neg": false, "kind": "plain"}
+{"q": "what's the first thing to check if the box stays silent", "lang": "en", "chunk_id": ["E18", "Z18"], "kw": ["led", "red", "muted"], "neg": false, "kind": "plain"}
+{"q": "how big is the M100's internal storage", "lang": "en", "chunk_id": ["E02", "Z02"], "kw": ["16 gb"], "neg": false, "kind": "plain"}
+{"q": "does the warranty cover power cables", "lang": "en", "chunk_id": ["E03", "Z03"], "kw": ["6 months"], "neg": false, "kind": "plain"}
+{"q": "can the company read my transcripts", "lang": "en", "chunk_id": ["E06", "Z06"], "kw": ["never"], "neg": true, "kind": "neg"}
+{"q": "will it understand me if I speak Cantonese", "lang": "en", "chunk_id": ["E10", "Z10"], "kw": ["not supported"], "neg": true, "kind": "neg"}
+{"q": "can the M100 connect at 5 GHz", "lang": "en", "chunk_id": ["E07", "Z07"], "kw": ["2.4", "only"], "neg": true, "kind": "neg"}
+{"q": "does the warranty cover a cracked case from a drop", "lang": "en", "chunk_id": ["E03", "Z03"], "kw": ["not covered"], "neg": true, "kind": "neg"}
+{"q": "is firmware erased by a reset", "lang": "en", "chunk_id": ["E08", "Z08"], "kw": ["firmware is kept", "kept"], "neg": true, "kind": "neg"}
+{"q": "is the X200 supposed to run above 45 degrees", "lang": "en", "chunk_id": ["E14", "Z14"], "kw": ["40"], "neg": true, "kind": "neg"}
+{"q": "how many planets are in the solar system", "lang": "en", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "what's the best way to learn Spanish", "lang": "en", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "who is the CEO of Apple", "lang": "en", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "how do I convert Celsius to Fahrenheit", "lang": "en", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "what's a good name for a bakery", "lang": "en", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "旗舰款的存储是多少", "lang": "zh", "chunk_id": ["E01", "Z01"], "kw": ["32 gb"], "neg": false, "kind": "plain"}
+{"q": "M100 用的什么处理器", "lang": "zh", "chunk_id": ["E02", "Z02"], "kw": ["2 核", "arm"], "neg": false, "kind": "plain"}
+{"q": "X200 保修几年", "lang": "zh", "chunk_id": ["E03", "Z03"], "kw": ["2 年"], "neg": false, "kind": "plain"}
+{"q": "改唤醒词在哪里设置", "lang": "zh", "chunk_id": ["E04", "Z04"], "kw": ["设置", "唤醒词"], "neg": false, "kind": "plain"}
+{"q": "红灯亮了是什么意思", "lang": "zh", "chunk_id": ["E05", "Z05"], "kw": ["静音"], "neg": false, "kind": "plain"}
+{"q": "M100 的 Wi-Fi 是什么规格", "lang": "zh", "chunk_id": ["E07", "Z07"], "kw": ["wi-fi 5"], "neg": false, "kind": "plain"}
+{"q": "复位要按住多长时间", "lang": "zh", "chunk_id": ["E08", "Z08"], "kw": ["10 秒"], "neg": false, "kind": "plain"}
+{"q": "手动更新固件的步骤", "lang": "zh", "chunk_id": ["E09", "Z09"], "kw": ["检查更新"], "neg": false, "kind": "plain"}
+{"q": "能说英语吗", "lang": "zh", "chunk_id": ["E10", "Z10"], "kw": ["英语"], "neg": false, "kind": "plain"}
+{"q": "能导入 PDF 吗", "lang": "zh", "chunk_id": ["E11", "Z11"], "kw": ["pdf"], "neg": false, "kind": "plain"}
+{"q": "多少天内可以退款", "lang": "zh", "chunk_id": ["E12", "Z12"], "kw": ["30 天"], "neg": false, "kind": "plain"}
+{"q": "客服邮箱是什么", "lang": "zh", "chunk_id": ["E13", "Z13"], "kw": ["support@vora.example"], "neg": false, "kind": "plain"}
+{"q": "多冷的天气不能用", "lang": "zh", "chunk_id": ["E14", "Z14"], "kw": ["0 至 40", "40"], "neg": false, "kind": "plain"}
+{"q": "M100 的适配器规格", "lang": "zh", "chunk_id": ["E15", "Z15"], "kw": ["5 v"], "neg": false, "kind": "plain"}
+{"q": "M100 的麦克风数量", "lang": "zh", "chunk_id": ["E16", "Z16"], "kw": ["2 个"], "neg": false, "kind": "plain"}
+{"q": "M100 的扬声器有多大", "lang": "zh", "chunk_id": ["E17", "Z17"], "kw": ["5 瓦"], "neg": false, "kind": "plain"}
+{"q": "设备没声音先检查什么", "lang": "zh", "chunk_id": ["E18", "Z18"], "kw": ["指示灯", "红色"], "neg": false, "kind": "plain"}
+{"q": "M100 的内存多大", "lang": "zh", "chunk_id": ["E02", "Z02"], "kw": ["2 gb"], "neg": false, "kind": "plain"}
+{"q": "音频会存放在哪里", "lang": "zh", "chunk_id": ["E06", "Z06"], "kw": ["设备上"], "neg": false, "kind": "plain"}
+{"q": "我说粤语它能懂吗", "lang": "zh", "chunk_id": ["E10", "Z10"], "kw": ["不支持"], "neg": true, "kind": "neg"}
+{"q": "对话内容会被上传吗", "lang": "zh", "chunk_id": ["E06", "Z06"], "kw": ["不会上传"], "neg": true, "kind": "neg"}
+{"q": "M100 支持 5 GHz 频段吗", "lang": "zh", "chunk_id": ["E07", "Z07"], "kw": ["2.4", "只"], "neg": true, "kind": "neg"}
+{"q": "摔裂外壳保修吗", "lang": "zh", "chunk_id": ["E03", "Z03"], "kw": ["不在保修"], "neg": true, "kind": "neg"}
+{"q": "复位后固件会被清掉吗", "lang": "zh", "chunk_id": ["E08", "Z08"], "kw": ["保留"], "neg": true, "kind": "neg"}
+{"q": "50 摄氏度能用吗", "lang": "zh", "chunk_id": ["E14", "Z14"], "kw": ["40"], "neg": true, "kind": "neg"}
+{"q": "太阳系有几颗行星", "lang": "zh", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "怎么学好西班牙语", "lang": "zh", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "苹果公司的 CEO 是谁", "lang": "zh", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "摄氏度怎么换算成华氏度", "lang": "zh", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
+{"q": "给面包店起个名字", "lang": "zh", "chunk_id": [], "kw": [], "neg": false, "kind": "offtopic"}
