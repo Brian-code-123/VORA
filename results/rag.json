@@ -5,25 +5,23 @@
   "misses": []
  },
  "top3_heldout": {
-  "acc": 0.929,
+  "acc": 1.0,
   "n": 14,
-  "misses": [
-   "没反应怎么办"
-  ]
+  "misses": []
  },
  "offtopic_rejected": {
-  "rate": 0.9,
+  "rate": 1.0,
   "n": 10
  },
  "faithfulness": {
-  "acc": 0.975,
+  "acc": 1.0,
   "n": 40,
   "negation_acc": 1.0,
-  "heldout_acc": 0.95,
+  "heldout_acc": 1.0,
   "rows": [
    {
     "q": "how long is the warranty on the vora x200",
-    "answer": "the vora-x200 warranty period is 2 years.",
+    "answer": "the warranty on the vora-x200 is 2 years, with 6 months of coverage for power adapters and cables. physical damage and water damage are not covered.",
     "ok": true,
     "neg": false,
     "split": "dev"
@@ -37,21 +35,21 @@
    },
    {
     "q": "what does the red light mean",
-    "answer": "the red light on the box indicates that the microphone is muted.",
+    "answer": "the red light on the box indicates that it is muted.",
     "ok": true,
     "neg": false,
     "split": "dev"
    },
    {
     "q": "how do i factory reset it",
-    "answer": "to factory reset your device, hold the reset button on the back for 10 seconds until the led flashes white.",
+    "answer": "to factory reset your device, hold the reset button on the back for 10 seconds until the led flashes white, then erase all settings and imported documents.",
     "ok": true,
     "neg": false,
     "split": "dev"
    },
    {
     "q": "how do i contact support",
-    "answer": "to contact support, you can send an email to support@vora.example.",
+    "answer": "to contact support, you can use the email address provided in the context: support@vora.example.",
     "ok": true,
     "neg": false,
     "split": "dev"
@@ -93,7 +91,7 @@
    },
    {
     "q": "how many microphones does the x200 have",
-    "answer": "the x200 has a 4-microphone array with a pickup range of 5 meters.",
+    "answer": "the vora-x200 device has 4 microphones.",
     "ok": true,
     "neg": false,
     "split": "dev"
@@ -156,7 +154,7 @@
    },
    {
     "q": "知识库最大能导入多大",
-    "answer": "知识库最大能导入1gb的自有文档",
+    "answer": "知识库最大能导入1gb",
     "ok": true,
     "neg": false,
     "split": "dev"
@@ -170,7 +168,7 @@
    },
    {
     "q": "can i talk to it in cantonese",
-    "answer": "i'm not sure about that. could you rephrase?",
+    "answer": "cantonese speech is not supported.",
     "ok": true,
     "neg": true,
     "split": "heldout"
@@ -198,7 +196,7 @@
    },
    {
     "q": "does the m100 support 5ghz wifi",
-    "answer": "the x200 supports wi-fi 6 on 2.4 ghz and 5 ghz. the m100 supports wi-fi 5 on 2.4 ghz only.",
+    "answer": "wi-fi setup: open the vora home app, tap add device and follow the pairing steps. the m100 supports wi-fi 5 on 2.4 ghz only.",
     "ok": true,
     "neg": true,
     "split": "heldout"
@@ -254,14 +252,14 @@
    },
    {
     "q": "what hours is support open",
-    "answer": "support hours are monday to friday, 9:00 to 18:00 hong kong time.",
+    "answer": "support is open from monday to friday, 9:00 to 18:00 hong kong time.",
     "ok": true,
     "neg": false,
     "split": "heldout"
    },
    {
     "q": "x200是几核处理器",
-    "answer": "vora-x200是4核处理器",
+    "answer": "vora-x200是四核处理器",
     "ok": true,
     "neg": false,
     "split": "heldout"
@@ -275,8 +273,8 @@
    },
    {
     "q": "how far can the m100 hear me",
-    "answer": "the m100 has a 3-meter pickup range, which means it can hear you clearly in loud music.",
-    "ok": false,
+    "answer": "the m100 can hear you up to 3 meters away, while the x200 can hear you up to 5 meters away.",
+    "ok": true,
     "neg": false,
     "split": "heldout"
    },
@@ -296,123 +294,130 @@
    },
    {
     "q": "what is the support email",
-    "answer": "support contact: email support@vora.example.",
+    "answer": "the support email address is support@vora.example.",
     "ok": true,
     "neg": false,
     "split": "heldout"
    }
   ]
  },
+ "tune2": {
+  "n": 60,
+  "top3": 1.0,
+  "faith": 0.98,
+  "faith_with_refusals": 0.983,
+  "negation_acc": 1.0,
+  "offtopic_rejected": 1.0,
+  "misses": [
+   {
+    "q": "怎么把设备连上家里的无线网",
+    "ctx": [
+     "Z07",
+     "Z06",
+     "Z09"
+    ],
+    "answer": "如何将设备连接到家庭无线网络？"
+   }
+  ]
+ },
  "blind": {
   "n": 60,
-  "top3": 0.78,
-  "faith": 0.72,
-  "faith_with_refusals": 0.767,
+  "top3": 0.96,
+  "faith": 0.8,
+  "faith_with_refusals": 0.833,
   "negation_acc": 0.833,
   "offtopic_rejected": 1.0,
   "misses": [
    {
-    "q": "how much RAM does the mini model have",
+    "q": "where is the hardware mute switch",
     "ctx": [
-     "E01",
-     "E02",
+     "E05",
+     "E18",
+     "E06"
+    ],
+    "answer": "the hardware mute switch is located in the box."
+   },
+   {
+    "q": "what happens to my imported documents on a reset",
+    "ctx": [
+     "E08",
+     "E11",
+     "E06"
+    ],
+    "answer": "on a factory reset, your imported documents are erased."
+   },
+   {
+    "q": "how do I look for a firmware update manually",
+    "ctx": [
+     "E09",
+     "E08",
      "E18"
     ],
-    "answer": "the mini model of the vora-x200 has 4 gb ram."
+    "answer": "to look for a firmware update manually, follow these steps:\n\nfirmware updates: vora box installs firmware over the air once a month."
    },
    {
-    "q": "what charger does the X200 need",
+    "q": "what is the listening distance of the X200",
+    "ctx": [
+     "E17",
+     "E01",
+     "E16"
+    ],
+    "answer": "the x200 has a 10 w speaker, which is suitable for listening in a quiet environment."
+   },
+   {
+    "q": "can I change how loud it talks by voice",
     "ctx": [
      "E04",
-     "E18",
-     "E01"
+     "E17",
+     "E18"
     ],
-    "answer": "the x200 does not require a specific charger."
+    "answer": "wake word: the default wake word is \"hey vora\". you can change it in the vora home app under settings > wake word."
    },
    {
-    "q": "what should I do if it ignores me",
-    "ctx": [],
-    "answer": ""
-   },
-   {
-    "q": "how much power does the box use when idle",
+    "q": "大的那款用什么 CPU",
     "ctx": [
-     "E18",
-     "E15",
-     "E14"
+     "Z17",
+     "Z16",
+     "Z02"
     ],
-    "answer": "the box uses approximately 10 watts of power when idle."
+    "answer": "大款用的是m100，配5瓦扬声器。"
    },
    {
-    "q": "does the X200 work in 50 degree heat",
+    "q": "导入的文档在复位后会怎样",
     "ctx": [
-     "E18",
-     "E01",
-     "E17"
+     "Z08",
+     "Z11",
+     "Z06"
     ],
-    "answer": "vora-x200 hardware: the vora-x200 (also called vora box x200) has a 4-core arm cpu, 4 gb ram and 32 gb internal storage. it is the flagship model and runs all s"
+    "answer": "导入的文档在复位后会保留。"
    },
    {
-    "q": "迷你款有多少内存",
+    "q": "支持中英文混着说吗",
+    "ctx": [
+     "Z10",
+     "Z02",
+     "Z07"
+    ],
+    "answer": "不支持粤语。"
+   },
+   {
+    "q": "能放在零下的户外用吗",
     "ctx": [],
     "answer": ""
    },
    {
-    "q": "怎么把设备连上家里的无线网",
-    "ctx": [],
-    "answer": ""
-   },
-   {
-    "q": "X200 最多能导入多大的资料",
+    "q": "M100 能导入 1GB 的资料吗",
     "ctx": [
      "Z11",
-     "Z01",
-     "E01"
+     "Z02",
+     "Z07"
     ],
-    "answer": "x200 最多能导入1gb的自有文档（markdown、txt、pdf）。"
-   },
-   {
-    "q": "有问题发邮件给谁",
-    "ctx": [],
-    "answer": ""
-   },
-   {
-    "q": "多热的天气不能用",
-    "ctx": [],
-    "answer": ""
-   },
-   {
-    "q": "X200 配什么充电器",
-    "ctx": [
-     "Z01",
-     "E01",
-     "Z03"
-    ],
-    "answer": "x200 配 4 核 arm 处理器、4 gb 内存和 32 gb 内置存储。"
-   },
-   {
-    "q": "M100 的喇叭有多大功率",
-    "ctx": [
-     "Z16",
-     "Z12",
-     "Z03"
-    ],
-    "answer": "m100 的喇叭功率为 麦克风：x200 有 4 麦克风阵列，拾音距离 5 米；m100 有 2 个麦克风，拾音距离 3 米。"
-   },
-   {
-    "q": "叫它没反应怎么检查",
-    "ctx": [],
-    "answer": ""
-   },
-   {
-    "q": "50 度的房间能用吗",
-    "ctx": [],
-    "answer": ""
+    "answer": "产品名称和专业术语可以加入术语表。"
    }
   ]
  },
  "faithfulness_all": {
-  "acc": 0.85,
+  "acc": 0.9,
   "n": 100,
   "misses_allowed_for_95pct": 5
  }

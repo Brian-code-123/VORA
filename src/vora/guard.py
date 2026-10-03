@@ -166,3 +166,22 @@ def expects_number(question: str) -> bool:
 
 def has_number(text: str) -> bool:
     return bool(_NUM.search(text) or _NUMWORD.search(text) or re.search(r"[一二三四五六七八九十百千万两]", text))
+
+
+_CODE = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]\d{2,4}(?![A-Za-z0-9])")   # X200, M100 (also glued to CJK: "X200保修期"); not E-502 or Wi-Fi 6
+
+
+def product_codes(text: str) -> set[str]:
+    return {m.lower() for m in _CODE.findall(text)}
+
+
+def focus_on_asked_product(question: str, text: str) -> str:
+    """A chunk that covers two products ("The X200 uses 12 V. The M100 uses 5 V.") and a question about one of them:
+    keep that product's sentences and the sentences that name no product. Otherwise the 0.5B model answers with the other
+    model's figure (measured: "what charger does the X200 need" -> "5 V 2 A")."""
+    asked = product_codes(question)
+    if not asked:
+        return text
+    sents = split_sentences(text)
+    keep = [s for s in sents if not product_codes(s) or product_codes(s) & asked]
+    return " ".join(keep) if keep and len(keep) < len(sents) else text

@@ -119,3 +119,31 @@ def test_yes_no_with_negation_quotes_only_the_negating_sentence():
 def test_non_yes_no_still_one_sentence():
     chunk = "Support contact: email support@vora.example. Support hours are Monday to Friday."
     assert extractive_answer("what is the support email", [chunk]) == "Support contact: email support@vora.example."
+
+
+POWER = ("Power: the X200 uses a 12 V 2 A USB-C adapter. The M100 uses a 5 V 2 A USB-C adapter. "
+         "The X200 draws about 5 W when idle and 12 W while answering.")
+
+
+def test_focus_keeps_only_the_asked_product_and_neutral_sentences():
+    from vora.guard import focus_on_asked_product
+    x200 = focus_on_asked_product("what charger does the X200 need", POWER)
+    assert "12 V" in x200 and "5 W" in x200 and "M100" not in x200 and "5 V" not in x200
+    m100 = focus_on_asked_product("m100 adapter voltage?", POWER)
+    assert "5 V" in m100 and "X200" not in m100
+
+
+def test_focus_noop_without_a_product_code_or_when_nothing_to_drop():
+    from vora.guard import focus_on_asked_product
+    assert focus_on_asked_product("how much power does the box use", POWER) == POWER
+    only_x = "The X200 has a 10 W speaker. Volume is set by voice."
+    assert focus_on_asked_product("x200 speaker?", only_x) == only_x
+    assert focus_on_asked_product("how loud is the speaker", only_x) == only_x
+
+
+def test_focus_both_products_asked_keeps_both_and_codes_glued_to_cjk():
+    from vora.guard import focus_on_asked_product, product_codes
+    assert focus_on_asked_product("X200 and M100 adapters", POWER) == POWER
+    assert product_codes("X200保修期") == {"x200"} and product_codes("VORA-M100 and E-502 and Wi-Fi 6") == {"m100"}
+    zh = "电源：X200 使用 12 V 的适配器。M100 使用 5 V 的适配器。"
+    assert "5 V" not in focus_on_asked_product("X200的充电器是几伏", zh)
