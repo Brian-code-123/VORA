@@ -225,3 +225,18 @@ def test_qwen3_streams_without_think_tags_and_answers():
     q3 = Llm(Settings(llm_dir="llm_q3"))
     out = "".join(q3.stream("how long is the warranty on the vora x200", [Hit("E03", "Warranty: the VORA-X200 warranty period is 2 years. The VORA-M100 warranty period is 1 year.", 1.0)]))
     assert "think" not in out.lower() and "2 year" in out.lower(), out
+
+
+RESET_ZH = Hit("Z08", "恢复出厂设置：按住背面的复位键 10 秒，直到指示灯白色闪烁。这会清除所有设置和导入的文档，固件会保留。", 1.0)
+
+
+def test_answer_that_only_rephrases_the_question_gets_the_text_appended(llm, monkeypatch):
+    monkeypatch.setattr(llm.llm, "create_chat_completion", fake_words("如何 重置 整个 设备 的 方法？"))
+    out = "".join(llm.stream("怎么重置整个设备", [RESET_ZH]))
+    assert out.startswith("如何") and "复位键" in out         # spoken rephrasing stays (already played), the real sentence follows
+
+
+def test_restating_the_question_subject_at_the_start_is_not_an_echo(llm, monkeypatch):
+    monkeypatch.setattr(llm.llm, "create_chat_completion", fake_words("The VORA-X200 warranty period is 2 years, covering the whole unit."))
+    out = "".join(llm.stream("how long is the warranty on the vora x200", [WARRANTY_EN]))
+    assert out.startswith("The VORA-X200 warranty period is 2 years") and len(out) < 80   # no extractive sentence appended

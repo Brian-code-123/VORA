@@ -6,7 +6,7 @@ from typing import Iterator
 from llama_cpp import Llama
 
 from vora.config import Settings
-from vora.guard import focus_on_asked_product, product_codes, split_sentences, best_sentence, expects_number, extractive_answer, has_number, is_digitish, is_refusal, is_yes_no_question, numbers_mismatch, polarity_conflict
+from vora.guard import focus_on_asked_product, product_codes, split_sentences, best_sentence, expects_number, extractive_answer, has_number, is_digitish, is_refusal, is_yes_no_question, numbers_mismatch, polarity_conflict, is_question_echo
 from vora.rag.store import Hit
 
 SYSTEM = (
@@ -125,11 +125,11 @@ class Llm:
 
     def _deltas(self, msgs: list[dict]) -> Iterator[str | None]:
         if self._think_off:
-            for ev in self.llm.create_completion(prompt=chatml_prompt(msgs, True), stream=True, max_tokens=80, temperature=0.2,
+            for ev in self.llm.create_completion(prompt=chatml_prompt(msgs, True), stream=True, max_tokens=80, temperature=self.s.llm_temperature,
                                                  stop=["<|im_end|>"]):
                 yield ev["choices"][0]["text"]
         else:
-            for ev in self.llm.create_chat_completion(messages=msgs, stream=True, max_tokens=80, temperature=0.2):
+            for ev in self.llm.create_chat_completion(messages=msgs, stream=True, max_tokens=80, temperature=self.s.llm_temperature):
                 yield ev["choices"][0]["delta"].get("content")
 
     def prompt_tokens(self, question: str, hits: list[Hit]) -> int:
@@ -206,6 +206,8 @@ class Llm:
                 yield text if fix is None and (not pending or number_ok()) else extractive_answer(question, [h.text for h in hits])
             elif pending:
                 yield "".join(pending) if number_ok() else extractive_answer(question, [h.text for h in hits])
+            if decided and not cancel.is_set() and not expects_number(question) and is_question_echo("".join(said) + "".join(pending), question, chunks_text):
+                yield " " + extractive_answer(question, [h.text for h in hits])   # the whole answer only rephrased the question: add the text
             if decided and not cancel.is_set() and expects_number(question) and not has_number("".join(said) + "".join(pending)) \
                     and has_number(chunks_text):
                 yield " " + extractive_answer(question, [h.text for h in hits])   # asked "how far/long/much": the figure is in the text

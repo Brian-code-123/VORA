@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     endpoint_rule2_s: float = 0.4   # trailing silence after text that ends an utterance
     asr_zh_model: Literal["zipformer14m", "ctc_small"] = "ctc_small"   # AISHELL-1 CER 10.9% (wrapper, before no-reset) vs 16.0% for the 14M transducer
     llm_dir: str = "llm"   # folder under models_dir holding the .gguf (llm = Qwen2.5-0.5B, llm_q3 = Qwen3-0.6B)
+    llm_temperature: float = 0.2
     llm_threads: int = 4
     max_inflight_turns: int = 2   # LLM turns running+queued; the next one gets the busy reply immediately
     ssl_cert: str = ""
