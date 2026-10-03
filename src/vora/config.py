@@ -45,4 +45,5 @@ class Settings(BaseSettings):
     max_inflight_turns: int = 2   # LLM turns running+queued; the next one gets the busy reply immediately
     ssl_cert: str = ""
     ssl_key: str = ""
+    tts_en_voice: Literal["ljspeech", "lessac"] = "ljspeech"   # ljspeech: public domain, 22.05 kHz, from scratch. lessac: Blizzard 2013 licence (custom)
     tts_en_fp32: bool = False  # int8 en voice meets the 30 MB gate but is ~3x slower on ARM/M2; fp32 is 63 MB

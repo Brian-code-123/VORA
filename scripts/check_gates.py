@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 MB = 1024 * 1024
-LIMITS = {"asr_en": 50 * MB, "asr_zh": 50 * MB, "asr_zh_ctc": 50 * MB, "tts_en": 30 * MB, "tts_zh": 30 * MB}
+LIMITS = {"asr_en": 50 * MB, "asr_zh": 50 * MB, "asr_zh_ctc": 50 * MB, "tts_en": 30 * MB, "tts_en_ljspeech": 30 * MB, "tts_zh": 30 * MB}
 REPORT_ONLY = {"llm", "llm_q3", "embed"}  # LLM bounded by params (<=1B), not MB; RSS reported separately
 
 
