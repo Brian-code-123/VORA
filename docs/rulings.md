@@ -102,3 +102,10 @@
 - Final: Ruling: latency gates (G1, G2, G6) show UNVERIFIED instead of PASS/FAIL when the monitored run was busy. Quiet-start runs on this machine measured G1 p50 1124-1177 / p90 1418-1576 ms and G6 x1.09; the latest monitored runs (other apps at 40-60% CPU: Finder, WeChat, mediaanalysisd, Spotlight) gave G1 p50 1364 / p90 3262 and G6 x1.41. The user's other apps cannot be controlled.
 - Final measurement: latest bench (waited for CPU ≤25% x3, then ran; monitored DURING the run): G1 en p50 1138 / p90 1570 ms ("would pass"), but other-process CPU p90 was 34.5% (> 30% limit) → recorded busy → G1 UNVERIFIED. G6 latest: A 1279 / B 1355 ms vs single 959 (x1.41, would pass), other CPU p90 30.2% → UNVERIFIED. G2 (TTS first chunk, quiet by 1 s sample): en p95 147, zh 173 ms → PASS. G3 USS 272 MB PASS (USS is load-independent). G4 PASS. G5 FAIL (92.5%). G7 UNVERIFIED. G8 FAIL.
 - Final re-measurement (user confirmed the EduPulse-HK process stopped; CPU ~10-17%; monitored DURING the run, other-process CPU p90 24.8% bench / 28.6% concurrent, both ≤30%): G1 PASS en p50 1097 / p90 1468 ms (42 unique questions, speculation on). G6 PASS: 2 users A p50 1597, B p50 1326 ms vs single 852 ms (worst x1.87, threshold x2.0 — a thin margin; speculation off during the pairs, as in the server). Earlier busy-host runs are superseded.
+
+## Plan v8 (feat/real-suites) — T0 approvals (2026-10-03)
+- Downloads: user approved the whole list (MInDS-14 en-US/GB/AU/zh-CN, LibriSpeech test-other, DEMAND 28-clip mirror, silero VAD, LJSpeech medium, GTCRN, zipformer-small-en measure-only, bge-small-en experiment, axe-core dev-only).
+- Docker: user approved starting Docker Desktop at T7 (arm64 + amd64 builds, ~3 GB). Quit before T8 measurements.
+- AWS A1: user chose "ask me again at T7" (needs AWS connector login by the user; exact price + region shown before any launch). No EC2 call before an explicit yes.
+- CI: repo is PRIVATE → no arm64 CI job (billed minutes). amd64/arm64 build proof comes from local Docker.
+- Baseline before v8: fast suite 207 passed on branch feat/real-suites (cut from fix/gates).
