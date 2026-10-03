@@ -27,6 +27,7 @@ def dev_qa() -> list[dict]:
         qa += [{"q": r["text"], "chunk_id": intents[r["intent"]]["chunk_ids"], "split": "dev"} for r in rows]
     for name in ("librispeech_clean", "fleurs_en", "aishell", "fleurs_zh"):
         qa += [{"q": r["text"], "chunk_id": [], "split": "dev"} for r in [r for r in suites.load_manifest(name) if r["split"] == "dev"][:50]]
+    qa += [json.loads(l) for l in (ROOT / "eval" / "offtopic_dev.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]   # question-style off-topic
     return qa
 
 

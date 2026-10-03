@@ -2,10 +2,12 @@ import asyncio
 
 import pytest
 
+from vora.rag import store
+
 from vora.config import Settings
 
 S = Settings()
-pytestmark = [pytest.mark.perf, pytest.mark.skipif(not (S.index_dir / "faiss.index").exists(), reason="needs models + index")]
+pytestmark = [pytest.mark.perf, pytest.mark.skipif(not store.exists(S.index_dir), reason="needs models + index")]
 
 
 def test_two_sessions_p50_le_2x_single_and_memory_bounded():

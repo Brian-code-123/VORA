@@ -6,9 +6,10 @@ import sys
 import pytest
 
 from vora.config import Settings
+from vora.rag import store
 
 S = Settings()
-pytestmark = [pytest.mark.perf, pytest.mark.skipif(not (S.index_dir / "faiss.index").exists(), reason="needs models+index")]
+pytestmark = [pytest.mark.perf, pytest.mark.skipif(not store.exists(S.index_dir), reason="needs models+index")]
 
 SNIPPET = """
 import gc, json, os, psutil

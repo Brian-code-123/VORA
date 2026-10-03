@@ -91,7 +91,7 @@ def rows_from_minds14(table, cfg: str, intent_names: list[str], out_dir: Path) -
     p = pins()["minds14"]
     lang = "zh" if cfg.startswith("zh") else "en"
     report = {"seen": 0, "kept": 0, "corrupt": 0, "empty_text": 0, "too_short": 0, "too_long": 0}
-    rows = []
+    rows, seen = [], set()
     for r in table.to_pylist():
         report["seen"] += 1
         dec = decode_audio(r["audio"]["bytes"])
@@ -103,7 +103,11 @@ def rows_from_minds14(table, cfg: str, intent_names: list[str], out_dir: Path) -
         if why:
             report[why] += 1
             continue
-        id = f"minds14_{cfg}_{Path(r['path']).stem}"
+        pth = Path(r["path"])    # en-AU names every file response_N.wav inside one folder per intent: the folder is part of the id
+        id = f"minds14_{cfg}_{pth.parent.name.replace('~', '-')}_{pth.stem}"
+        if id in seen:
+            raise ValueError(f"duplicate id {id}: two rows would share one wav file")
+        seen.add(id)
         rel = _write(out_dir, id, to_16k(x, sr))
         rows.append(make_row(id=id, wav=rel, text=r["transcription"].strip(), lang=lang, scenario="telephone", accent=cfg,
                              intent=intent_names[r["intent_class"]], source=p["repo"], licence=p["licence"], orig_sr=sr))

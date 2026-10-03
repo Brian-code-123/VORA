@@ -2,12 +2,14 @@ import time
 
 import pytest
 
+from vora.rag import store
+
 from vora.config import ROOT, Settings
 from vora.rag.ingest import load_qa
 from vora.rag.retriever import Retriever
 
 S = Settings()
-pytestmark = pytest.mark.skipif(not (S.index_dir / "faiss.index").exists(), reason="run: python -m vora.rag.ingest")
+pytestmark = pytest.mark.skipif(not store.exists(S.index_dir), reason="run: python -m vora.rag.ingest")
 QA = load_qa(ROOT / "eval" / "rag_qa.jsonl")
 
 

@@ -10,38 +10,52 @@ from vora.rag import store
 
 
 def ingest(kb_dir: Path, index_dir: Path) -> None:
+    """One index per language, each with its own embedder (en chunks: bge-small-en, zh chunks: bge-small-zh)."""
     chunks = store.parse_kb(kb_dir)
-    emb = TextEmbedding(store.EMBED_MODEL, threads=2)
-    vecs = np.array(list(emb.embed([c["text"] for c in chunks])), dtype=np.float32)
-    vecs /= np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-9
-    store.save(index_dir, chunks, vecs, {"embed_model": store.EMBED_MODEL, "n": len(chunks)})
+    for c in chunks:
+        c["lang"] = store.lang_of(c["text"])
+    vecs = {}
+    for lang in sorted({c["lang"] for c in chunks}):
+        emb = TextEmbedding(store.LANG_MODELS[lang], threads=2)
+        v = np.array(list(emb.embed([c["text"] for c in chunks if c["lang"] == lang])), dtype=np.float32)
+        vecs[lang] = v / (np.linalg.norm(v, axis=1, keepdims=True) + 1e-9)
+    store.save(index_dir, chunks, vecs, {"embed_models": {l: store.LANG_MODELS[l] for l in vecs}, "n": len(chunks)})
 
 
 def load_qa(path: Path) -> list[dict]:
     return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
-def calibrate(settings: Settings, qa_path: Path) -> dict:
-    """Grid-search min_score on dev: maximise top-3 accuracy subject to rejecting >=90% of off-topic queries."""
+def calibrate(settings: Settings, qa_path: Path | list[Path]) -> dict:
+    """Per language, grid-search min_score on DEV questions: maximise top-3 accuracy subject to rejecting >=90% of
+    off-topic queries. (One shared threshold was wrong: zh and en scores live on different scales.)"""
     from vora.rag.retriever import Retriever
     r = Retriever(settings)
-    r.min_score = 0.0
-    dev = [q for q in load_qa(qa_path) if q["split"] == "dev"]
-    ans = [q for q in dev if q["chunk_id"]]
-    off = [q for q in dev if not q["chunk_id"]]
-    hit = {q["q"]: {h.chunk_id for h in r.search(q["q"])} & set(q["chunk_id"]) != set() for q in ans}
-    ans_score = {q["q"]: r.best_score(q["q"]) for q in ans}
-    off_score = [r.best_score(q["q"]) for q in off]
-    best = None
-    for th in np.arange(0.2, 0.9, 0.01):
-        rej = np.mean([s < th for s in off_score])
-        acc = np.mean([hit[q] and ans_score[q] >= th for q in hit])
-        if rej >= 0.9 and (best is None or acc > best[1]):
-            best = (float(round(th, 2)), float(acc), float(rej))
-    best = best or (float(max(off_score)) + 0.01, 0.0, 1.0)
+    r.min_score = {lang: 0.0 for lang in r.lanes}
+    paths = qa_path if isinstance(qa_path, list) else [qa_path]
+    dev = [q for p in paths for q in load_qa(p) if q["split"] == "dev"]
+    out = {"min_score": {}, "dev_top3_at_threshold": {}, "offtopic_rejected": {}, "n_dev": {}}
+    for lang in r.lanes:
+        qs = [q for q in dev if store.lang_of(q["q"]) == lang]
+        ans, off = [q for q in qs if q["chunk_id"]], [q for q in qs if not q["chunk_id"]]
+        if not ans or not off:      # nothing to calibrate against: keep the configured default
+            out["min_score"][lang], out["n_dev"][lang] = settings.min_score, [len(ans), len(off)]
+            continue
+        hit = {q["q"]: {h.chunk_id for h in r.search(q["q"])} & set(q["chunk_id"]) != set() for q in ans}
+        ans_score = {q["q"]: r.best_score(q["q"]) for q in ans}
+        off_score = [r.best_score(q["q"]) for q in off]
+        best = None
+        for th in np.arange(0.2, 0.95, 0.01):
+            rej = np.mean([s < th for s in off_score])
+            acc = np.mean([hit[q] and ans_score[q] >= th for q in hit])
+            if rej >= 0.9 and (best is None or acc > best[1]):
+                best = (float(round(th, 2)), float(acc), float(rej))
+        best = best or (float(max(off_score)) + 0.01, 0.0, 1.0)
+        out["min_score"][lang], out["dev_top3_at_threshold"][lang], out["offtopic_rejected"][lang] = best
+        out["n_dev"][lang] = [len(ans), len(off)]
     meta_path = settings.index_dir / "meta.json"
     meta = json.loads(meta_path.read_text())
-    meta.update(min_score=best[0], dev_top3_at_threshold=best[1], offtopic_rejected=best[2])
+    meta.update(out)
     meta_path.write_text(json.dumps(meta))
     return meta
 
@@ -49,4 +63,4 @@ def calibrate(settings: Settings, qa_path: Path) -> dict:
 if __name__ == "__main__":
     s = Settings()
     ingest(s.kb_dir, s.index_dir)
-    print(calibrate(s, ROOT / "eval" / "rag_qa.jsonl"))
+    print(calibrate(s, [ROOT / "eval" / "rag_qa.jsonl", ROOT / "eval" / "offtopic_dev.jsonl"]))
