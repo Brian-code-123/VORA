@@ -124,7 +124,8 @@ def score_asr(refs: list[str], hyps: list[str], lang: str) -> dict:
 def faith_check(answer: str, kws: list[str]) -> bool:
     """Any keyword in the answer, ignoring case, spaces and hyphens ("2gb" == "2 GB")."""
     squash = lambda t: re.sub(r"[\s\-]+", "", t.lower())
-    return any(squash(k) in squash(answer) for k in kws)
+    stem = lambda t: re.sub(r"(?<=[a-z]{3})(es|s|ed|d|ing)$", "", t)    # erases / erased / erase
+    return any(squash(k) in squash(answer) or (k.isalpha() and len(k) > 4 and stem(squash(k)) in squash(answer)) for k in kws)
 
 
 def _retrieve(retriever, text: str, ids: set[str]) -> tuple[bool, bool, list]:

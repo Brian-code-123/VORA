@@ -134,6 +134,7 @@ def test_faith_check_is_case_insensitive_any_keyword():
     assert E.faith_check("余额在应用首页", ["余额", "balance"])
     assert not E.faith_check("I'm not sure about that.", ["balance"])
     assert not E.faith_check("anything", [])
+    assert E.faith_check("your documents are erased", ["erases"]) and not E.faith_check("nothing happens", ["erases"])
     assert E.faith_check("迷你款有2gb内存", ["2 gb"]) and E.faith_check("it has a 3-meter pickup range", ["3 meter"])
 
 

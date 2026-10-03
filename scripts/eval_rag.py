@@ -2,6 +2,7 @@
 Usage: eval_rag.py"""
 import json
 import re
+from pathlib import Path
 
 from vora.config import ROOT, Settings
 from vora.llm import Llm
@@ -11,7 +12,8 @@ from vora.rag.retriever import Retriever
 def has_kw(answer: str, kws: list[str]) -> bool:
     """Any keyword in the answer, ignoring spaces and hyphens ("2gb" == "2 GB", "3-meter" == "3 meter")."""
     squash = lambda t: re.sub(r"[\s\-]+", "", t.lower())
-    return any(squash(k) in squash(answer) for k in kws)
+    stem = lambda t: re.sub(r"(?<=[a-z]{3})(es|s|ed|d|ing)$", "", t)    # erases / erased / erase
+    return any(squash(k) in squash(answer) or (k.isalpha() and len(k) > 4 and stem(squash(k)) in squash(answer)) for k in kws)
 
 
 def load_faithfulness() -> list[dict]:
@@ -47,6 +49,7 @@ def score_blind(r: Retriever, llm: Llm | None, name: str = "rag_blind3") -> dict
 
 def main() -> None:
     import sys
+    out_path = Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv else ROOT / "results" / "rag.json"
     final = "--final" in sys.argv   # rag_blind3 is read once, in the final run (like the test split)
     s = Settings()
     r = Retriever(s)
@@ -75,8 +78,8 @@ def main() -> None:
         n_all = len(rows) + blind["n"]
         ok_all = sum(x["ok"] for x in rows) + round(blind["faith_with_refusals"] * blind["n"])
         res["faithfulness_all"] = {"acc": round(ok_all / n_all, 3), "n": n_all, "misses_allowed_for_95pct": n_all // 20}
-    (ROOT / "results").mkdir(exist_ok=True)
-    (ROOT / "results" / "rag.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(res, ensure_ascii=False, indent=1))
     print({k: (v if k.startswith("top3") or k.startswith("off") or k in ("blind", "tune2", "tune3", "faithfulness_all") else {kk: v[kk] for kk in ("acc", "n", "negation_acc", "heldout_acc") if kk in v}) for k, v in res.items()})
     for x in rows:
         if not x["ok"]:
