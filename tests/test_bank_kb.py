@@ -51,7 +51,7 @@ def test_ingest_ids_match_parser_regex():
     assert len(lines) == 28 and len(chunks()) == 28
 
 
-@pytest.mark.skipif(not (ROOT / "index_bank" / "faiss.index").exists(), reason="python scripts/build_bank_index.py not run")
+@pytest.mark.skipif(not store.exists(ROOT / "index_bank"), reason="python scripts/build_bank_index.py not run")
 def test_retriever_domain_isolated():
     from vora.config import Settings
     from vora.rag.retriever import Retriever

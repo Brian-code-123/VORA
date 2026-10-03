@@ -3,11 +3,13 @@ import json
 
 import pytest
 
+from vora.rag import store
+
 from vora.config import ROOT, Settings
 from vora.rag.retriever import Retriever
 
 S = Settings()
-pytestmark = pytest.mark.skipif(not (S.index_dir / "faiss.index").exists(), reason="run: python -m vora.rag.ingest")
+pytestmark = pytest.mark.skipif(not store.exists(S.index_dir), reason="run: python -m vora.rag.ingest")
 
 
 @pytest.fixture(scope="module")
@@ -84,4 +86,4 @@ def test_min_score_calibrated_per_kb():
     if not bank.exists():
         pytest.skip("python scripts/build_bank_index.py not run")
     m = json.loads(bank.read_text())
-    assert "min_score" in m and m["offtopic_rejected"] >= 0.9
+    assert set(m["min_score"]) == {"en", "zh"} and all(v >= 0.9 for v in m["offtopic_rejected"].values())

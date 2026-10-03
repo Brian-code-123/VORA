@@ -21,7 +21,7 @@ def measure(models_dir: Path) -> dict[str, int]:
     """Count only the weights the runtime loads (int8 onnx / gguf), not espeak data."""
     sizes = {}
     for d in sorted(models_dir.iterdir()) if models_dir.exists() else []:
-        if not d.is_dir():
+        if not d.is_dir() or d.name == "aux":   # aux = dev-only tools (silero VAD for the latency cross-check), never shipped
             continue
         files = [f for f in d.rglob("*") if f.is_file()]
         if d.name.startswith("asr"):

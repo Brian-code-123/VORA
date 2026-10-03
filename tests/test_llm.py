@@ -5,6 +5,7 @@ import pytest
 
 from vora.config import Settings
 from vora.llm import BUSY, SYSTEM, UNSURE, Llm
+from vora.rag import store
 from vora.rag.store import Hit
 
 S = Settings()
@@ -159,7 +160,7 @@ def test_context_trim_keeps_the_answer_sentence(llm):
     assert len(llm.llm.tokenize(ctx.encode())) <= llm.s.max_ctx_tokens + 40
 
 
-@pytest.mark.skipif(not (S.index_dir / "faiss.index").exists(), reason="needs index")
+@pytest.mark.skipif(not store.exists(S.index_dir), reason="needs index")
 def test_prompt_tokens_le_170_for_every_eval_question(llm):
     from vora.config import ROOT
     from vora.rag.ingest import load_qa

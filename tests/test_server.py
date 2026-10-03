@@ -6,6 +6,8 @@ import wave
 
 import numpy as np
 import pytest
+
+from vora.rag import store
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
@@ -226,7 +228,7 @@ async def test_idle_timeout_closes():
     assert ws.closed == 1000
 
 
-@pytest.mark.skipif(not (Settings().models_dir / "llm").exists() or not (Settings().index_dir / "faiss.index").exists(),
+@pytest.mark.skipif(not (Settings().models_dir / "llm").exists() or not store.exists(Settings().index_dir),
                     reason="needs models + index")
 def test_real_models_roundtrip_en():
     wav = Settings().models_dir / "asr_en/test_wavs/1.wav"

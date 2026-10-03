@@ -10,7 +10,7 @@ from rapidfuzz import fuzz
 
 from vora.config import Settings
 from vora.rag import store
-from vora.rag.store import EMBED_MODEL, Hit
+from vora.rag.store import LANG_MODELS, Hit, lang_of
 
 jieba.setLogLevel(60)
 _LATIN_RUN = re.compile(r"[A-Za-z0-9][A-Za-z0-9\- ]*[A-Za-z0-9]|[A-Za-z0-9]")
@@ -31,9 +31,10 @@ def _compact(s: str) -> str:
 class Retriever:
     def __init__(self, settings: Settings, index_dir: Path | None = None):
         self.s = settings
-        self.index, self.chunks, meta = store.load(index_dir or settings.index_dir)
-        self.min_score = meta.get("min_score", settings.min_score)
-        self.emb = TextEmbedding(EMBED_MODEL, threads=1)
+        self.lanes, self.chunks, meta = store.load(index_dir or settings.index_dir)
+        ms = meta.get("min_score", settings.min_score)
+        self.min_score = ms if isinstance(ms, dict) else {lang: ms for lang in self.lanes}   # per language
+        self._emb: dict[str, TextEmbedding] = {}      # loaded on first query in that language
         self.bm25 = BM25Okapi([tokenize(c["text"]) for c in self.chunks])
         gpath = settings.kb_dir / "glossary.json"
         self.glossary = json.loads(gpath.read_text(encoding="utf-8")) if gpath.exists() else {}
@@ -76,28 +77,44 @@ class Retriever:
                 extra.append(add)
         return text if not extra else f"{text} {' '.join(extra)}"
 
-    def _dense(self, q: str) -> np.ndarray:
-        v = np.array(list(self.emb.embed([q])), dtype=np.float32)
+    def _lane(self, q: str) -> str:
+        lang = lang_of(q)
+        return lang if lang in self.lanes else next(iter(self.lanes))   # KB without chunks in that language: use what exists
+
+    def _embedder(self, lang: str) -> TextEmbedding:
+        if lang not in self._emb:
+            self._emb[lang] = TextEmbedding(LANG_MODELS[lang], threads=1)
+        return self._emb[lang]
+
+    def _dense(self, q: str, lang: str) -> np.ndarray:
+        v = np.array(list(self._embedder(lang).embed([q])), dtype=np.float32)
         v /= np.linalg.norm(v, axis=1, keepdims=True) + 1e-9
-        scores, ids = self.index.search(v, len(self.chunks))
+        index, pos = self.lanes[lang]
+        scores, ids = index.search(v, len(pos))
         d = np.zeros(len(self.chunks), dtype=np.float32)
-        d[ids[0]] = scores[0]
+        d[pos[ids[0]]] = scores[0]
         return d
+
+    def _bm25(self, q: str) -> np.ndarray:
+        toks = tokenize(q)
+        bm = self.bm25.get_scores(toks)
+        if self.s.bm25_norm == "idf":    # fraction of the query's information content that a chunk matches
+            den = sum(self.bm25.idf.get(t, 0.0) for t in set(toks)) * (self.bm25.k1 + 1)
+            return bm / den if den > 0 else bm * 0
+        return bm / bm.max() if bm.max() > 0 else bm
+
+    def _score(self, q: str) -> tuple[np.ndarray, str]:
+        lang = self._lane(q)
+        w = self.s.dense_weight
+        return w * np.clip(self._dense(q, lang), 0, 1) + (1 - w) * self._bm25(q), lang
 
     def search(self, query: str, k: int | None = None) -> list[Hit]:
         k = k or self.s.top_k
-        q = self.expand_query(self.normalize_query(query))
-        dense = np.clip(self._dense(q), 0, 1)
-        bm = self.bm25.get_scores(tokenize(q))
-        bm = bm / bm.max() if bm.max() > 0 else bm
-        score = 0.7 * dense + 0.3 * bm
+        score, lang = self._score(self.expand_query(self.normalize_query(query)))
         order = np.argsort(-score)[:k]
-        if score[order[0]] < self.min_score:
+        if score[order[0]] < self.min_score.get(lang, self.s.min_score):
             return []
         return [Hit(self.chunks[i]["id"], self.chunks[i]["text"], float(score[i])) for i in order]
 
     def best_score(self, query: str) -> float:
-        q = self.expand_query(self.normalize_query(query))
-        bm = self.bm25.get_scores(tokenize(q))
-        bm = bm / bm.max() if bm.max() > 0 else bm
-        return float((0.7 * np.clip(self._dense(q), 0, 1) + 0.3 * bm).max())
+        return float(self._score(self.expand_query(self.normalize_query(query)))[0].max())

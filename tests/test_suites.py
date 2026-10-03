@@ -87,6 +87,25 @@ def test_minds14_rows_and_filter_counts_reported(tmp_path: Path):
     assert sr == 16000 and x.ndim == 1
 
 
+def test_duplicate_file_names_across_intents_get_unique_ids(tmp_path: Path):
+    """en-AU names every file response_N.wav inside one folder per intent (en-AU~PAY_BILL/response_4.wav): the first build
+    used the file stem as id, 624 rows collapsed to 146 ids and later wavs overwrote earlier ones (94.8% 'WER' was an artefact)."""
+    rows_in = []
+    for intent_dir, cls in (("en-AU~PAY_BILL", 0), ("en-AU~BALANCE", 1)):
+        rows_in.append({"path": f"{intent_dir}/response_4.wav", "audio": {"bytes": wav_bytes(tone8k(), 8000), "path": None},
+                        "transcription": f"text for {intent_dir}", "english_transcription": "x", "intent_class": cls, "lang_id": 2})
+    rows, _ = S.rows_from_minds14(pa.Table.from_pylist(rows_in), "en-AU", ["pay_bill", "balance"], tmp_path)
+    assert len({r["id"] for r in rows}) == 2 and len({r["wav"] for r in rows}) == 2
+    assert len(list((tmp_path / "wav").glob("*.wav"))) == 2
+
+
+def test_duplicate_ids_are_rejected(tmp_path: Path):
+    t = pa.Table.from_pylist([{"path": "a/x.wav", "audio": {"bytes": wav_bytes(tone8k(), 8000), "path": None}, "transcription": "one",
+                               "english_transcription": "one", "intent_class": 0, "lang_id": 0}] * 2)
+    with pytest.raises(ValueError, match="duplicate id"):
+        S.rows_from_minds14(t, "en-US", ["balance"], tmp_path)
+
+
 def test_corrupt_audio_skipped_not_crash(tmp_path: Path):
     rows, report = S.rows_from_minds14(fake_table(0, with_bad=True), "en-US", ["balance"], tmp_path)
     assert report["corrupt"] == 1 and all(r["id"] != "x" for r in rows)
@@ -153,3 +172,13 @@ def test_pins_json_lists_licence_for_every_source():
     pins = json.loads((S.ROOT / "eval" / "suites" / "pins.json").read_text())
     for name, p in pins["datasets"].items():
         assert p["licence"] and p["repo"], name
+
+
+@pytest.mark.parametrize("name", list(S.MINDS14) + list(S.READ))
+def test_built_manifests_have_unique_ids_and_existing_wavs(name):
+    if not (S.SUITES_DIR / name / "manifest.jsonl").exists():
+        pytest.skip(f"suite {name} not built")
+    rows = S.load_manifest(name)
+    assert len({r["id"] for r in rows}) == len(rows)
+    assert all((S.SUITES_DIR / name / r["wav"]).exists() for r in rows[:50])
+    assert len({r["wav"] for r in rows}) == len(rows)
