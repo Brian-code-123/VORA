@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 import threading
 from typing import Iterator
 
@@ -34,18 +35,34 @@ def _first_sentence(text: str) -> str:
     return (m.group(1) if m else text).strip()
 
 
+def chatml_prompt(msgs: list[dict], think_off: bool) -> str:
+    """ChatML text for models whose chat template we bypass. think_off: Qwen3 starts with a reasoning block; an empty one
+    makes it answer directly (and keeps <think> tokens out of the stream the guard reads)."""
+    out = "".join(f"<|im_start|>{m['role']}\n{m['content']}<|im_end|>\n" for m in msgs) + "<|im_start|>assistant\n"
+    return out + "<think>\n\n</think>\n\n" if think_off else out
+
+
 class Llm:
-    """Qwen2.5-0.5B GGUF. One instance per process; llama.cpp is not thread-safe, so a lock serialises users."""
+    """Qwen2.5-0.5B GGUF (default) or Qwen3-0.6B (Settings.llm_dir). One instance per process; llama.cpp is not thread-safe, so a lock serialises users."""
+
+    @staticmethod
+    def model_path(settings: Settings) -> Path:
+        d = settings.models_dir / settings.llm_dir
+        found = sorted(d.glob("*.gguf")) if d.exists() else []
+        if not found:
+            raise FileNotFoundError(f"no .gguf in {d} (Settings.llm_dir={settings.llm_dir!r}, fetch it first)")
+        return found[0]
 
     def __init__(self, settings: Settings):
         self.s = settings
         self.llm = Llama(
-            model_path=str(next((settings.models_dir / "llm").glob("*.gguf"))),
+            model_path=str(self.model_path(settings)),
             n_ctx=1024, n_threads=settings.llm_threads, n_threads_batch=settings.llm_threads,  # default n_threads_batch = all logical cores: E-core stragglers made prefill 10x slower (22 vs 374 tok/s)
             n_batch=512, n_gpu_layers=0, verbose=False,
         )
         # No LlamaRAMCache: every entry copies ~90 MB of logits (RSS 2.5 GB, seconds of memcpy). llama.cpp already reuses the
         # KV prefix of the previous prompt, which is the shared system prompt when users alternate.
+        self._think_off = self.llm.metadata.get("general.architecture") == "qwen3"
         self._lock = threading.Lock()
         self._cancel = threading.Event()
 
@@ -96,6 +113,15 @@ class Llm:
         return [{"role": "system", "content": SYSTEM},
                 {"role": "user", "content": f"Context:\n{self._context(question, hits)}\n\nQuestion: {question}"}]
 
+    def _deltas(self, msgs: list[dict]) -> Iterator[str | None]:
+        if self._think_off:
+            for ev in self.llm.create_completion(prompt=chatml_prompt(msgs, True), stream=True, max_tokens=80, temperature=0.2,
+                                                 stop=["<|im_end|>"]):
+                yield ev["choices"][0]["text"]
+        else:
+            for ev in self.llm.create_chat_completion(messages=msgs, stream=True, max_tokens=80, temperature=0.2):
+                yield ev["choices"][0]["delta"].get("content")
+
     def prompt_tokens(self, question: str, hits: list[Hit]) -> int:
         return sum(self._ntok(m["content"]) for m in self._messages(question, hits)) + 20   # chat-template overhead
 
@@ -119,7 +145,7 @@ class Llm:
         gen = None
         try:
             msgs = self._messages(question, hits)
-            gen = self.llm.create_chat_completion(messages=msgs, stream=True, max_tokens=80, temperature=0.2)
+            gen = self._deltas(msgs)
             buf, decided, ref = [], False, _terms(hits[0].text) | _terms(question)
             pending: list[str] = []          # digit-ish tokens held back until the whole number is known
             chunks_text = " ".join(h.text for h in hits)
@@ -135,10 +161,9 @@ class Llm:
                     pending.insert(0, buf.pop())
                 return self._replacement(question, hits, "".join(buf), ref)
 
-            for ev in gen:
+            for tok in gen:
                 if cancel.is_set():
                     return
-                tok = ev["choices"][0]["delta"].get("content")
                 if not tok:
                     continue
                 if not decided:

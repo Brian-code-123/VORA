@@ -199,3 +199,29 @@ def test_quantity_question_without_a_figure_gets_the_sentence_appended(llm, monk
     monkeypatch.setattr(llm.llm, "create_chat_completion", fake_words("The M100 can hear you from quite a distance away."))
     out = "".join(llm.stream("how far can the m100 hear me", [mic]))
     assert "3 meters" in out and out.startswith("The M100 can hear you")
+
+
+def test_chatml_prompt_for_thinking_models_ends_with_an_empty_think_block():
+    from vora.llm import chatml_prompt
+    msgs = [{"role": "system", "content": "SYS"}, {"role": "user", "content": "Q?"}]
+    p = chatml_prompt(msgs, think_off=True)
+    assert p.startswith("<|im_start|>system\nSYS<|im_end|>\n<|im_start|>user\nQ?<|im_end|>\n<|im_start|>assistant\n")
+    assert p.endswith("<think>\n\n</think>\n\n")                # Qwen3: skip the reasoning block, no think tokens in the stream
+    assert not chatml_prompt(msgs, think_off=False).endswith("</think>\n\n")
+
+
+def test_llm_dir_setting_selects_the_model_folder(tmp_path):
+    from vora.llm import Llm
+    (tmp_path / "llm_x").mkdir()
+    (tmp_path / "llm_x" / "m.gguf").write_bytes(b"x")
+    assert Llm.model_path(Settings(models_dir=tmp_path, llm_dir="llm_x")).name == "m.gguf"
+    with pytest.raises(FileNotFoundError, match="llm_missing"):
+        Llm.model_path(Settings(models_dir=tmp_path, llm_dir="llm_missing"))
+
+
+@pytest.mark.skipif(not (S.models_dir / "llm_q3").exists(), reason="Qwen3 A/B model not fetched")
+def test_qwen3_streams_without_think_tags_and_answers():
+    from vora.llm import Llm
+    q3 = Llm(Settings(llm_dir="llm_q3"))
+    out = "".join(q3.stream("how long is the warranty on the vora x200", [Hit("E03", "Warranty: the VORA-X200 warranty period is 2 years. The VORA-M100 warranty period is 1 year.", 1.0)]))
+    assert "think" not in out.lower() and "2 year" in out.lower(), out
