@@ -1,6 +1,6 @@
 import pytest
 
-from vora.guard import best_sentence, is_refusal, polarity_conflict
+from vora.guard import best_sentence, focus_on_asked_product, is_refusal, polarity_conflict
 
 CANTONESE_EN = "Languages: VORA Box understands and speaks Mandarin Chinese and English. Cantonese speech is not supported."
 CANTONESE_ZH = "语言：VORA Box 能听懂并说普通话和英语，也能回答中英文混合的句子。不支持粤语。"
@@ -147,3 +147,15 @@ def test_focus_both_products_asked_keeps_both_and_codes_glued_to_cjk():
     assert product_codes("X200保修期") == {"x200"} and product_codes("VORA-M100 and E-502 and Wi-Fi 6") == {"m100"}
     zh = "电源：X200 使用 12 V 的适配器。M100 使用 5 V 的适配器。"
     assert "5 V" not in focus_on_asked_product("X200的充电器是几伏", zh)
+
+
+def test_reading_text_modes():
+    from vora.llm import reading_text
+    from vora.rag.store import Hit
+    chunk = "Speaker: the X200 has a 10 W speaker. The M100 has a 5 W speaker. Volume is set by voice."
+    h = Hit("E17", chunk, 0.9, "Speaker: The M100 has a 5 W speaker.")
+    assert reading_text("chunk", "how loud is the m100", h) == focus_on_asked_product("how loud is the m100", chunk)
+    assert reading_text("focus", "how loud is the m100", h) == "Speaker: The M100 has a 5 W speaker."     # focus sentence matches the asked product
+    assert reading_text("focus", "how loud is the speaker", h) == h.focus                                  # no product asked: focus as is
+    assert reading_text("focus", "how loud is the x200 speaker", h) == "Speaker: the X200 has a 10 W speaker. Volume is set by voice."   # focus names the OTHER product: fall back to the asked one
+    assert reading_text("focus", "q", Hit("E01", "whole text", 0.5)) == "whole text"                       # no focus available

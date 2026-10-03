@@ -6,7 +6,7 @@ from typing import Iterator
 from llama_cpp import Llama
 
 from vora.config import Settings
-from vora.guard import focus_on_asked_product, split_sentences, best_sentence, expects_number, extractive_answer, has_number, is_digitish, is_refusal, is_yes_no_question, numbers_mismatch, polarity_conflict
+from vora.guard import focus_on_asked_product, product_codes, split_sentences, best_sentence, expects_number, extractive_answer, has_number, is_digitish, is_refusal, is_yes_no_question, numbers_mismatch, polarity_conflict
 from vora.rag.store import Hit
 
 SYSTEM = (
@@ -33,6 +33,16 @@ def _terms(text: str) -> set[str]:
 def _first_sentence(text: str) -> str:
     m = re.match(r"(.+?[。！？.!?])(\s|$)", text.strip())
     return (m.group(1) if m else text).strip()
+
+
+def reading_text(mode: str, question: str, hit: Hit) -> str:
+    """The text the model reads (and the guards check against) for one hit. "chunk": the whole chunk minus the sentences about
+    a product the question did not ask for. "focus": only the retriever's best sentence, unless that sentence is about the
+    other product."""
+    asked = product_codes(question)
+    if mode == "focus" and hit.focus and (not asked or not product_codes(hit.focus) or product_codes(hit.focus) & asked):
+        return hit.focus
+    return focus_on_asked_product(question, hit.text)
 
 
 def chatml_prompt(msgs: list[dict], think_off: bool) -> str:
@@ -131,7 +141,7 @@ class Llm:
         if not hits:
             yield UNSURE[lang]
             return
-        hits = [Hit(h.chunk_id, focus_on_asked_product(question, h.text), h.score) for h in hits]   # one product's sentences only
+        hits = [Hit(h.chunk_id, reading_text(self.s.context_mode, question, h), h.score) for h in hits]
         if self.s.yes_no_extractive and is_yes_no_question(question):
             # a 0.5B model ignores negation in yes/no questions (measured: "yes, understands Cantonese"); quote the text
             yield extractive_answer(question, [h.text for h in hits])
