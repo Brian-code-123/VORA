@@ -122,8 +122,9 @@ def score_asr(refs: list[str], hyps: list[str], lang: str) -> dict:
 
 
 def faith_check(answer: str, kws: list[str]) -> bool:
-    a = answer.lower()
-    return any(k.lower() in a for k in kws)
+    """Any keyword in the answer, ignoring case, spaces and hyphens ("2gb" == "2 GB")."""
+    squash = lambda t: re.sub(r"[\s\-]+", "", t.lower())
+    return any(squash(k) in squash(answer) for k in kws)
 
 
 def _retrieve(retriever, text: str, ids: set[str]) -> tuple[bool, bool, list]:

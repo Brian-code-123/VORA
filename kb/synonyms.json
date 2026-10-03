@@ -15,5 +15,18 @@
   "mute": "microphone mute switch red LED",
   "hear": "microphone pickup range distance meters",
   "how far": "microphone pickup range distance meters",
-  "拾音": "麦克风 拾音距离 米"
+  "拾音": "麦克风 拾音距离 米",
+  "charger": "power adapter USB-C 12 V",
+  "充电器": "电源适配器 USB-C 伏",
+  "network": "Wi-Fi wireless network setup pairing Add Device",
+  "无线网": "Wi-Fi 无线网络 配对 添加设备",
+  "ignores": "does not respond troubleshooting LED power wake word",
+  "没反应": "无响应 排查 指示灯 电源 唤醒词",
+  "heat": "operating conditions degrees Celsius heaters",
+  "degree": "operating conditions degrees Celsius",
+  "热": "使用环境 摄氏度 湿度",
+  "喇叭": "扬声器 瓦 音量",
+  "邮件": "客服 联系方式 邮件 support",
+  "idle": "power consumption watts W standby adapter",
+  "standby": "power consumption watts W idle adapter"
 }
