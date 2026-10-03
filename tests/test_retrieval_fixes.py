@@ -52,30 +52,32 @@ def test_synonyms_lint_general_only():
         assert add.strip() and key != add
 
 
-@pytest.mark.parametrize("name,sha", [("rag_blind", "BLIND.sha256"), ("rag_blind2", "BLIND2.sha256")])
+@pytest.mark.parametrize("name,sha", [("rag_blind", "BLIND.sha256"), ("rag_blind2", "BLIND2.sha256"), ("rag_blind3", "BLIND3.sha256")])
 def test_blind_set_hash_unchanged(name, sha):
     want = (ROOT / "eval" / sha).read_text().split()[0]
     got = hashlib.sha256((ROOT / "eval" / f"{name}.jsonl").read_bytes()).hexdigest()
     assert got == want, f"eval/{name}.jsonl was edited: frozen sets change only with a ruling in docs/rulings.md"
 
 
-@pytest.mark.parametrize("name", ["rag_blind", "rag_blind2"])
+@pytest.mark.parametrize("name", ["rag_blind", "rag_blind2", "rag_blind3"])
 def test_blind_set_shape(name):
     rows = [json.loads(l) for l in (ROOT / "eval" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
     assert len(rows) == 60 and sum(x["kind"] == "neg" for x in rows) == 12 and sum(x["kind"] == "offtopic" for x in rows) == 10
     assert {x["lang"] for x in rows} == {"en", "zh"} and all(x["kw"] and x["chunk_id"] for x in rows if x["kind"] != "offtopic")
 
 
-def test_blind2_does_not_overlap_any_other_eval_set():
-    """blind v1 duplicated 7 questions of the older sets (one more reason it is exposed); v2 must share none."""
+def test_blind3_does_not_overlap_any_other_eval_set():
+    """blind v1 duplicated 7 questions of the older sets (one more reason it is exposed); v2 and v3 must share none."""
     qs = {}
-    for f in ("rag_qa", "faithfulness", "rag_blind", "rag_blind2"):
+    for f in ("rag_qa", "faithfulness", "rag_blind", "rag_blind2", "rag_blind3", "offtopic_dev"):
         qs[f] = [json.loads(l)["q"].lower().strip() for l in (ROOT / "eval" / f"{f}.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
-    for other in ("rag_qa", "faithfulness", "rag_blind"):
-        assert not set(qs["rag_blind2"]) & set(qs[other]), (other, set(qs["rag_blind2"]) & set(qs[other]))
+    for new in ("rag_blind2", "rag_blind3"):
+        for other in ("rag_qa", "faithfulness", "rag_blind", "rag_blind2", "rag_blind3", "offtopic_dev"):
+            if other != new:
+                assert not set(qs[new]) & set(qs[other]), (new, other, set(qs[new]) & set(qs[other]))
 
 
-@pytest.mark.parametrize("name", ["rag_blind", "rag_blind2"])
+@pytest.mark.parametrize("name", ["rag_blind", "rag_blind2", "rag_blind3"])
 def test_blind_offtopic_is_refused(r, name):
     off = [json.loads(l)["q"] for l in (ROOT / "eval" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if '"offtopic"' in l]
     assert len(off) == 10 and sum(r.search(q) == [] for q in off) / len(off) >= 0.9
