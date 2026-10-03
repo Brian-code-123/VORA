@@ -70,7 +70,8 @@ class Retriever:
         the KB says "degrees Celsius", users say "temperature". Query untouched when no synonym matches."""
         low, extra = text.lower(), []
         for key, add in self.synonyms.items():
-            hit = key in low if re.search(r"[\u4e00-\u9fff]", key) else re.search(rf"\b{re.escape(key)}\b", low)
+            # Latin keys need a Latin-side boundary. \b is wrong here: CJK counts as \w, so "的wifi" had no boundary
+            hit = key in low if re.search(r"[\u4e00-\u9fff]", key) else re.search(rf"(?<![A-Za-z0-9]){re.escape(key)}(?![A-Za-z0-9])", low)
             if hit and add not in extra:
                 extra.append(add)
         return text if not extra else f"{text} {' '.join(extra)}"

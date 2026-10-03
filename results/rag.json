@@ -16,10 +16,10 @@
   "n": 10
  },
  "faithfulness": {
-  "acc": 0.925,
+  "acc": 0.975,
   "n": 40,
-  "negation_acc": 0.909,
-  "heldout_acc": 0.85,
+  "negation_acc": 1.0,
+  "heldout_acc": 0.95,
   "rows": [
    {
     "q": "how long is the warranty on the vora x200",
@@ -205,8 +205,8 @@
    },
    {
     "q": "m100能连5g的wifi吗",
-    "answer": "我不确定，请换个问法。",
-    "ok": false,
+    "answer": "wi-fi 设置：打开 vora home 应用，点击“添加设备”并按提示配对。 x200 支持 2.4 ghz 和 5 ghz 的 wi-fi 6，m100 只支持 2.4 ghz 的 wi-fi 5。",
+    "ok": true,
     "neg": true,
     "split": "heldout"
    },
@@ -275,15 +275,15 @@
    },
    {
     "q": "how far can the m100 hear me",
-    "answer": "the vora-m100 can hear you within 30 days.",
+    "answer": "the m100 has a 3-meter pickup range, which means it can hear you clearly in loud music.",
     "ok": false,
     "neg": false,
     "split": "heldout"
    },
    {
     "q": "x200 拾音范围",
-    "answer": "x200 拾音范围是麦克风拾音范围内。 无响应排查：检查指示灯是否为红色（已静音）；拔掉电源 10 秒后重新插上；靠近到麦克风拾音范围内；并清楚地说出唤醒词“hey vora”。",
-    "ok": false,
+    "answer": "x200 拾音距离为5米。",
+    "ok": true,
     "neg": false,
     "split": "heldout"
    },
@@ -302,5 +302,118 @@
     "split": "heldout"
    }
   ]
+ },
+ "blind": {
+  "n": 60,
+  "top3": 0.78,
+  "faith": 0.72,
+  "faith_with_refusals": 0.767,
+  "negation_acc": 0.833,
+  "offtopic_rejected": 1.0,
+  "misses": [
+   {
+    "q": "how much RAM does the mini model have",
+    "ctx": [
+     "E01",
+     "E02",
+     "E18"
+    ],
+    "answer": "the mini model of the vora-x200 has 4 gb ram."
+   },
+   {
+    "q": "what charger does the X200 need",
+    "ctx": [
+     "E04",
+     "E18",
+     "E01"
+    ],
+    "answer": "the x200 does not require a specific charger."
+   },
+   {
+    "q": "what should I do if it ignores me",
+    "ctx": [],
+    "answer": ""
+   },
+   {
+    "q": "how much power does the box use when idle",
+    "ctx": [
+     "E18",
+     "E15",
+     "E14"
+    ],
+    "answer": "the box uses approximately 10 watts of power when idle."
+   },
+   {
+    "q": "does the X200 work in 50 degree heat",
+    "ctx": [
+     "E18",
+     "E01",
+     "E17"
+    ],
+    "answer": "vora-x200 hardware: the vora-x200 (also called vora box x200) has a 4-core arm cpu, 4 gb ram and 32 gb internal storage. it is the flagship model and runs all s"
+   },
+   {
+    "q": "迷你款有多少内存",
+    "ctx": [],
+    "answer": ""
+   },
+   {
+    "q": "怎么把设备连上家里的无线网",
+    "ctx": [],
+    "answer": ""
+   },
+   {
+    "q": "X200 最多能导入多大的资料",
+    "ctx": [
+     "Z11",
+     "Z01",
+     "E01"
+    ],
+    "answer": "x200 最多能导入1gb的自有文档（markdown、txt、pdf）。"
+   },
+   {
+    "q": "有问题发邮件给谁",
+    "ctx": [],
+    "answer": ""
+   },
+   {
+    "q": "多热的天气不能用",
+    "ctx": [],
+    "answer": ""
+   },
+   {
+    "q": "X200 配什么充电器",
+    "ctx": [
+     "Z01",
+     "E01",
+     "Z03"
+    ],
+    "answer": "x200 配 4 核 arm 处理器、4 gb 内存和 32 gb 内置存储。"
+   },
+   {
+    "q": "M100 的喇叭有多大功率",
+    "ctx": [
+     "Z16",
+     "Z12",
+     "Z03"
+    ],
+    "answer": "m100 的喇叭功率为 麦克风：x200 有 4 麦克风阵列，拾音距离 5 米；m100 有 2 个麦克风，拾音距离 3 米。"
+   },
+   {
+    "q": "叫它没反应怎么检查",
+    "ctx": [],
+    "answer": ""
+   },
+   {
+    "q": "50 度的房间能用吗",
+    "ctx": [],
+    "answer": ""
+   }
+  ]
+ },
+ "faithfulness_all": {
+  "acc": 0.85,
+  "n": 100,
+  "misses_allowed_for_95pct": 5
  }
 }
