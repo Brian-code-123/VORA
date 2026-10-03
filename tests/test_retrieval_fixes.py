@@ -77,8 +77,8 @@ def test_blind3_and_4_do_not_overlap_any_other_eval_set():
                 assert not set(qs[new]) & set(qs[other]), (new, other, set(qs[new]) & set(qs[other]))
 
 
-@pytest.mark.parametrize("name", ["rag_blind", "rag_blind2", "rag_blind3", "rag_blind4"])
-def test_blind_offtopic_is_refused(r, name):
+@pytest.mark.parametrize("name", ["rag_blind", "rag_blind2"])   # tuning sets only: the held-out sets are reported by eval_rag.py, never asserted
+def test_tuning_set_offtopic_is_refused(r, name):
     off = [json.loads(l)["q"] for l in (ROOT / "eval" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if '"offtopic"' in l]
     assert len(off) == 10 and sum(r.search(q) == [] for q in off) / len(off) >= 0.9
 
