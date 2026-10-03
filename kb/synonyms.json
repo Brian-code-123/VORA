@@ -28,5 +28,8 @@
   "喇叭": "扬声器 瓦 音量",
   "邮件": "客服 联系方式 邮件 support",
   "idle": "power consumption watts W standby adapter",
-  "standby": "power consumption watts W idle adapter"
+  "standby": "power consumption watts W idle adapter",
+  "return": "returns refund 30 days shipping",
+  "returned": "returns refund 30 days shipping",
+  "refund": "returns refund 30 days shipping"
 }

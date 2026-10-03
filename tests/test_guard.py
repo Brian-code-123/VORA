@@ -159,3 +159,38 @@ def test_reading_text_modes():
     assert reading_text("focus", "how loud is the speaker", h) == h.focus                                  # no product asked: focus as is
     assert reading_text("focus", "how loud is the x200 speaker", h) == "Speaker: the X200 has a 10 W speaker. Volume is set by voice."   # focus names the OTHER product: fall back to the asked one
     assert reading_text("focus", "q", Hit("E01", "whole text", 0.5)) == "whole text"                       # no focus available
+
+
+def test_extractive_answer_trusts_the_top_hit_over_lower_ranked_chunks():
+    from vora.guard import extractive_answer
+    top = "Privacy: all audio is processed on the device. A hardware mute switch on top of the box physically disconnects the microphones."
+    low = "Troubleshooting: check that the LED is not red (muted), unplug the power for 10 seconds."
+    out = extractive_answer("does the box listen when the mute switch is on", [top, low])
+    assert "disconnects the microphones" in out and "unplug" not in out
+    # only when the top hit shares nothing with the question do lower-ranked chunks get a say
+    unrelated = "Warranty: the X200 warranty period is 2 years."
+    assert "disconnects" in extractive_answer("does the mute switch disconnect the microphones", [unrelated, top])
+
+
+def test_focus_splits_a_sentence_that_names_both_products_into_clauses():
+    from vora.guard import focus_on_asked_product
+    zh = "Wi-Fi 设置：打开应用。X200 支持 2.4 GHz 和 5 GHz 的 Wi-Fi 6，M100 只支持 2.4 GHz 的 Wi-Fi 5。Wi-Fi 仅用于固件更新。"
+    out = focus_on_asked_product("X200 用的是什么 Wi-Fi", zh)
+    assert "Wi-Fi 6" in out and "Wi-Fi 5" not in out and "仅用于固件更新" in out
+    out = focus_on_asked_product("M100 支持 5GHz 吗", zh)
+    assert "Wi-Fi 5" in out and "Wi-Fi 6" not in out
+    en = "Speaker: the X200 has a 10 W speaker and the M100 has a 5 W speaker. Volume is set by voice."
+    out = focus_on_asked_product("how loud is the m100 speaker", en)
+    assert "5 W" in out and "10 W" not in out and "Volume is set by voice" in out
+
+
+def test_echo_of_the_question_is_detected():
+    from vora.guard import is_question_echo
+    zh_chunk = "恢复出厂设置：按住背面的复位键 10 秒，直到指示灯白色闪烁。这会清除所有设置和导入的文档，固件会保留。"
+    assert is_question_echo("如何重置整个设备", "怎么重置整个设备", zh_chunk)           # paraphrased question, nothing new
+    assert not is_question_echo("按住背面的复位键", "怎么重置整个设备", zh_chunk)       # new information from the chunk
+    en_chunk = "Firmware updates: VORA Box installs firmware over the air once a month. To check manually open VORA Home > Settings > About > Check for update."
+    assert is_question_echo("to look for a firmware update manually, follow", "how do I look for a firmware update manually", en_chunk)
+    assert not is_question_echo("open VORA Home > Settings", "how do I look for a firmware update manually", en_chunk)
+    assert not is_question_echo("2 years", "how long is the warranty", "Warranty: 2 years.")   # a figure is new information
+    assert not is_question_echo("99", "how much does it cost", "Price: 99 USD")

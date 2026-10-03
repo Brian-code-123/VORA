@@ -10,7 +10,7 @@
   "misses": []
  },
  "offtopic_rejected": {
-  "rate": 1.0,
+  "rate": 0.9,
   "n": 10
  },
  "faithfulness": {
@@ -91,7 +91,7 @@
    },
    {
     "q": "how many microphones does the x200 have",
-    "answer": "the vora-x200 device has 4 microphones.",
+    "answer": "the x200 has a 4-microphone array with a pickup range of 5 meters.",
     "ok": true,
     "neg": false,
     "split": "dev"
@@ -238,7 +238,7 @@
    },
    {
     "q": "m100存储空间多大",
-    "answer": "vora-m100存储容量为16gb。",
+    "answer": "vora-m100设备的存储空间为16gb。",
     "ok": true,
     "neg": false,
     "split": "heldout"
@@ -304,81 +304,54 @@
  "tune2": {
   "n": 60,
   "top3": 1.0,
-  "faith": 0.98,
-  "faith_with_refusals": 0.983,
+  "faith": 0.96,
+  "faith_with_refusals": 0.967,
   "negation_acc": 1.0,
   "offtopic_rejected": 1.0,
   "misses": [
    {
+    "q": "what does a green light indicate",
+    "ctx": [
+     "E05",
+     "E15",
+     "E18"
+    ],
+    "answer": "a green light indicates that the microphone is muted."
+   },
+   {
     "q": "怎么把设备连上家里的无线网",
     "ctx": [
      "Z07",
-     "Z06",
-     "Z09"
+     "Z01",
+     "Z06"
     ],
     "answer": "如何将设备连接到家庭无线网络？"
    }
   ]
  },
- "blind": {
+ "tune3": {
   "n": 60,
   "top3": 0.96,
-  "faith": 0.8,
-  "faith_with_refusals": 0.833,
+  "faith": 0.86,
+  "faith_with_refusals": 0.883,
   "negation_acc": 0.833,
   "offtopic_rejected": 1.0,
   "misses": [
-   {
-    "q": "where is the hardware mute switch",
-    "ctx": [
-     "E05",
-     "E18",
-     "E06"
-    ],
-    "answer": "the hardware mute switch is located in the box."
-   },
-   {
-    "q": "what happens to my imported documents on a reset",
-    "ctx": [
-     "E08",
-     "E11",
-     "E06"
-    ],
-    "answer": "on a factory reset, your imported documents are erased."
-   },
    {
     "q": "how do I look for a firmware update manually",
     "ctx": [
      "E09",
      "E08",
-     "E18"
+     "E07"
     ],
     "answer": "to look for a firmware update manually, follow these steps:\n\nfirmware updates: vora box installs firmware over the air once a month."
-   },
-   {
-    "q": "what is the listening distance of the X200",
-    "ctx": [
-     "E17",
-     "E01",
-     "E16"
-    ],
-    "answer": "the x200 has a 10 w speaker, which is suitable for listening in a quiet environment."
-   },
-   {
-    "q": "can I change how loud it talks by voice",
-    "ctx": [
-     "E04",
-     "E17",
-     "E18"
-    ],
-    "answer": "wake word: the default wake word is \"hey vora\". you can change it in the vora home app under settings > wake word."
    },
    {
     "q": "大的那款用什么 CPU",
     "ctx": [
      "Z17",
-     "Z16",
-     "Z02"
+     "Z02",
+     "Z16"
     ],
     "answer": "大款用的是m100，配5瓦扬声器。"
    },
@@ -401,6 +374,15 @@
     "answer": "不支持粤语。"
    },
    {
+    "q": "M100 能听多远",
+    "ctx": [
+     "Z02",
+     "Z16",
+     "Z17"
+    ],
+    "answer": "vora-m100 能听 vora-m100 硬件：vora-m100（vora box mini）配备 2 核 arm 处理器、2 gb 内存和 16 gb 存储。"
+   },
+   {
     "q": "能放在零下的户外用吗",
     "ctx": [],
     "answer": ""
@@ -416,8 +398,113 @@
    }
   ]
  },
+ "blind": {
+  "n": 60,
+  "top3": 0.96,
+  "faith": 0.78,
+  "faith_with_refusals": 0.817,
+  "negation_acc": 0.583,
+  "offtopic_rejected": 1.0,
+  "misses": [
+   {
+    "q": "what is the X200 Wi-Fi standard",
+    "ctx": [
+     "E07",
+     "E01",
+     "E17"
+    ],
+    "answer": "the x200 wi-fi standard supports both 2.4 ghz and 5 ghz."
+   },
+   {
+    "q": "how many mics does the Mini have",
+    "ctx": [
+     "E16",
+     "E02",
+     "E17"
+    ],
+    "answer": "the mini has 4 microphones."
+   },
+   {
+    "q": "my box is not answering what should I try",
+    "ctx": [
+     "E18",
+     "E13",
+     "E05"
+    ],
+    "answer": "try moving within the microphone range and make sure you say the wake word \"hey vora\" clearly."
+   },
+   {
+    "q": "does the box listen when the mute switch is on",
+    "ctx": [
+     "E06",
+     "E05",
+     "E18"
+    ],
+    "answer": "troubleshooting when the box does not respond: check that the led is not red (muted), unplug the power for 10 seconds and plug it in again, move within the micr"
+   },
+   {
+    "q": "can I use it without Wi-Fi at all",
+    "ctx": [
+     "E07",
+     "E06",
+     "E14"
+    ],
+    "answer": "wi-fi setup: open the vora home app, tap add device and follow the pairing steps. the x200 supports wi-fi 6 on 2.4 ghz and 5 ghz."
+   },
+   {
+    "q": "can the M100 be returned after 45 days",
+    "ctx": [
+     "E03",
+     "E12",
+     "E02"
+    ],
+    "answer": "the vora-m100 warranty period is 1 year. power adapters and cables are covered for 6 months."
+   },
+   {
+    "q": "X200 用的是什么 Wi-Fi",
+    "ctx": [
+     "Z07",
+     "Z01",
+     "Z15"
+    ],
+    "answer": "x200 用的是 2.4 ghz 的 wi-fi 5。"
+   },
+   {
+    "q": "怎么重置整个设备",
+    "ctx": [
+     "Z08",
+     "Z07",
+     "Z06"
+    ],
+    "answer": "如何重置整个设备？"
+   },
+   {
+    "q": "盒子不回答我怎么办",
+    "ctx": [],
+    "answer": ""
+   },
+   {
+    "q": "不连 Wi-Fi 能用吗",
+    "ctx": [
+     "Z07",
+     "Z15",
+     "Z02"
+    ],
+    "answer": "wi-fi 设置：打开 vora home 应用，点击“添加设备”并按提示配对。 x200 支持 2.4 ghz 和 5 ghz 的 wi-fi 6，m100 只支持 2.4 ghz 的 wi-fi 5。"
+   },
+   {
+    "q": "X200 保修超过 2 年吗",
+    "ctx": [
+     "Z03",
+     "Z12",
+     "Z15"
+    ],
+    "answer": "人为损坏和进水损坏不在保修范围内。"
+   }
+  ]
+ },
  "faithfulness_all": {
-  "acc": 0.9,
+  "acc": 0.89,
   "n": 100,
   "misses_allowed_for_95pct": 5
  }

@@ -128,31 +128,27 @@ def numbers_mismatch(chunk: str, head: str) -> bool:
 
 
 def extractive_answer(question: str, chunks: list[str]) -> str:
-    """Honest answer straight from the text. Yes/no question: the sentence that negates the topic if any, else the two
-    best-matching sentences in text order (the answer is often the neighbour of the best match: "...erases settings.
-    Firmware is kept."). Other questions: the single best sentence across the chunks."""
+    """Honest answer straight from the text, from the highest-ranked chunk that shares anything with the question (a lower
+    chunk only gets a say when the better ones are unrelated). Yes/no question: the sentence that negates the topic if any,
+    else the two best-matching sentences in text order (the answer is often the neighbour of the best match: "...erases
+    settings. Firmware is kept."). Other questions: the single best sentence."""
     yes_no = is_yes_no_question(question)
-    if yes_no:
-        for c in chunks:
-            neg = negating_sentence(question, c)
-            if neg:
-                return neg
     kws = set(_keywords(question))
-    best, best_score = None, -1
     for c in chunks:
         sents = split_sentences(c)
         scored = [(sum(1 for k in kws if k in x.lower()), i) for i, x in enumerate(sents)]
-        if not scored:
-            continue
-        top = max(scored)[0]
-        if top > best_score:
-            if yes_no and len(sents) > 1:
+        if not scored or max(scored)[0] == 0:
+            continue                                   # nothing in common with the question: try the next chunk
+        if yes_no:
+            neg = negating_sentence(question, c)
+            if neg:
+                return neg
+            if len(sents) > 1:
                 order = sorted(sorted(scored, key=lambda t: (-t[0], t[1]))[:2], key=lambda t: t[1])
-                best = " ".join(sents[i] for _, i in order)
-            else:
-                best = sents[[i for sc, i in scored if sc == top][0]] if len(sents) > 1 else c.strip()
-            best_score = top
-    return best or (chunks[0] if chunks else "")
+                return " ".join(sents[i] for _, i in order)
+        top = max(scored)[0]
+        return sents[[i for sc, i in scored if sc == top][0]] if len(sents) > 1 else c.strip()
+    return chunks[0] if chunks else ""
 
 
 _EXPECTS_EN = re.compile(r"^\s*(how\s+(long|much|many|far|big|often|loud|tall|heavy|fast|old)|what(?:'s| is)?\s+(the\s+)?(temperature|power|size|price|cost|range|capacity|storage))\b", re.I)
@@ -175,13 +171,44 @@ def product_codes(text: str) -> set[str]:
     return {m.lower() for m in _CODE.findall(text)}
 
 
+def _clauses(sent: str) -> list[str]:
+    """A sentence that names two products is split into clauses: "...Wi-Fi 6，M100 只支持..." / "the X200 has ... and the M100 has ..."."""
+    return [p for p in re.split(r"(?<=[，,；;])|\s+and\s+(?=(?:the\s+)?[A-Za-z]\d{2,4}\b)", sent) if p and p.strip()]
+
+
 def focus_on_asked_product(question: str, text: str) -> str:
     """A chunk that covers two products ("The X200 uses 12 V. The M100 uses 5 V.") and a question about one of them:
-    keep that product's sentences and the sentences that name no product. Otherwise the 0.5B model answers with the other
-    model's figure (measured: "what charger does the X200 need" -> "5 V 2 A")."""
+    keep that product's sentences (or clauses, when one sentence names both) and the parts that name no product. Otherwise
+    the 0.5B model answers with the other model's figure (measured: "what charger does the X200 need" -> "5 V 2 A")."""
     asked = product_codes(question)
     if not asked:
         return text
-    sents = split_sentences(text)
-    keep = [s for s in sents if not product_codes(s) or product_codes(s) & asked]
-    return " ".join(keep) if keep and len(keep) < len(sents) else text
+    kept, dropped = [], False
+    for sent in split_sentences(text):
+        codes = product_codes(sent)
+        if not codes or codes <= asked:
+            kept.append(sent)
+        elif not codes & asked and not codes <= asked:
+            dropped = True                                        # only other products
+        else:                                                     # names the asked product AND another: keep the right clauses
+            part = "".join(c for c in _clauses(sent) if not product_codes(c) or product_codes(c) & asked).strip()
+            part = re.sub(r"[，,；;]\s*$", "。" if _is_zh(part) else ".", part)
+            kept.append(part or sent)
+            dropped = dropped or part != sent
+    return " ".join(kept) if kept and dropped else text
+
+
+def terms(text: str) -> set[str]:
+    """Content terms: Latin/number words of 3+ characters and Chinese character bigrams."""
+    t = text.lower()
+    cjk = "".join(_CJK.findall(t))
+    return set(re.findall(r"[a-z0-9]{3,}", t)) | {cjk[i:i + 2] for i in range(len(cjk) - 1)}
+
+
+def is_question_echo(head: str, question: str, chunk: str) -> bool:
+    """The model started by rephrasing the question ("如何重置整个设备" for "怎么重置整个设备"): none of its content terms is
+    new information from the chunk. A figure in the answer counts as new information."""
+    if re.search(r"\d", head):
+        return False
+    th = terms(head)
+    return len(th) >= 3 and not (th & (terms(chunk) - terms(question)))
