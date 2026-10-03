@@ -12,6 +12,31 @@ def load_faithfulness() -> list[dict]:
     return [json.loads(l) for l in (ROOT / "eval" / "faithfulness.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
+def load_blind(name: str = "rag_blind2") -> list[dict]:
+    """Frozen self-authored sets (sha256 next to them). rag_blind (v1) was EXPOSED after its first measurement and is now a
+    tuning set; rag_blind2 was written and frozen before any change that followed. The gate uses rag_blind2."""
+    return [json.loads(l) for l in (ROOT / "eval" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+
+
+def score_blind(r: Retriever, llm: Llm | None, name: str = "rag_blind2") -> dict:
+    rows = []
+    for x in load_blind(name):
+        hits = r.search(x["q"])
+        if x["kind"] == "offtopic":
+            rows.append({**x, "ok": not hits, "ctx": [h.chunk_id for h in hits]})
+            continue
+        top3 = bool({h.chunk_id for h in hits} & set(x["chunk_id"]))
+        ans = ("".join(llm.stream(x["q"], hits)).lower() if hits else "") if llm else ""
+        rows.append({**x, "top3": top3, "answer": ans, "ctx": [h.chunk_id for h in hits],
+                     "ok": (any(k.lower() in ans for k in x["kw"]) if llm else top3)})
+    ans_rows = [x for x in rows if x["kind"] != "offtopic"]
+    acc = lambda rs: round(sum(x["ok"] for x in rs) / len(rs), 3) if rs else None
+    return {"n": len(rows), "top3": round(sum(x["top3"] for x in ans_rows) / len(ans_rows), 3), "faith": acc(ans_rows),
+            "faith_with_refusals": acc(rows), "negation_acc": acc([x for x in rows if x["kind"] == "neg"]),
+            "offtopic_rejected": acc([x for x in rows if x["kind"] == "offtopic"]),
+            "misses": [{"q": x["q"], "ctx": x["ctx"], "answer": x.get("answer", "")[:160]} for x in rows if not x["ok"]]}
+
+
 def main() -> None:
     s = Settings()
     r = Retriever(s)
@@ -32,9 +57,15 @@ def main() -> None:
     acc = lambda rs: round(sum(x["ok"] for x in rs) / len(rs), 3) if rs else None
     res["faithfulness"] = {"acc": acc(rows), "n": len(rows), "negation_acc": acc([x for x in rows if x["neg"]]),
                            "heldout_acc": acc([x for x in rows if x["split"] == "heldout"]), "rows": rows}
+    res["tune2"] = score_blind(r, llm, "rag_blind")      # exposed set: report, never claim as held-out
+    blind = score_blind(r, llm, "rag_blind2")
+    res["blind"] = blind
+    n_all = len(rows) + blind["n"]
+    ok_all = sum(x["ok"] for x in rows) + round(blind["faith_with_refusals"] * blind["n"])
+    res["faithfulness_all"] = {"acc": round(ok_all / n_all, 3), "n": n_all, "misses_allowed_for_95pct": n_all // 20}
     (ROOT / "results").mkdir(exist_ok=True)
     (ROOT / "results" / "rag.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
-    print({k: (v if k.startswith("top3") or k.startswith("off") else {kk: v[kk] for kk in ("acc", "n", "negation_acc", "heldout_acc") if kk in v}) for k, v in res.items()})
+    print({k: (v if k.startswith("top3") or k.startswith("off") or k in ("blind", "tune2", "faithfulness_all") else {kk: v[kk] for kk in ("acc", "n", "negation_acc", "heldout_acc") if kk in v}) for k, v in res.items()})
     for x in rows:
         if not x["ok"]:
             print("  UNFAITHFUL:", x["q"], "->", x["answer"])

@@ -12,5 +12,8 @@
   "多少钱": "售价 美元 退货",
   "价格": "售价 美元 退货",
   "muted": "microphone mute switch red LED",
-  "mute": "microphone mute switch red LED"
+  "mute": "microphone mute switch red LED",
+  "hear": "microphone pickup range distance meters",
+  "how far": "microphone pickup range distance meters",
+  "拾音": "麦克风 拾音距离 米"
 }

@@ -253,6 +253,26 @@ async def _latency_turns(models, settings, items: list[tuple[str, np.ndarray]]) 
     return out
 
 
+_CACHE: dict = {}
+
+
+def _models(kb: str, faith: bool):
+    """Recognizers / retriever / LLM are loaded once per process (a matrix run reuses them for every cell)."""
+    from vora.config import Settings
+    s = Settings(kb_dir=BANK_KB, index_dir=BANK_INDEX) if kb == "bank" else Settings()
+    if "recs" not in _CACHE:
+        from vora.asr import load_recognizers
+        _CACHE["recs"] = load_recognizers(Settings())
+    if kb == "bank" and "retriever" not in _CACHE:
+        from vora.rag.retriever import Retriever
+        _CACHE["retriever"] = Retriever(s)
+    if kb == "bank" and faith and "llm" not in _CACHE:
+        from vora.llm import Llm
+        _CACHE["llm"] = Llm(s)
+    intents = json.loads((BANK_KB / "intents.json").read_text(encoding="utf-8")) if kb == "bank" else None
+    return s, _CACHE["recs"], _CACHE.get("retriever") if kb == "bank" else None, _CACHE.get("llm") if (kb == "bank" and faith) else None, intents
+
+
 def run(suite: str, aug: str = "clean", split: str = "dev", final: bool = False, n: int = 0, kb: str = "none",
         faith: bool = False, latency: bool = False, audio_dir: Path | None = None, force: bool = False) -> dict:
     if audio_dir is None and suite not in suites.ALL:
@@ -272,15 +292,7 @@ def run(suite: str, aug: str = "clean", split: str = "dev", final: bool = False,
     if aug.startswith("ambient"):
         noise = [suites.load_wav(suites.NOISE, r) for r in suites.load_manifest(suites.NOISE)]
     from scripts import eval_asr
-    from vora.asr import load_recognizers
-    s = Settings(kb_dir=BANK_KB, index_dir=BANK_INDEX) if kb == "bank" else Settings()
-    recs = load_recognizers(s)
-    retriever = llm = intents = None
-    if kb == "bank":
-        from vora.llm import Llm
-        from vora.rag.retriever import Retriever
-        retriever, intents = Retriever(s), json.loads((BANK_KB / "intents.json").read_text(encoding="utf-8"))
-        llm = Llm(s) if faith else None
+    s, recs, retriever, llm, intents = _models(kb, faith)
     mon = QuietMonitor()
     mon.start()
     res = {"suite": suite if audio_dir is None else f"dir:{Path(audio_dir).name}", "aug": aug, "split": split, "kb": kb, **evaluate(
@@ -288,7 +300,7 @@ def run(suite: str, aug: str = "clean", split: str = "dev", final: bool = False,
         unsure={"en": "I'm not sure", "zh": "我不确定"})}
     if retriever is not None and rows:
         lang = rows[0]["lang"]
-        off = [r for n_ in OFFTOPIC_SUITES[lang] for r in suites.load_manifest(n_)[:100]]
+        off = [r for n_ in OFFTOPIC_SUITES[lang] for r in [x for x in suites.load_manifest(n_) if x["split"] == split][:100]]
         res["offtopic_false_accept"] = {"rate": offtopic_false_accept(off, retriever), "n": len(off)}
     res["speech_end_gap"] = _speech_end_gaps(rows, load_pcm)
     if latency:
