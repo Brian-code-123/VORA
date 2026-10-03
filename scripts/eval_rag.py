@@ -19,13 +19,14 @@ def load_faithfulness() -> list[dict]:
     return [json.loads(l) for l in (ROOT / "eval" / "faithfulness.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
-def load_blind(name: str = "rag_blind2") -> list[dict]:
-    """Frozen self-authored sets (sha256 next to them). rag_blind (v1) was EXPOSED after its first measurement and is now a
-    tuning set; rag_blind2 was written and frozen before any change that followed. The gate uses rag_blind2."""
+def load_blind(name: str = "rag_blind3") -> list[dict]:
+    """Frozen self-authored sets (sha256 next to them). rag_blind (v1) and rag_blind2 were EXPOSED after their first
+    measurement and are tuning sets now; rag_blind3 was written and frozen before the LLM experiments that followed.
+    The G5 gate uses rag_blind3, read once with --final."""
     return [json.loads(l) for l in (ROOT / "eval" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
-def score_blind(r: Retriever, llm: Llm | None, name: str = "rag_blind2") -> dict:
+def score_blind(r: Retriever, llm: Llm | None, name: str = "rag_blind3") -> dict:
     rows = []
     for x in load_blind(name):
         hits = r.search(x["q"])
@@ -46,7 +47,7 @@ def score_blind(r: Retriever, llm: Llm | None, name: str = "rag_blind2") -> dict
 
 def main() -> None:
     import sys
-    final = "--final" in sys.argv   # rag_blind2 is read once, in the final run (like the test split)
+    final = "--final" in sys.argv   # rag_blind3 is read once, in the final run (like the test split)
     s = Settings()
     r = Retriever(s)
     qa = load_qa(ROOT / "eval" / "rag_qa.jsonl")
@@ -66,16 +67,17 @@ def main() -> None:
     acc = lambda rs: round(sum(x["ok"] for x in rs) / len(rs), 3) if rs else None
     res["faithfulness"] = {"acc": acc(rows), "n": len(rows), "negation_acc": acc([x for x in rows if x["neg"]]),
                            "heldout_acc": acc([x for x in rows if x["split"] == "heldout"]), "rows": rows}
-    res["tune2"] = score_blind(r, llm, "rag_blind")      # exposed set: report, never claim as held-out
+    res["tune2"] = score_blind(r, llm, "rag_blind")      # exposed sets: report, never claim as held-out
+    res["tune3"] = score_blind(r, llm, "rag_blind2")
     if final:
-        blind = score_blind(r, llm, "rag_blind2")
+        blind = score_blind(r, llm, "rag_blind3")
         res["blind"] = blind
         n_all = len(rows) + blind["n"]
         ok_all = sum(x["ok"] for x in rows) + round(blind["faith_with_refusals"] * blind["n"])
         res["faithfulness_all"] = {"acc": round(ok_all / n_all, 3), "n": n_all, "misses_allowed_for_95pct": n_all // 20}
     (ROOT / "results").mkdir(exist_ok=True)
     (ROOT / "results" / "rag.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
-    print({k: (v if k.startswith("top3") or k.startswith("off") or k in ("blind", "tune2", "faithfulness_all") else {kk: v[kk] for kk in ("acc", "n", "negation_acc", "heldout_acc") if kk in v}) for k, v in res.items()})
+    print({k: (v if k.startswith("top3") or k.startswith("off") or k in ("blind", "tune2", "tune3", "faithfulness_all") else {kk: v[kk] for kk in ("acc", "n", "negation_acc", "heldout_acc") if kk in v}) for k, v in res.items()})
     for x in rows:
         if not x["ok"]:
             print("  UNFAITHFUL:", x["q"], "->", x["answer"])
