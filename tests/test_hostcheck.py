@@ -76,6 +76,10 @@ def test_quiet_monitor_attributes_our_children_cpu_to_us():
     import sys
     import time
     import vora.hostcheck as h
+    base = h.QuietMonitor(interval=0.3)       # what OTHER apps use right now (a busy laptop must not fail this test)
+    base.start()
+    time.sleep(1.2)
+    other_now = base.stop()["p90_other_cpu_pct"]
     kids = [subprocess.Popen([sys.executable, "-c", "while True: pass"]) for _ in range(8)]
     try:
         m = h.QuietMonitor(interval=0.3)
@@ -85,4 +89,4 @@ def test_quiet_monitor_attributes_our_children_cpu_to_us():
     finally:
         for k in kids:
             k.kill()
-    assert r["p90_other_cpu_pct"] <= 35, r      # system is ~100% busy, but it is all ours
+    assert r["p90_other_cpu_pct"] <= other_now + 20, (r, other_now)      # system is ~100% busy, but the extra load is all ours

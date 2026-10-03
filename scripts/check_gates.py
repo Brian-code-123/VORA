@@ -4,7 +4,7 @@ from pathlib import Path
 
 MB = 1024 * 1024
 LIMITS = {"asr_en": 50 * MB, "asr_zh": 50 * MB, "asr_zh_ctc": 50 * MB, "tts_en": 30 * MB, "tts_zh": 30 * MB}
-REPORT_ONLY = {"llm", "embed"}  # LLM bounded by params (<=1B), not MB; RSS reported separately
+REPORT_ONLY = {"llm", "llm_q3", "embed"}  # LLM bounded by params (<=1B), not MB; RSS reported separately
 
 
 def evaluate(sizes: dict[str, int]) -> dict[str, dict]:
@@ -29,7 +29,7 @@ def measure(models_dir: Path) -> dict[str, int]:
         elif d.name.startswith("tts"):
             q = [f for f in files if f.name.endswith(".int8.onnx")]
             files = q or [f for f in files if f.suffix == ".onnx"]
-        elif d.name == "llm":
+        elif d.name.startswith("llm"):
             files = [f for f in files if f.suffix == ".gguf"]
         elif d.name == "embed":
             files = [f for f in files if f.suffix == ".onnx"]
