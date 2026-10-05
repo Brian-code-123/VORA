@@ -66,12 +66,16 @@ def add_noise(x: np.ndarray, snr_db: float, rng: np.random.Generator) -> np.ndar
     return np.clip(x + n, -32768, 32767).astype(np.int16)
 
 
-def transcribe(recs, lang: str, pcm: np.ndarray) -> tuple[str, float]:
+def transcribe(recs, lang: str, pcm: np.ndarray, agc: bool | None = None) -> tuple[str, float]:
+    """Same input path as the server: optional gain control (Settings.agc) in front of the streaming wrapper."""
+    from vora.agc import Agc
     sess = AsrSession(recs, lang)
+    gain = Agc() if (Settings().agc if agc is None else agc) else None
     x = np.concatenate([pcm, np.zeros(int(1.5 * SR), dtype=np.int16)])
     t0, finals = time.perf_counter(), []
     for i in range(0, len(x), 1600):
-        finals += [e.text for e in sess.feed(x[i:i + 1600].tobytes()) if e.kind == "final"]
+        frame = x[i:i + 1600].tobytes()
+        finals += [e.text for e in sess.feed(gain.process(frame) if gain else frame) if e.kind == "final"]
     return ("" if lang == "zh" else " ").join(finals), time.perf_counter() - t0
 
 

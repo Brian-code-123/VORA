@@ -18,6 +18,7 @@ from typing import Any, Callable, Literal
 
 import numpy as np
 
+from vora.agc import Agc
 from vora.chunker import SentenceChunker
 from vora.config import Settings
 from vora.llm import BUSY
@@ -132,6 +133,7 @@ class Pipeline:
         self._last_partial = ""
         self._last_voice = clock()
         self._floor: float | None = None      # running noise-floor estimate for voiced-frame detection
+        self._agc = Agc() if settings.agc else None   # quiet microphones: boost before the voice detector and ASR see the audio
         self._spoken: deque[tuple[float, str]] = deque(maxlen=64)   # sentences sent to TTS, for echo detection
         self.stalled = False
         self._prefetch_text = ""
@@ -192,6 +194,8 @@ class Pipeline:
         if self.stalled:
             raise ClientStalled()
         now = self.clock()
+        if self._agc is not None:
+            pcm = self._agc.process(pcm)
         if self._voiced(pcm):
             self._last_voice = now   # plan: speech_end = last voiced input frame
         events = await self.loop.run_in_executor(self.ex.asr, self.asr.feed, pcm)
