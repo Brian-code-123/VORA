@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     max_text_frame_bytes: int = 4096
     allowed_origins: tuple[str, ...] = ()   # extra allowed Origin values; same-origin (Origin host == Host) is always allowed
     asr_threads: int = 2
+    agc: bool = True                # gain control before ASR (quiet input: LibriSpeech WER 42.9% -> see docs/rulings.md)
     hold_ms: int = 500              # extra audio to wait when the text ends mid-sentence (0 = off)
     hold_total_cap_ms: int = 1200   # per utterance, so 'and... and...' cannot starve the reply
     endpoint_rule2_s: float = 0.4   # trailing silence after text that ends an utterance
