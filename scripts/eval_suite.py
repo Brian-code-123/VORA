@@ -99,14 +99,13 @@ def apply_aug(pcm: np.ndarray, spec: str, row_id: str, pool_ids: list[str], load
 
 
 # ---------- scoring ----------
-def score_asr(refs: list[str], hyps: list[str], lang: str) -> dict:
+def _errors(refs: list[str], hyps: list[str], lang: str, numbers: bool) -> tuple[list[int], list[int]]:
     import jiwer
     from scripts.eval_asr import norm
     errs, lens = [], []
     for ref, hyp in zip(refs, hyps):
-        r, h = norm(ref, lang), norm(hyp, lang)
-        unit = list if lang == "zh" else str.split
-        n = len(unit(r))
+        r, h = norm(ref, lang, numbers), norm(hyp, lang, numbers)
+        n = len(list(r) if lang == "zh" else r.split())
         if n == 0:
             continue
         if not h:
@@ -115,10 +114,23 @@ def score_asr(refs: list[str], hyps: list[str], lang: str) -> dict:
             o = (jiwer.process_characters if lang == "zh" else jiwer.process_words)(r, h)
             errs.append(o.substitutions + o.deletions + o.insertions)
         lens.append(n)
+    return errs, lens
+
+
+def score_asr(refs: list[str], hyps: list[str], lang: str) -> dict:
+    """Raw score (digits as written) and, for English, a second score with digits spelled out on both sides."""
+    errs, lens = _errors(refs, hyps, lang, False)
     tot = sum(lens)
     lo, hi = wer_ci(errs, lens)
-    return {"metric": "cer" if lang == "zh" else "wer", "value": (sum(errs) / tot) if tot else None, "errors": sum(errs),
-            "ref_len": tot, "n": len(lens), "ci": [lo, hi]}
+    out = {"metric": "cer" if lang == "zh" else "wer", "value": (sum(errs) / tot) if tot else None, "errors": sum(errs),
+           "ref_len": tot, "n": len(lens), "ci": [lo, hi]}
+    if lang == "en":
+        try:
+            e2, l2 = _errors(refs, hyps, lang, True)
+            out["value_numbers_spelled"] = sum(e2) / sum(l2) if sum(l2) else None
+        except ImportError:            # num2words is an eval-only dependency
+            pass
+    return out
 
 
 def faith_check(answer: str, kws: list[str]) -> bool:

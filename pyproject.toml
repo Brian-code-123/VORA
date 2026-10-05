@@ -10,7 +10,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "pytest-timeout", "httpx"]
-eval = ["jiwer", "datasets", "soundfile", "torch", "onnxruntime", "optimum[onnxruntime]", "playwright"]
+eval = ["jiwer", "num2words", "datasets", "soundfile", "torch", "onnxruntime", "optimum[onnxruntime]", "playwright"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
