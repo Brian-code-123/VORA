@@ -1,0 +1,8 @@
+/* Print stylesheet for docs/report.pdf. Minimums are tested (tests/test_report_length.py): no shrinking the text to fit. */
+@page { size: A4; margin: 15mm 14mm; }
+body { font: 10pt/1.35 "Helvetica Neue", Arial, "PingFang SC", sans-serif; color: #111; max-width: none; margin: 0; }
+h1 { font-size: 15pt; margin: 0 0 4pt; } h2 { font-size: 11.5pt; margin: 9pt 0 3pt; } h3 { font-size: 10.5pt; margin: 6pt 0 2pt; }
+p, li { margin: 0 0 3pt; } ul { margin: 0 0 3pt; padding-left: 14pt; }
+table { border-collapse: collapse; width: 100%; margin: 3pt 0 5pt; font-size: 9pt; }
+th, td { border: 0.5pt solid #999; padding: 1.5pt 3pt; text-align: left; vertical-align: top; }
+th { background: #eee; } code { font-size: 9pt; }

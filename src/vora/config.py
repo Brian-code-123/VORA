@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.2
     llm_threads: int = 4
     max_inflight_turns: int = 2   # LLM turns running+queued; the next one gets the busy reply immediately
+    access_key: str = ""            # non-empty: /ws needs ?key=<access_key> (a box reachable from any network). "" = off (localhost use)
     ssl_cert: str = ""
     ssl_key: str = ""
     tts_en_voice: Literal["ljspeech", "lessac"] = "ljspeech"   # ljspeech: public domain, 22.05 kHz, from scratch. lessac: Blizzard 2013 licence (custom)

@@ -1,6 +1,6 @@
 """End-to-end smoke over the real WebSocket: stream a wav at real-time pace, expect final, context, audio and metrics.
 Usage: python scripts/ws_smoke.py ws://127.0.0.1:8000/ws client/samples/q_warranty_en.wav [--lang en] [--timeout 30] [-v]
-Exit code 0 = all seen; 1 = something missing (printed); 2 = could not connect."""
+Exit code 0 = all seen; 1 = something missing (printed); 2 = could not connect; 3 = server closed the socket (e.g. no access key)."""
 import argparse
 import asyncio
 import json
@@ -79,9 +79,14 @@ def main(argv=None) -> int:
     ap.add_argument("-v", "--verbose", action="store_true")
     ap.add_argument("--insecure", action="store_true", help="accept a self-signed certificate (wss://)")
     a = ap.parse_args(argv)
+    import websockets
     try:
         seen = asyncio.run(run(a.url, a.wav, a.lang, a.timeout, a.verbose, a.insecure))
-    except OSError as e:
+    except websockets.exceptions.ConnectionClosed as e:     # e.g. 1008 "access key missing or wrong"
+        rc = e.rcvd or e.sent
+        print(json.dumps({"ok": False, "closed": getattr(rc, "code", None), "reason": getattr(rc, "reason", "")}))
+        return 3
+    except (OSError, asyncio.TimeoutError, websockets.exceptions.InvalidHandshake) as e:
         print("could not connect:", e)
         return 2
     missing = check(seen)

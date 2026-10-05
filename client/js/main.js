@@ -14,6 +14,17 @@ const REAL_SAMPLES = [   // CC-BY-4.0 MInDS-14 clips, see samples/real/ATTRIBUTI
 
 let s = initial(), ws = null, lang = localStorageGet("vora.lang") || (navigator.language?.startsWith("zh") ? "zh" : "en");
 let retries = 0, silentSince = null, wake = null, intentional = false;
+// Access key for a server reachable from other networks: taken from ?key= once, kept for this tab only, removed from the
+// address bar so it does not end up in screenshots or the history.
+const accessKey = (() => {
+  const q = new URLSearchParams(location.search), k = q.get("key");
+  if (k) {
+    try { sessionStorage.setItem("vora.key", k); } catch { /* private mode: the key lives only in this variable */ }
+    q.delete("key"); history.replaceState(null, "", location.pathname + (q.toString() ? `?${q}` : "") + location.hash);
+    return k;
+  }
+  try { return sessionStorage.getItem("vora.key") || ""; } catch { return ""; }
+})();
 const hist = new History(12);
 const env = detect(window);
 
@@ -56,12 +67,12 @@ async function serverLoading() {
 
 function connect() {
   return new Promise((resolve, reject) => {
-    const sock = new WebSocket(wsUrl(location));
+    const sock = new WebSocket(wsUrl(location, accessKey));
     sock.binaryType = "arraybuffer";
     sock.onopen = () => { sock.send(JSON.stringify({ type: "config", lang })); resolve(sock); };
     sock.onerror = () => reject(new Error("websocket error"));
     sock.onmessage = (m) => (typeof m.data === "string" ? onServer(m.data) : onAudio(m.data));
-    sock.onclose = (e) => onClose(sock, e.code);
+    sock.onclose = (e) => onClose(sock, e.code, e.reason);
   });
 }
 
@@ -86,14 +97,14 @@ function onAudio(buf) {
   if (!s.dropAudio && ["speaking", "hearing"].includes(s.phase)) audio.play(buf);   // frames of a cancelled turn are dropped
 }
 
-async function onClose(sock, code) {
+async function onClose(sock, code, reason = "") {
   if (sock !== ws) return;
   ws = null;
   audio.stopPlayback();
   if (intentional) return;
   const loading = code === 1013 && (await serverLoading());
-  dispatch({ type: "close", code, loading });
-  const info = closeInfo(code, { loading });
+  dispatch({ type: "close", code, loading, reason });
+  const info = closeInfo(code, { loading, reason });
   teardown();
   if (loading) setTimeout(() => s.phase === "loading" && start(), 2000);
   else if (info.retry) {

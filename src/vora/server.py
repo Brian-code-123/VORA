@@ -1,4 +1,5 @@
 import asyncio
+import hmac
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -16,7 +17,7 @@ from vora.config import ROOT, Settings
 from vora.pipeline import Admission, ClientStalled, Executors, Pipeline
 
 log = logging.getLogger("vora")
-CLOSE_REASONS = {1000: "idle timeout", 1008: "origin not allowed", 1009: "frame too large", 1011: "client stopped reading",
+CLOSE_REASONS = {1000: "idle timeout", 1008: "origin not allowed", 4401: "access key missing or wrong", 1009: "frame too large", 1011: "client stopped reading",
                  1013: "busy or loading"}
 
 
@@ -159,6 +160,10 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
         origin = ws.headers.get("origin")
         if origin and urlparse(origin).netloc != ws.headers.get("host") and origin not in s.allowed_origins:
             await _close(ws, 1008)   # any web page could otherwise drive a localhost server from the user's browser
+            return
+        if s.access_key and not hmac.compare_digest(ws.query_params.get("key", "").encode(), s.access_key.encode()):
+            await ws.accept()      # accept first: a refused handshake reaches a browser as a bare 1006, without the reason
+            await ws.close(code=1008, reason=CLOSE_REASONS[4401])
             return
         if not app.state.ready:
             await _close(ws, 1013)

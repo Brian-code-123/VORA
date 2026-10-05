@@ -39,6 +39,11 @@ test("backoff is capped and stops after 3 tries", () => {
   assert.deepEqual([0, 1, 2, 3].map(backoff), [500, 1500, 4000, null]);
 });
 
+test("access key: appended to the ws url, wrong-key close gets its own message", () => {
+  assert.equal(wsUrl({ protocol: "https:", host: "a:8000" }, "k y"), "wss://a:8000/ws?key=k%20y");
+  assert.deepEqual(closeInfo(1008, { reason: "access key missing or wrong" }), { key: "err_key", retry: false });
+});
+
 test("ws url follows the page scheme", () => {
   assert.equal(wsUrl({ protocol: "https:", host: "a:8000" }), "wss://a:8000/ws");
   assert.equal(wsUrl({ protocol: "http:", host: "localhost:8000" }), "ws://localhost:8000/ws");
