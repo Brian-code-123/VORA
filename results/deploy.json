@@ -25,5 +25,15 @@
   "region": "us-east-1",
   "access": "https, port 8000, only from the owner's IP",
   "keep_until": "about 2026-11-05 (end of the evaluation period)"
+ },
+ "docker_amd64": {
+  "ok": true,
+  "host": "Apple M2, Docker Desktop, `docker buildx --platform linux/amd64` (emulated x86_64)",
+  "build_s": 1042,
+  "image_size": "1.06 GB",
+  "ready_s": 20,
+  "uname": "x86_64",
+  "ws_smoke": "ok (final, context, audio, metrics)",
+  "note": "boot + function proof only; latency under emulation (2.6 s) says nothing about real x86 hardware"
  }
 }
