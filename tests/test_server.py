@@ -336,3 +336,22 @@ def test_client_files_revalidate():
     with TestClient(create_app(settings=Settings(), loader=loader)) as c:
         r = c.get("/js/main.js")
         assert r.status_code == 200 and r.headers["cache-control"] == "no-cache" and "javascript" in r.headers["content-type"]
+
+
+def test_access_key_required_when_configured():
+    """A box reachable from any network (evaluators on unknown networks, VPN with rotating IPs) must not be open to anyone who finds the port."""
+    s = Settings(access_key="s3cret-key")
+    with TestClient(create_app(models=models([[]]), settings=s)) as c:
+        wait_ready(c)
+        for url in ("/ws", "/ws?key=wrong"):
+            with pytest.raises(WebSocketDisconnect) as e:
+                with c.websocket_connect(url) as ws:
+                    ws.receive_text()
+            assert e.value.code == 1008 and "key" in (e.value.reason or "")
+        with c.websocket_connect("/ws?key=s3cret-key") as ws:
+            ws.send_text('{"type": "stop"}')
+        assert c.get("/health").status_code == 200          # health stays public (no secrets in it)
+
+
+def test_no_access_key_by_default():
+    assert Settings().access_key == ""
