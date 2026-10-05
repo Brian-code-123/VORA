@@ -12,5 +12,18 @@
    "zh_real_voice": "ok, final '挺显示我的账户余额'"
   },
   "note": "latency NOT measured here: host overloaded during the run (2.7-9.2 s first-content audio), see limited_core_run"
+ },
+ "pi_class_measured": {
+  "ok": null,
+  "attempt": "2026-10-05 AWS a1.xlarge (Cortex-A72) in us-east-1",
+  "result": "refused by AWS: 'The specified instance type is not eligible for Free Tier' (account on the FREE plan); nothing launched, nothing charged",
+  "how_to_unblock": "upgrade the account to the paid plan (credits are kept) or run scripts/pi_bench.sh on a real Pi 4"
+ },
+ "aws_demo": {
+  "instance": "i-<instance>",
+  "type": "t4g.small",
+  "region": "us-east-1",
+  "access": "https, port 8000, only from the owner's IP",
+  "keep_until": "about 2026-11-05 (end of the evaluation period)"
  }
 }

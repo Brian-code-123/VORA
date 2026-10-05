@@ -47,9 +47,24 @@ def evaluate(results_dir: Path) -> list[Gate]:
     en = [r["total"] for r in (bench or {}).get("rows", []) if r.get("lang") == "en" and "total" in r]
     if en:
         p50, p90 = _pct(en, 50), _pct(en, 90)
-        gs.append(Gate("G1", "end-to-end latency (en audio)", "p50 <=1500 ms, p90 <=1800 ms", f"p50 {p50:.0f} / p90 {p90:.0f} ms", p50 <= 1500 and p90 <= 1800, quiet))
+        gs.append(Gate("G1", "end-to-end latency (synthetic en audio)", "p50 <=1500 ms, p90 <=1800 ms", f"p50 {p50:.0f} / p90 {p90:.0f} ms", p50 <= 1500 and p90 <= 1800, quiet))
     else:
-        gs.append(Gate("G1", "end-to-end latency (en audio)", "p50 <=1500 ms, p90 <=1800 ms", "no data", None, quiet))
+        gs.append(Gate("G1", "end-to-end latency (synthetic en audio)", "p50 <=1500 ms, p90 <=1800 ms", "no data", None, quiet))
+
+    # G1r: the same 1.5 s target on REAL voices (MInDS-14 telephone requests, test split, answered turns), the primary row
+    rows, quiet_r = [], True
+    for f in sorted((d / "suites").glob("minds14_*__clean__test.json")) if (d / "suites").exists() else []:
+        r = json.loads(f.read_text())
+        a = (r.get("latency") or {}).get("answered")
+        if a:
+            acc = f.name.split("__")[0].replace("minds14_", "").replace("_", "-")
+            acc = {"en-us": "en-US", "en-gb": "en-GB", "en-au": "en-AU", "zh": "zh-CN"}.get(acc, acc)
+            rows.append((acc, a["p50"], a["p90"]))
+            quiet_r = quiet_r and bool(r.get("quiet"))
+    meas = ", ".join(f"{a} {p50:.0f}/{p90:.0f}" for a, p50, p90 in rows) + " ms (p50/p90)" if rows else "no real-voice run"
+    ok_r = (all(p50 <= 1500 and p90 <= 1800 for _, p50, p90 in rows) if quiet_r else None) if rows else None
+    gs.append(Gate("G1r", "end-to-end latency, real voices (MInDS-14)", "answered turns p50 <=1500 ms, p90 <=1800 ms",
+                   meas if quiet_r or not rows else meas + " (busy host)", ok_r, quiet_r))
 
     tf = _load(d, "tts_first_chunk.json")
     if tf:   # dedicated test: text of the real first chunk -> first PCM piece (the bench metric also waits for LLM tokens)
@@ -75,9 +90,15 @@ def evaluate(results_dir: Path) -> list[Gate]:
         gs.append(Gate("G4", "ASR accuracy", "WER/CER <=15%", "no data", None, True))
 
     if rag:
-        top = min(rag["top3_dev"]["acc"], rag["top3_heldout"]["acc"])
-        fa = rag["faithfulness"]["acc"]
-        gs.append(Gate("G5", "RAG top-3 + faithfulness", "top-3 >=80%, faithfulness >=95%", f"top-3 {top*100:.0f}%, faithful {fa*100:.0f}%", top >= 0.8 and fa >= 0.95, True))
+        if "faithfulness_all" in rag:   # frozen held-out set (eval/rag_blind4.jsonl) + the 40 dev questions
+            top = min(rag["top3_dev"]["acc"], rag["top3_heldout"]["acc"], rag["blind"]["top3"])
+            fa = rag["faithfulness_all"]["acc"]
+            meas = f"top-3 {top*100:.0f}% (blind {rag['blind']['top3']*100:.0f}%), faithful {fa*100:.0f}% of {rag['faithfulness_all']['n']} (blind {rag['blind']['faith_with_refusals']*100:.1f}%)"
+        else:
+            top = min(rag["top3_dev"]["acc"], rag["top3_heldout"]["acc"])
+            fa = rag["faithfulness"]["acc"]
+            meas = f"top-3 {top*100:.0f}%, faithful {fa*100:.0f}%"
+        gs.append(Gate("G5", "RAG top-3 + faithfulness", "top-3 >=80%, faithfulness >=95%", meas, top >= 0.8 and fa >= 0.95, True))
     else:
         gs.append(Gate("G5", "RAG top-3 + faithfulness", "top-3 >=80%, faithfulness >=95%", "no data", None, True))
 
