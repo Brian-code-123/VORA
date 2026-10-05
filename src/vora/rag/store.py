@@ -9,7 +9,7 @@ import numpy as np
 from vora.guard import split_sentences
 
 _LINE = re.compile(r"^\[([A-Z]\d+)\]\s+(.*\S)\s*$")
-LANG_MODELS = {"zh": "BAAI/bge-small-zh-v1.5", "en": "BAAI/bge-small-en-v1.5"}   # one embedder per language (the zh model is weak on English)
+LANG_MODELS = {"zh": "BAAI/bge-small-zh-v1.5", "en": "BAAI/bge-small-en-v1.5"}   # one embedder per language (the zh model is weak on English); int8 ONNX in models/embed_<lang>
 EMBED_MODEL = LANG_MODELS["zh"]
 _CJK = re.compile(r"[一-鿿]")
 

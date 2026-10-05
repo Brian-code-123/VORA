@@ -3,26 +3,26 @@ import json
 from pathlib import Path
 
 import numpy as np
-from fastembed import TextEmbedding
 
 from vora.config import ROOT, Settings
 from vora.rag import store
+from vora.rag.embed import Embedder, model_dir
 
 
-def ingest(kb_dir: Path, index_dir: Path) -> None:
+def ingest(kb_dir: Path, index_dir: Path, settings: Settings | None = None) -> None:
     """One index per language, each with its own embedder (en chunks: bge-small-en, zh chunks: bge-small-zh). Every chunk is
     also split into sentence passages, embedded alongside, so a question can match the one sentence that answers it."""
     chunks = store.parse_kb(kb_dir)
     for c in chunks:
         c["lang"] = store.lang_of(c["text"])
     vecs, passages = {}, {}
-    norm = lambda v: v / (np.linalg.norm(v, axis=1, keepdims=True) + 1e-9)
+    settings = settings or Settings()
     for lang in sorted({c["lang"] for c in chunks}):
-        emb = TextEmbedding(store.LANG_MODELS[lang], threads=2)
+        emb = Embedder(model_dir(settings, lang), threads=2)
         mine = [(i, c) for i, c in enumerate(chunks) if c["lang"] == lang]
-        vecs[lang] = norm(np.array(list(emb.embed([c["text"] for _, c in mine])), dtype=np.float32))
+        vecs[lang] = np.vstack([emb.embed([c["text"]]) for _, c in mine])      # one by one: no padding effects
         prow = [(i, sent, text) for i, c in mine for sent, text in store.split_passages(c["text"])]
-        pv = norm(np.array(list(emb.embed([t for _, _, t in prow])), dtype=np.float32))
+        pv = np.vstack([emb.embed([t]) for _, _, t in prow])
         passages[lang] = (pv, [{"chunk": i, "text": t} for i, _, t in prow])
     store.save(index_dir, chunks, vecs, {"embed_models": {l: store.LANG_MODELS[l] for l in vecs}, "n": len(chunks)}, passages)
 
@@ -67,5 +67,5 @@ def calibrate(settings: Settings, qa_path: Path | list[Path]) -> dict:
 
 if __name__ == "__main__":
     s = Settings()
-    ingest(s.kb_dir, s.index_dir)
+    ingest(s.kb_dir, s.index_dir, s)
     print(calibrate(s, [ROOT / "eval" / "rag_qa.jsonl", ROOT / "eval" / "offtopic_dev.jsonl"]))

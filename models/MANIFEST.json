@@ -28,7 +28,7 @@
     "repo": "csukuangfj/vits-piper-en_US-ljspeech-medium",
     "license": "Piper MIT; voice dataset LJ Speech: public domain (model card), trained from scratch",
     "files": {
-      "en_US-ljspeech-medium.int8.onnx": "206a8403baad4df7642156918a6ebe205798290d82f24d0d0119d7afa8a2738e",
+      "en_US-ljspeech-medium.int8.onnx": "6c68032b0eb679767a06b88ee317e4bdbb4f2f067399646b250ba64fdfae1849",
       "en_US-ljspeech-medium.onnx": "8ceba58a4b540d4e7e7e24ad079cf0d92762a4fd334e059f12940787c6c37b3d"
     }
   },
@@ -37,6 +37,20 @@
     "license": "Piper MIT; voice dataset licence UNKNOWN per Piper model card",
     "files": {
       "zh_CN-huayan-x_low.onnx": "74ab713ba7c6d5e8b0b690a85d468c8fe7a4bc531759dbada9a47ced6007af71"
+    }
+  },
+  "embed_zh": {
+    "repo": "Xenova/bge-small-zh-v1.5",
+    "license": "MIT (BAAI bge-small-zh-v1.5, int8 ONNX export)",
+    "files": {
+      "onnx/model_int8.onnx": "b9837c19ce154ff0726d398ee77abbc03a7faf0476c6f93016c84e531be7ebb5"
+    }
+  },
+  "embed_en": {
+    "repo": "Xenova/bge-small-en-v1.5",
+    "license": "MIT (BAAI bge-small-en-v1.5, int8 ONNX export)",
+    "files": {
+      "onnx/model_int8.onnx": "bf64d05457cb391fa88d045faf5927a15ea36d96228ddf23ea970087afdc1197"
     }
   },
   "llm": {

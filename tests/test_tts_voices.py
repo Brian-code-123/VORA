@@ -131,3 +131,22 @@ def test_en_first_chunk_p95_le_200ms_ljspeech():
         t.append((time.perf_counter() - t0) * 1000)
     t.sort()
     assert t[int(0.95 * len(t)) - 1] <= 200, t
+
+
+def test_resampler_keeps_a_tone_and_the_length():
+    from vora.tts import resample
+    t = np.arange(22050) / 22050
+    x = np.sin(2 * np.pi * 1000 * t).astype(np.float32) * 0.5
+    y = resample(x, 22050, 16000)
+    assert len(y) == 16000
+    ref = 0.5 * np.sin(2 * np.pi * 1000 * np.arange(16000) / 16000)
+    err = y[1000:-1000] - ref[1000:-1000]
+    assert 10 * np.log10(np.mean(ref[1000:-1000] ** 2) / np.mean(err ** 2)) > 40      # > 40 dB SNR
+    assert len(resample(np.zeros(0, np.float32), 22050, 16000)) == 0
+
+
+def test_tts_runtime_does_not_import_scipy():
+    import subprocess, sys
+    code = "import sys; import vora.tts, vora.pipeline, vora.server; print('scipy' in sys.modules)"
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env={**__import__('os').environ, "PYTHONPATH": "src"}).stdout.strip()
+    assert out == "False"        # scipy.signal alone cost 72 MB USS on Linux arm64
