@@ -8,25 +8,35 @@ import sys
 import time
 from math import gcd
 
+import wave
+
 import numpy as np
-import soundfile as sf
 from scipy.signal import resample_poly
 
 
 def load_pcm16(path: str) -> bytes:
-    x, sr = sf.read(path, dtype="float32")
-    x = x[:, 0] if x.ndim > 1 else x
+    """PCM16 wav -> 16 kHz mono PCM16 (stdlib wave + numpy/scipy only, so it runs inside the server image)."""
+    with wave.open(path, "rb") as w:
+        assert w.getsampwidth() == 2, "16-bit PCM wav expected"
+        sr, ch = w.getframerate(), w.getnchannels()
+        x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).reshape(-1, ch)[:, 0].astype(np.float32) / 32768
     if sr != 16000:
         g = gcd(sr, 16000)
         x = resample_poly(x, 16000 // g, sr // g)
     return (np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes()
 
 
-async def run(url: str, wav: str, lang: str, timeout: float, verbose: bool) -> dict:
+async def run(url: str, wav: str, lang: str, timeout: float, verbose: bool, insecure: bool = False) -> dict:
+    import ssl
     import websockets
     pcm = load_pcm16(wav) + bytes(int(1.6 * 16000) * 2)          # trailing silence so the endpoint fires
     seen: dict = {"events": [], "audio_bytes": 0}
-    async with websockets.connect(url, max_size=None) as ws:
+    ctx = None
+    if url.startswith("wss://"):
+        ctx = ssl.create_default_context()
+        if insecure:                                   # the demo box uses a self-signed certificate
+            ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
+    async with websockets.connect(url, max_size=None, ssl=ctx) as ws:
         await ws.send(json.dumps({"type": "config", "lang": lang}))
 
         async def reader():
@@ -67,9 +77,10 @@ def main(argv=None) -> int:
     ap.add_argument("--lang", default="en")
     ap.add_argument("--timeout", type=float, default=30.0)
     ap.add_argument("-v", "--verbose", action="store_true")
+    ap.add_argument("--insecure", action="store_true", help="accept a self-signed certificate (wss://)")
     a = ap.parse_args(argv)
     try:
-        seen = asyncio.run(run(a.url, a.wav, a.lang, a.timeout, a.verbose))
+        seen = asyncio.run(run(a.url, a.wav, a.lang, a.timeout, a.verbose, a.insecure))
     except OSError as e:
         print("could not connect:", e)
         return 2

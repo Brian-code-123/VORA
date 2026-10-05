@@ -77,3 +77,15 @@ def test_dockerfile_copies_what_ingest_needs():
     from pathlib import Path
     df = Path("docker/Dockerfile").read_text()
     assert "COPY eval ./eval" in df and "COPY kb ./kb" in df and "vora.rag.ingest" in df   # calibration reads eval/rag_qa + offtopic_dev
+
+
+def test_ws_smoke_exits_nonzero_on_no_audio_and_on_no_server(tmp_path):
+    import subprocess, sys, wave
+    w = tmp_path / "s.wav"
+    with wave.open(str(w), "wb") as f:
+        f.setnchannels(1); f.setsampwidth(2); f.setframerate(8000); f.writeframes(b"\x00\x00" * 800)
+    from scripts.ws_smoke import check, load_pcm16
+    assert len(load_pcm16(str(w))) == 1600 * 2                     # 8 kHz -> 16 kHz
+    assert check({"events": [{"type": "final"}, {"type": "context"}, {"type": "metrics"}], "audio_bytes": 0}) == ["audio"]
+    r = subprocess.run([sys.executable, "scripts/ws_smoke.py", "ws://127.0.0.1:9/ws", str(w), "--timeout", "2"], capture_output=True, text=True, timeout=60)
+    assert r.returncode == 2                                        # could not connect
