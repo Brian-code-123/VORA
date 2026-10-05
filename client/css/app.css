@@ -26,13 +26,13 @@ body {
   font: 1rem/1.5 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
   min-height: 100vh; min-height: 100dvh;
 }
-.wrap { max-width: 100rem; margin: 0 auto; padding: 0 1rem; }
+.wrap { max-width: 100rem; margin: 0 auto; padding: 0 1rem calc(var(--dock-h) + 1rem); }   /* --dock-h is measured by main.js */
 header.top { padding: 1rem 0 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
 header.top h1 { font-size: 1.25rem; margin: 0; }
-header.top .sub { color: var(--mute); margin: 0; font-size: 0.875rem; flex-basis: 100%; max-width: 75ch; }
+header.top .sub { color: var(--mute); margin: 0; font-size: 0.875rem; flex: 0 0 100%; }
 header.top .lang { margin-left: auto; }
 
-main.layout { display: grid; gap: var(--gap); padding-bottom: calc(var(--dock-h) + 2rem + env(safe-area-inset-bottom)); }
+main.layout { display: grid; gap: var(--gap); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 0.875rem 1rem; min-width: 0; }
 .card h2 { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); margin: 0 0 0.375rem; font-weight: 600; }
 .text { max-width: 75ch; overflow-wrap: anywhere; }
@@ -79,7 +79,9 @@ details dd { margin: 0; font-variant-numeric: tabular-nums; }
 .status #st { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .meter { width: 5rem; height: 0.5rem; border-radius: 999px; background: var(--line); overflow: hidden; flex: none; }
 .meter i { display: block; height: 100%; width: 0; background: var(--ok); transition: width 60ms linear; }
-.tools { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.tools { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; min-width: 0; max-width: 100%; }
+.tools label { min-width: 0; max-width: 100%; }
+select { max-width: 100%; text-overflow: ellipsis; }   /* a select is as wide as its longest option otherwise */
 
 button, select, .filebtn {
   font: inherit; min-height: 2.75rem; padding: 0.5rem 0.875rem; border-radius: 0.625rem;

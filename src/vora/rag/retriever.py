@@ -83,7 +83,10 @@ class Retriever:
 
     def _embedder(self, lang: str) -> TextEmbedding:
         if lang not in self._emb:
-            self._emb[lang] = TextEmbedding(LANG_MODELS[lang], threads=1)
+            try:      # offline box: never pay a network round trip (measured 4 s on the first Chinese question)
+                self._emb[lang] = TextEmbedding(LANG_MODELS[lang], threads=1, local_files_only=True)
+            except Exception:  # noqa: BLE001 - not cached yet: download once
+                self._emb[lang] = TextEmbedding(LANG_MODELS[lang], threads=1)
         return self._emb[lang]
 
     def _dense(self, q: str, lang: str) -> tuple[np.ndarray, dict[int, str]]:
