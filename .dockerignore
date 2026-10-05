@@ -9,3 +9,8 @@ __pycache__
 *.pyc
 docs
 tests
+index_bank
+certs
+.claude
+client/tests
+eval_kb
