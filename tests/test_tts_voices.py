@@ -29,11 +29,20 @@ def test_ljspeech_int8_le_30mb():
 @pytest.mark.skipif(not LJ.exists(), reason="LJSpeech voice not fetched")
 def test_en_voice_output_16k_mono_and_duration_preserved():
     tts = Tts(Settings(tts_en_voice="ljspeech"))
-    native = tts.voices["en"].generate("Hello there, this is a test.", sid=0, speed=1.0)
-    assert native.sample_rate == 22050            # medium voice: resampled to 16 kHz for the client
+    real, grabbed = tts.voices["en"], []
+
+    class Spy:                    # VITS durations are stochastic: compare against the very audio synth() resampled
+        sample_rate = real.sample_rate
+
+        def generate(self, *a, **kw):
+            out = real.generate(*a, **kw)
+            grabbed.append(out)
+            return out
+    tts.voices["en"] = Spy()
     pcm = np.frombuffer(b"".join(tts.synth("Hello there, this is a test.")), dtype=np.int16)
-    ratio = (len(pcm) / SR) / (len(native.samples) / native.sample_rate)
-    assert 0.9 < ratio < 1.1                      # VITS sampling is stochastic (duration varies a few % between runs); a wrong rate would be 0.73 or 1.38
+    native = grabbed[0]
+    assert native.sample_rate == 22050            # medium voice: resampled to 16 kHz for the client
+    assert abs(len(pcm) / SR - len(native.samples) / native.sample_rate) < 0.005
     assert pcm.dtype == np.int16 and np.abs(pcm).max() > 1000
 
 
