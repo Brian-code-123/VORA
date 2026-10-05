@@ -65,3 +65,15 @@ def test_fetch_models_dry_run_lists_pinned_revisions():
 def test_healthcheck_and_loopback_default():
     assert "HEALTHCHECK" in DOCKERFILE and "/health" in DOCKERFILE
     assert "VORA_HOST=0.0.0.0" in DOCKERFILE      # inside the container only; compose publishes on 127.0.0.1
+
+
+def test_dockerignore_excludes_local_data_keys_and_dev_only_files():
+    from pathlib import Path
+    ignored = set(Path(".dockerignore").read_text().split())
+    assert {"data", "results", "models", "index", "index_bank", "certs", ".claude", "client/tests"} <= ignored   # private keys never in an image
+
+
+def test_dockerfile_copies_what_ingest_needs():
+    from pathlib import Path
+    df = Path("docker/Dockerfile").read_text()
+    assert "COPY eval ./eval" in df and "COPY kb ./kb" in df and "vora.rag.ingest" in df   # calibration reads eval/rag_qa + offtopic_dev
