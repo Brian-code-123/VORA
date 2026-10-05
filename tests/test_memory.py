@@ -23,7 +23,7 @@ print(json.dumps({{"delta_mb": (p.memory_full_info().uss - base) / 2**20}}))
 """
 LOADS = {
     "asr_rag_tts": """
-import numpy, sherpa_onnx, onnxruntime, faiss, jieba, fastembed
+import numpy, sherpa_onnx, onnxruntime, faiss, jieba, tokenizers
 imp = p.memory_full_info().uss
 from vora.asr import load_recognizers, AsrSession
 r = load_recognizers(S)

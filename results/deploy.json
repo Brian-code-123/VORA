@@ -35,5 +35,19 @@
   "uname": "x86_64",
   "ws_smoke": "ok (final, context, audio, metrics)",
   "note": "boot + function proof only; latency under emulation (2.6 s) says nothing about real x86 hardware"
+ },
+ "limited_core_run": {
+  "ok": true,
+  "how": "docker run --cpus=4 --memory=2g vora:arm64 bash scripts/pi_bench.sh (M2 cores: optimistic vs a Pi 4)",
+  "e2e_ms": {
+   "p50": 979,
+   "p95": 2811,
+   "n": 20
+  },
+  "tts_first_chunk_p95_ms": {
+   "en": 67,
+   "zh": 28
+  },
+  "asr_rag_tts_uss_mb_linux": 465.2
  }
 }

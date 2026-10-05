@@ -33,7 +33,7 @@ def dev_qa() -> list[dict]:
 
 def main() -> None:
     s = Settings(kb_dir=BANK, index_dir=INDEX)
-    ingest.ingest(s.kb_dir, s.index_dir)
+    ingest.ingest(s.kb_dir, s.index_dir, s)
     qa = dev_qa()
     path = ROOT / "data" / "suites" / "bank_dev_qa.jsonl"
     path.write_text("".join(json.dumps(q, ensure_ascii=False) + "\n" for q in qa), encoding="utf-8")

@@ -6,7 +6,6 @@ from typing import Iterator, Literal
 
 import numpy as np
 import sherpa_onnx
-from scipy.signal import resample_poly
 
 from vora.config import Settings
 
@@ -75,6 +74,19 @@ def split_by_script(text: str) -> list[tuple[str, str]]:
             pending = ""
         runs[-1][1] += ch
     return [(l, t) for l, t in runs]
+
+
+def resample(x: np.ndarray, sr_in: int, sr_out: int) -> np.ndarray:
+    """Band-limited FFT resampling of one synthesized clause (numpy only: importing scipy.signal cost 72 MB on Linux).
+    Clauses start and end in near-silence, so the FFT's periodic wrap-around is inaudible."""
+    if sr_in == sr_out or x.size == 0:
+        return x.astype(np.float32)
+    n_out = int(round(len(x) * sr_out / sr_in))
+    X = np.fft.rfft(x.astype(np.float64))
+    Y = np.zeros(n_out // 2 + 1, dtype=complex)
+    k = min(len(X), len(Y))
+    Y[:k] = X[:k]
+    return (np.fft.irfft(Y, n_out) * (n_out / len(x))).astype(np.float32)
 
 
 def en_voice_dir(settings: Settings) -> Path:
@@ -168,7 +180,7 @@ class Tts:
             if x.size == 0 or audio.sample_rate <= 0:   # all-OOV run: nothing to say (used to crash in resample)
                 continue
             if audio.sample_rate != SR:
-                x = resample_poly(x, SR, audio.sample_rate).astype(np.float32)
+                x = resample(x, audio.sample_rate, SR)
             pcm = (np.clip(x, -1, 1) * 32767).astype(np.int16)
             for i in range(0, len(pcm), CHUNK):
                 if cancel.is_set():

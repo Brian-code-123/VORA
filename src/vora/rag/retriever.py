@@ -4,13 +4,13 @@ from pathlib import Path
 
 import jieba
 import numpy as np
-from fastembed import TextEmbedding
 from rank_bm25 import BM25Okapi
 from rapidfuzz import fuzz
 
 from vora.config import Settings
 from vora.rag import store
-from vora.rag.store import LANG_MODELS, Hit, lang_of
+from vora.rag.embed import Embedder, model_dir
+from vora.rag.store import Hit, lang_of
 
 jieba.setLogLevel(60)
 _LATIN_RUN = re.compile(r"[A-Za-z0-9][A-Za-z0-9\- ]*[A-Za-z0-9]|[A-Za-z0-9]")
@@ -34,7 +34,7 @@ class Retriever:
         self.lanes, self.chunks, meta = store.load(index_dir or settings.index_dir)
         ms = meta.get("min_score", settings.min_score)
         self.min_score = ms if isinstance(ms, dict) else {lang: ms for lang in self.lanes}   # per language
-        self._emb: dict[str, TextEmbedding] = {}      # loaded on first query in that language
+        self._emb: dict[str, Embedder] = {}      # loaded on first query in that language
         self.bm25 = BM25Okapi([tokenize(c["text"]) for c in self.chunks])
         gpath = settings.kb_dir / "glossary.json"
         self.glossary = json.loads(gpath.read_text(encoding="utf-8")) if gpath.exists() else {}
@@ -81,18 +81,14 @@ class Retriever:
         lang = lang_of(q)
         return lang if lang in self.lanes else next(iter(self.lanes))   # KB without chunks in that language: use what exists
 
-    def _embedder(self, lang: str) -> TextEmbedding:
+    def _embedder(self, lang: str) -> Embedder:
         if lang not in self._emb:
-            try:      # offline box: never pay a network round trip (measured 4 s on the first Chinese question)
-                self._emb[lang] = TextEmbedding(LANG_MODELS[lang], threads=1, local_files_only=True)
-            except Exception:  # noqa: BLE001 - not cached yet: download once
-                self._emb[lang] = TextEmbedding(LANG_MODELS[lang], threads=1)
+            self._emb[lang] = Embedder(model_dir(self.s, lang))
         return self._emb[lang]
 
     def _dense(self, q: str, lang: str) -> tuple[np.ndarray, dict[int, str]]:
         """Per-chunk similarity: the chunk itself averaged with its best sentence (Settings.passage_weight), and that sentence."""
-        v = np.array(list(self._embedder(lang).embed([q])), dtype=np.float32)
-        v /= np.linalg.norm(v, axis=1, keepdims=True) + 1e-9
+        v = self._embedder(lang).embed([q])
         lane = self.lanes[lang]
         scores, ids = lane.index.search(v, len(lane.pos))
         d = np.zeros(len(self.chunks), dtype=np.float32)

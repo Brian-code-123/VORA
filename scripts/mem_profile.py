@@ -28,7 +28,7 @@ def main() -> None:
         steps[name] = round(now - last, 1)
         last = now
 
-    for mod in ("numpy", "scipy.signal", "onnxruntime", "sherpa_onnx", "faiss", "jieba", "rank_bm25", "tokenizers", "fastembed", "llama_cpp"):
+    for mod in ("numpy", "onnxruntime", "sherpa_onnx", "faiss", "jieba", "rank_bm25", "tokenizers", "llama_cpp"):   # what the server imports
         try:
             __import__(mod)
         except Exception:  # noqa: BLE001
@@ -46,6 +46,7 @@ def main() -> None:
     from vora.rag.retriever import Retriever
     ret = Retriever(S)
     ret.search("warranty")
+    ret.search("保修期多久")                        # the server warms both language lanes
     mark("rag (embedder + index + bm25)")
     from vora.tts import Tts
     t = Tts(S)

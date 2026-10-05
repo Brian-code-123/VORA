@@ -13,8 +13,7 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /install /usr/local
 WORKDIR /app
-ENV FASTEMBED_CACHE_PATH=/app/models/fastembed \
-    VORA_HOST=0.0.0.0 \
+ENV VORA_HOST=0.0.0.0 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src
 COPY scripts/fetch_models.py scripts/quantize_tts.py scripts/
