@@ -38,10 +38,25 @@ def norm_zh(t: str) -> str:
     return re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]+", "", t.lower())
 
 
-def norm(t: str, lang: str) -> str:
+def _en_numbers(t: str) -> str:
+    """Scoring only: digits -> words (FLEURS refs write "25", the ASR says "twenty five"); 1100-2099 read as years."""
+    from num2words import num2words
+
+    def conv(m: re.Match) -> str:
+        s = m.group(0)
+        if "." in s:
+            return num2words(float(s))
+        n = int(s)
+        return num2words(n, to="year") if len(s) == 4 and 1100 <= n <= 2099 and not 2000 <= n <= 2009 else num2words(n)
+    return re.sub(r"\d+(?:\.\d+)?", conv, t.replace(",", ""))
+
+
+def norm(t: str, lang: str, numbers: bool = False) -> str:
     t = t.lower()
     if lang == "zh":
         return norm_zh(t)
+    if numbers:
+        t = _en_numbers(t)
     return " ".join(re.sub(r"[^a-z0-9' ]+", " ", t).split())
 
 
