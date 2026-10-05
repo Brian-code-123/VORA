@@ -1,0 +1,16 @@
+{
+ "docker_arm64": {
+  "ok": true,
+  "host": "Apple M2, Docker Desktop 28.5.1 VM (8 CPU, 8 GB), native linux/arm64",
+  "build_s": 1653,
+  "image_size": "2.75 GB",
+  "ready_s": 84,
+  "idle_mem": "805 MiB (docker stats, whole container incl. LLM)",
+  "ws_smoke": {
+   "en": "ok (final, context, audio, metrics)",
+   "zh": "ok",
+   "zh_real_voice": "ok, final '挺显示我的账户余额'"
+  },
+  "note": "latency NOT measured here: host overloaded during the run (2.7-9.2 s first-content audio), see limited_core_run"
+ }
+}
