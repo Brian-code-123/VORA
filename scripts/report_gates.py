@@ -36,7 +36,7 @@ def _pct(xs: list[float], p: float) -> float:
 def evaluate(results_dir: Path) -> list[Gate]:
     d = Path(results_dir)
     bench, mem, asr, rag = (_load(d, f) for f in ("bench.json", "memory.json", "asr.json", "rag.json"))
-    conc, docker = _load(d, "concurrent.json"), _load(d, "docker.json")
+    conc = _load(d, "concurrent.json")
     quiet = False
     if bench:
         h = bench.get("host", {})
@@ -83,8 +83,13 @@ def evaluate(results_dir: Path) -> list[Gate]:
 
     gs.append(Gate("G6", "2 concurrent users", "each p50 <=2x single", json.dumps(conc.get("summary")) if conc else "not measured",
                    conc.get("ok") if conc else None, bool(conc.get("quiet")) if conc else False))
-    gs.append(Gate("G7", "Docker + Pi proof", "image builds, health 200, Pi run", json.dumps(docker.get("summary")) if docker else "not built / no Pi",
-                   docker.get("ok") if docker else None, True))
+    dep = _load(d, "deploy.json") or {}
+    parts = ("docker_arm64", "docker_amd64", "limited_core_run", "pi_class_measured")
+    state = {k: (dep.get(k) or {}).get("ok") for k in parts}
+    word = {True: "yes", False: "FAILED", None: "unverified"}
+    measured = ", ".join(f"{k}: {word[v]}" for k, v in state.items()) + "; Jetson: unverified (no hardware)"
+    ok7 = False if False in state.values() else (True if all(v is True for v in state.values()) else None)
+    gs.append(Gate("G7", "Docker + Pi-class proof", "arm64 + amd64 image build/boot/smoke, limited-core run, Pi-class CPU run", measured, ok7, True))
 
     man = (d.parent / "models" / "MANIFEST.json")
     if man.exists():

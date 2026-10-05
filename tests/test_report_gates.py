@@ -53,3 +53,16 @@ def test_latency_gates_are_unverified_not_pass_or_fail_on_a_busy_host(tmp_path):
     assert g["G1"].ok is None and "busy host" in g["G1"].measured
     base(tmp_path, p50_total=1700, quiet_load=9.0)          # numbers would fail, but the host was busy
     assert by_id(evaluate(tmp_path))["G1"].ok is None
+
+
+def test_report_gates_g7_partial_states(tmp_path):
+    base(tmp_path)
+    ok = {"ok": True}
+    write(tmp_path, "deploy.json", {"docker_arm64": ok, "docker_amd64": ok, "limited_core_run": ok})       # no Pi-class run
+    g = by_id(evaluate(tmp_path))["G7"]
+    assert g.ok is None and "pi_class_measured: unverified" in g.measured and "Jetson: unverified" in g.measured
+    write(tmp_path, "deploy.json", {"docker_arm64": ok, "docker_amd64": {"ok": False}, "limited_core_run": ok, "pi_class_measured": ok})
+    assert by_id(evaluate(tmp_path))["G7"].ok is False
+    write(tmp_path, "deploy.json", {k: ok for k in ("docker_arm64", "docker_amd64", "limited_core_run", "pi_class_measured")})
+    g = by_id(evaluate(tmp_path))["G7"]
+    assert g.ok is True and "Jetson: unverified" in g.measured     # Jetson is never claimed
