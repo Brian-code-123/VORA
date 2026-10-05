@@ -16,6 +16,12 @@ from vora.config import ROOT, Settings
 from vora.pipeline import Admission, ClientStalled, Executors, Pipeline
 
 log = logging.getLogger("vora")
+CLOSE_REASONS = {1000: "idle timeout", 1008: "origin not allowed", 1009: "frame too large", 1011: "client stopped reading",
+                 1013: "busy or loading"}
+
+
+async def _close(ws, code: int) -> None:
+    await ws.close(code=code, reason=CLOSE_REASONS.get(code, ""))
 
 
 @dataclass
@@ -40,6 +46,7 @@ class Models:
         for lang in ("en", "zh"):
             m.make_asr(lang).feed(np.zeros(1600, dtype=np.int16).tobytes())
         m.retriever.search("warm up")
+        m.retriever.search("你好，保修期多久")    # loads the zh embedder now, not on the first Chinese question (measured 6 s)
         list(m.llm.stream("hi", [Hit("w", "Hello.", 1.0)]))
         list(m.llm.stream("你好", [Hit("w", "你好。", 1.0)]))  # pages in CJK embedding rows (cold zh call took 4.7 s)
         list(m.tts.synth("Hello.")), list(m.tts.synth("你好。"))
@@ -64,7 +71,7 @@ async def serve_session(ws, models: Models, s: Settings, sessions: set) -> None:
     """Duck-typed on `ws` (accept/receive/send_json/send_bytes/close) so tests can drive it with a stub."""
     await ws.accept()
     if len(sessions) >= s.max_sessions:
-        await ws.close(code=1013)
+        await _close(ws, 1013)
         return
     pipe = Pipeline(models.make_asr("en"), models.retriever, models.llm, models.tts, s, models.executors,
                     active_sessions=lambda: len(sessions))
@@ -78,12 +85,12 @@ async def serve_session(ws, models: Models, s: Settings, sessions: set) -> None:
                 break
             if msg.get("bytes") is not None:
                 if len(msg["bytes"]) > s.max_frame_bytes:
-                    await ws.close(code=1009)
+                    await _close(ws, 1009)
                     break
                 await pipe.on_audio(msg["bytes"])
             elif msg.get("text"):
                 if len(msg["text"]) > s.max_text_frame_bytes:
-                    await ws.close(code=1009)
+                    await _close(ws, 1009)
                     break
                 try:
                     d = json.loads(msg["text"])
@@ -98,15 +105,24 @@ async def serve_session(ws, models: Models, s: Settings, sessions: set) -> None:
                     await pipe.close()
                     pipe.asr = models.make_asr(lang)
     except asyncio.TimeoutError:
-        await ws.close(code=1000)
+        await _close(ws, 1000)
     except ClientStalled:  # client keeps the socket open but never reads: free the slot
-        await ws.close(code=1011)
+        await _close(ws, 1011)
     except WebSocketDisconnect:
         pass
     finally:
         sender.cancel()
         await pipe.close()
         sessions.discard(pipe)
+
+
+class ClientFiles(StaticFiles):
+    """The client is a handful of small ES modules: revalidate on every load (ETag) so an upgrade never runs stale JS."""
+
+    async def get_response(self, path, scope):
+        resp = await super().get_response(path, scope)
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
 
 
 def create_app(models: Models | None = None, settings: Settings | None = None,
@@ -133,7 +149,7 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
 
     @app.get("/health")
     async def health():
-        body = {"ready": app.state.ready}
+        body = {"ready": app.state.ready, "sessions": len(app.state.sessions), "max_sessions": s.max_sessions}
         if app.state.error:
             body["error"] = app.state.error
         return JSONResponse(body, status_code=200 if app.state.ready else 503)
@@ -142,16 +158,16 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
     async def ws_endpoint(ws: WebSocket):
         origin = ws.headers.get("origin")
         if origin and urlparse(origin).netloc != ws.headers.get("host") and origin not in s.allowed_origins:
-            await ws.close(code=1008)   # any web page could otherwise drive a localhost server from the user's browser
+            await _close(ws, 1008)   # any web page could otherwise drive a localhost server from the user's browser
             return
         if not app.state.ready:
-            await ws.close(code=1013)
+            await _close(ws, 1013)
             return
         await serve_session(ws, app.state.models, s, app.state.sessions)
 
     client_dir = ROOT / "client"
     if client_dir.exists():
-        app.mount("/", StaticFiles(directory=client_dir, html=True), name="client")
+        app.mount("/", ClientFiles(directory=client_dir, html=True), name="client")
     return app
 
 

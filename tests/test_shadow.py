@@ -291,3 +291,19 @@ async def test_refused_shadow_is_not_promoted_into_a_silent_turn():
     msgs = drain(p)
     assert p.llm.calls == [Q]                        # a normal turn ran
     assert any(m[0] == "audio" for m in msgs) and any(m[0] == "json" and m[1]["type"] == "metrics" for m in msgs)
+
+
+async def test_context_ids_sent_when_promotion_beats_retrieval():
+    """Found in the browser: the first Chinese question loaded the zh embedder for seconds, the guess was promoted before its
+    retrieval finished, the context event went out EMPTY and the real ids were never sent (UI: "no sources" + an answer)."""
+    from tests.test_pipeline import HIT
+    s = Settings(speculate=True, speculate_min_cores=1, queue_max=64)
+    p = Pipeline(FakeAsr([[part(Q, True)], [fin(Q)]]), FakeRetriever(delay=0.4), FakeLlm(delay=0.01), FakeTts(chunks=2, delay=0.005), s,
+                 Executors(), active_sessions=lambda: 1)
+    _PIPES.append(p)
+    await feed(p)                    # stable partial: the shadow starts, its retrieval takes 0.4 s
+    await asyncio.sleep(0.05)
+    await feed(p)                    # the final matches the guess and arrives before retrieval is done
+    await asyncio.sleep(0.8)
+    ctx = [m[1] for m in drain(p) if m[0] == "json" and m[1]["type"] == "context"]
+    assert len(ctx) == 1 and ctx[0]["ids"] == [HIT.chunk_id], ctx

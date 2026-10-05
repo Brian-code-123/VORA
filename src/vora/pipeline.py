@@ -50,6 +50,7 @@ class ShadowGate:
         self.spoken: list[tuple[float, str]] = []
         self.audio: list[tuple[bytes, bool]] = []     # (pcm piece, is_filler)
         self.context_ids: list[str] = []
+        self.context_ready = False      # retrieval done; whoever finishes second (retrieval or promotion) sends the context event
         self.stamps: dict[str, float] = {}
 
     def take_audio(self) -> list[tuple[bytes, bool]]:
@@ -339,8 +340,10 @@ class Pipeline:
             tokens, spoken = list(g.tokens), list(g.spoken)
             g.tokens.clear(), g.spoken.clear()
             g.open.set()
+            ctx_ready = g.context_ready
         self._spoken.extend(spoken)
-        await self._emit_bg({"type": "context", "ids": g.context_ids})
+        if ctx_ready:
+            await self._emit_bg({"type": "context", "ids": g.context_ids})
         for t in tokens:
             await self._emit_bg({"type": "token", "text": t}, droppable=True)
         # buffered audio is released by the TTS thread (the only writer) or, if it already finished, by _run_turn
@@ -351,7 +354,11 @@ class Pipeline:
         if gate is None:
             await self._emit_bg({"type": "context", "ids": [h.chunk_id for h in hits]})
         else:
-            gate.context_ids = [h.chunk_id for h in hits]
+            with gate.lock:
+                gate.context_ids, gate.context_ready = [h.chunk_id for h in hits], True
+                promoted = gate.open.is_set()
+            if promoted:            # promoted while we were still retrieving: _promote_shadow left the event to us
+                await self._emit_bg({"type": "context", "ids": gate.context_ids})
         sent_q: queue.Queue = queue.Queue()
         stamps: dict[str, float] = gate.stamps if gate is not None else {}
         def record_spoken(sentence: str) -> None:

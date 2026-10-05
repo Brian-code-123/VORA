@@ -116,8 +116,8 @@ class StubWs:
     async def send_json(self, d):
         self.sent.append(("json", d))
 
-    async def close(self, code=1000):
-        self.closed = code
+    async def close(self, code=1000, reason=None):
+        self.closed, self.reason = code, reason
         await self.inbox.put({"type": "websocket.disconnect"})
 
     def push(self, b=FRAME):
@@ -254,7 +254,8 @@ def test_real_models_roundtrip_en():
 def test_client_files_served():
     with TestClient(app_with(models([[]]))) as c:
         html = c.get("/")
-        assert html.status_code == 200 and "worklet.js" in html.text and "echoCancellation" in html.text
+        assert html.status_code == 200 and 'src="js/main.js"' in html.text
+        assert "echoCancellation" in c.get("/js/audio.js").text and "worklet.js" in c.get("/js/audio.js").text
         js = c.get("/worklet.js")
         assert js.status_code == 200 and "registerProcessor" in js.text
 
@@ -307,3 +308,31 @@ async def test_stalled_client_session_is_closed_1011():
         await asyncio.sleep(0.4)
     await asyncio.wait_for(t, 5)
     assert ws.closed == 1011 and sessions == set()
+
+
+async def test_close_reasons_present():
+    """Every close the server initiates carries a short reason, so a client (or a person reading devtools) can tell why."""
+    from vora.server import CLOSE_REASONS
+    assert {1000, 1008, 1009, 1011, 1013} <= set(CLOSE_REASONS) and all(0 < len(r.encode()) <= 123 for r in CLOSE_REASONS.values())
+    m = models([[]])
+    ws = StubWs()
+    t = asyncio.create_task(serve_session(ws, m, Settings(max_frame_bytes=10), set()))
+    await asyncio.sleep(0.02)
+    ws.push(b"x" * 20)
+    await asyncio.wait_for(t, 2)
+    assert ws.closed == 1009 and ws.reason == CLOSE_REASONS[1009]
+
+
+def test_health_reports_sessions_and_limit():
+    loader = lambda s: models([[]])     # noqa: E731
+    with TestClient(create_app(settings=Settings(max_sessions=3), loader=loader)) as c:
+        wait_ready(c)
+        body = c.get("/health").json()
+        assert body["ready"] is True and body["sessions"] == 0 and body["max_sessions"] == 3
+
+
+def test_client_files_revalidate():
+    loader = lambda s: models([[]])     # noqa: E731
+    with TestClient(create_app(settings=Settings(), loader=loader)) as c:
+        r = c.get("/js/main.js")
+        assert r.status_code == 200 and r.headers["cache-control"] == "no-cache" and "javascript" in r.headers["content-type"]
