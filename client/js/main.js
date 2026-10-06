@@ -1,7 +1,7 @@
 // Controller: wires the state machine, the socket, the audio layer and the view.
 import { initial, reduce } from "./state.js";
 import { History } from "./stats.js";
-import { backoff, closeInfo, wsUrl } from "./net.js";
+import { backoff, closeInfo, parseKeyFromHash, wsUrl } from "./net.js";
 import { detect } from "./env.js";
 import { Audio } from "./audio.js";
 import * as ui from "./ui.js";
@@ -14,13 +14,13 @@ const REAL_SAMPLES = [   // CC-BY-4.0 MInDS-14 clips, see samples/real/ATTRIBUTI
 
 let s = initial(), ws = null, lang = localStorageGet("vora.lang") || (navigator.language?.startsWith("zh") ? "zh" : "en");
 let retries = 0, silentSince = null, wake = null, intentional = false;
-// Access key for a server reachable from other networks: taken from ?key= once, kept for this tab only, removed from the
-// address bar so it does not end up in screenshots or the history.
+// Access key for a server reachable from other networks: taken once from the link's #key= fragment (never sent to the server),
+// kept for this tab only, removed from the address bar so it does not end up in screenshots or the history.
 const accessKey = (() => {
-  const q = new URLSearchParams(location.search), k = q.get("key");
+  const k = parseKeyFromHash(location.hash);
   if (k) {
     try { sessionStorage.setItem("vora.key", k); } catch { /* private mode: the key lives only in this variable */ }
-    q.delete("key"); history.replaceState(null, "", location.pathname + (q.toString() ? `?${q}` : "") + location.hash);
+    history.replaceState(null, "", location.pathname + location.search);
     return k;
   }
   try { return sessionStorage.getItem("vora.key") || ""; } catch { return ""; }
@@ -67,9 +67,13 @@ async function serverLoading() {
 
 function connect() {
   return new Promise((resolve, reject) => {
-    const sock = new WebSocket(wsUrl(location, accessKey));
+    const sock = new WebSocket(wsUrl(location));
     sock.binaryType = "arraybuffer";
-    sock.onopen = () => { sock.send(JSON.stringify({ type: "config", lang })); resolve(sock); };
+    sock.onopen = () => {
+      if (accessKey) sock.send(JSON.stringify({ type: "auth", key: accessKey }));   // must be the first message
+      sock.send(JSON.stringify({ type: "config", lang }));
+      resolve(sock);
+    };
     sock.onerror = () => reject(new Error("websocket error"));
     sock.onmessage = (m) => (typeof m.data === "string" ? onServer(m.data) : onAudio(m.data));
     sock.onclose = (e) => onClose(sock, e.code, e.reason);

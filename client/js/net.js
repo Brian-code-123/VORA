@@ -10,4 +10,16 @@ export function closeInfo(code, { loading = false, reason = "" } = {}) {
 
 const DELAYS = [500, 1500, 4000];
 export const backoff = (attempt) => DELAYS[attempt] ?? null;
-export const wsUrl = (loc, key = "") => `${loc.protocol === "https:" ? "wss" : "ws"}://${loc.host}/ws${key ? `?key=${encodeURIComponent(key)}` : ""}`;
+// The access key never goes into a URL: uvicorn logs request paths with their query strings. It is sent as the first message.
+export const wsUrl = (loc) => `${loc.protocol === "https:" ? "wss" : "ws"}://${loc.host}/ws`;
+
+// The link looks like https://host/#key=<urlencoded>. A fragment is never sent to the server (not even in a Referer).
+export function parseKeyFromHash(hash = "") {
+  for (const part of String(hash ?? "").replace(/^#/, "").split("&")) {
+    const i = part.indexOf("=");
+    if (i > 0 && part.slice(0, i) === "key") {
+      try { return decodeURIComponent(part.slice(i + 1)); } catch { return ""; }
+    }
+  }
+  return "";
+}
