@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "pytest-timeout", "httpx"]
+dev = ["pytest", "pytest-asyncio", "pytest-timeout", "httpx", "jiwer", "soundfile", "pyarrow"]   # test modules import the eval helpers
 eval = ["jiwer", "num2words", "fastembed", "datasets", "soundfile", "torch", "onnxruntime", "optimum[onnxruntime]", "playwright"]
 
 [tool.pytest.ini_options]

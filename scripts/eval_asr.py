@@ -9,7 +9,6 @@ from pathlib import Path
 
 import numpy as np
 import soundfile as sf
-from datasets import Audio, load_dataset
 from jiwer import cer, wer
 
 from vora.asr import AsrSession, load_recognizers
@@ -126,6 +125,7 @@ def _stream(name: str, n: int):
     if name == "zh_aishell":
         return _stream_aishell(n)
     repo, cfg, lang, col = SETS[name]
+    from datasets import Audio, load_dataset   # heavy, eval-only: test modules import norm() without it
     ds = load_dataset(repo, cfg, split="test", streaming=True, revision=REVISION.get(repo)).cast_column("audio", Audio(decode=False))
     out = []
     for ex in ds:
