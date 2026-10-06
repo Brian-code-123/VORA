@@ -35,7 +35,10 @@
    "ws_without_key": "closed 1008 'access key missing or wrong'",
    "index_http": 200,
    "new_sample_label_served": true,
-   "self_test_with_key_en": "ok, audio 134862 bytes, first_content_audio_ms 3975"
+   "self_test_with_key_en": "ok, audio 134862 bytes, first_content_audio_ms 3975",
+   "self_test_with_key_zh_real_voice": "ok, audio 282624 bytes, first_content_audio_ms 5415, final '挺显示我的账户余额' (bank question, off-topic for the VORA Box KB; reply text not logged)",
+   "self_test_without_key": "closed 1008 'access key missing or wrong'",
+   "not_tested_on_box": "browser page with a real microphone"
   },
   "keep_until": "about 2026-11-05 (end of the evaluation period)"
  },
