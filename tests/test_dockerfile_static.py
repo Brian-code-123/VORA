@@ -130,3 +130,12 @@ def test_models_are_downloaded_as_the_app_user():
 
 def test_aws_deploy_logs_container_uid():
     assert "docker exec vora id -u" in (ROOT / "scripts" / "aws_deploy.sh").read_text()
+
+
+def test_aws_deploy_prints_certificate_fingerprint():
+    """The demo certificate is self-signed, so the browser warning is the only check a visitor gets. The box prints the
+    certificate's SHA-256 fingerprint to its console, and docs/deploy.md has the owner compare it before clicking through."""
+    sh = (ROOT / "scripts" / "aws_deploy.sh").read_text()
+    assert 'say "cert $(openssl x509 -in /opt/vora/certs/vora.crt -noout -fingerprint -sha256)"' in sh
+    assert sh.index("openssl req -x509") < sh.index("-fingerprint -sha256") < sh.index("docker run -d --name vora")
+    assert "-fingerprint -sha256" in (ROOT / "docs" / "deploy.md").read_text()

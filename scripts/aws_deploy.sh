@@ -77,6 +77,7 @@ IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest
 mkdir -p /opt/vora/certs && openssl req -x509 -newkey rsa:2048 -nodes -days 60 -keyout /opt/vora/certs/vora.key \
   -out /opt/vora/certs/vora.crt -subj "/CN=vora-demo" -addext "subjectAltName=IP:${IP}" 2>/dev/null
 chmod 644 /opt/vora/certs/vora.key
+say "cert $(openssl x509 -in /opt/vora/certs/vora.crt -noout -fingerprint -sha256)"   # compare with what the browser sees before trusting it
 docker run -d --name vora --restart unless-stopped -p 443:8000 -v /opt/vora/certs:/certs:ro -v /opt/vora/scripts:/opt/smoke:ro \
   -e VORA_SSL_CERT=/certs/vora.crt -e VORA_SSL_KEY=/certs/vora.key -e VORA_ACCESS_KEY="$KEY" -e VORA_LLM_THREADS=2 -e VORA_ASR_THREADS=1 vora
 for i in $(seq 1 120); do curl -kfs https://127.0.0.1/health >/dev/null && break; sleep 5; done

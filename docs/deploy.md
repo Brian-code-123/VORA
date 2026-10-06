@@ -47,8 +47,13 @@ A redeploy creates a new IP and a new access key, so links already shared stop w
    `tar xzf vora-src.tar.gz scripts/aws_deploy.sh scripts/aws_teardown.sh && (umask 077; bash scripts/aws_deploy.sh any demo 2>&1 | tee >(grep '^OPEN:' > ~/vora-demo-link.txt) | grep -v '^OPEN:' | tail -8)`
 4. After about 10 minutes, from the Mac: `curl -ks https://<IP>/health` gives `{"ready":true,...}`, and
    `python scripts/ws_smoke.py wss://<IP>/ws client/samples/q_warranty_en.wav --insecure --timeout 10` exits 3 with
-   1008 "access key missing or wrong". Open the link from `cat ~/vora-demo-link.txt` and play a sample.
-5. Tear down when done: `bash scripts/aws_teardown.sh all` (checks that nothing is left).
+   1008 "access key missing or wrong".
+5. The certificate is self-signed, so check it yourself before clicking through the browser warning. The box prints its
+   fingerprint to the console (`aws ec2 get-console-output --latest --instance-id <id> --query Output --output text | grep 'VORA: cert'`);
+   from the Mac, `echo | openssl s_client -connect <IP>:443 2>/dev/null | openssl x509 -noout -fingerprint -sha256` must
+   print the same SHA-256 value. A different value means something sits between you and the box: stop and redeploy.
+6. Open the link from `cat ~/vora-demo-link.txt` (it has the form `https://<IP>/#key=…`) and play a sample.
+7. Tear down when done: `bash scripts/aws_teardown.sh all` (checks that nothing is left).
 
 ## Licences inside the image
 See docs/licenses.md. Note: the image contains `espeak-ng-data` (GPL-3.0) and the zh voice whose dataset licence is
