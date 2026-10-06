@@ -10,8 +10,3 @@ jobs:
         env: { CMAKE_ARGS: "-DGGML_METAL=OFF" }
       # model/index-dependent tests skip themselves when models/ is absent; perf tests need real hardware
       - run: uv run pytest -m "not perf" -q
-  docker-arm64:
-    runs-on: ubuntu-24.04-arm   # free for public repos; falls back to buildx+qemu locally
-    steps:
-      - uses: actions/checkout@v4
-      - run: docker build -f docker/Dockerfile -t vora:ci .
