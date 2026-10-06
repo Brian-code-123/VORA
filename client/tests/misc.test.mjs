@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { percentile, History, stages } from "../js/stats.js";
-import { closeInfo, backoff, wsUrl } from "../js/net.js";
+import { closeInfo, backoff, wsUrl, parseKeyFromHash } from "../js/net.js";
 import { detect } from "../js/env.js";
 import { STRINGS, t } from "../js/i18n.js";
 
@@ -39,9 +39,26 @@ test("backoff is capped and stops after 3 tries", () => {
   assert.deepEqual([0, 1, 2, 3].map(backoff), [500, 1500, 4000, null]);
 });
 
-test("access key: appended to the ws url, wrong-key close gets its own message", () => {
-  assert.equal(wsUrl({ protocol: "https:", host: "a:8000" }, "k y"), "wss://a:8000/ws?key=k%20y");
+test("access key: never in the ws url (URLs are logged); wrong-key close gets its own message", () => {
+  assert.equal(wsUrl({ protocol: "https:", host: "a:8000" }, "k y"), "wss://a:8000/ws");
   assert.deepEqual(closeInfo(1008, { reason: "access key missing or wrong" }), { key: "err_key", retry: false });
+});
+
+test("key is read from the URL fragment, which browsers never send to the server", () => {
+  assert.equal(parseKeyFromHash("#key=a%20b"), "a b");
+  assert.equal(parseKeyFromHash("#foo=1&key=k"), "k");
+  assert.equal(parseKeyFromHash("#key="), "");
+  assert.equal(parseKeyFromHash(""), "");
+  assert.equal(parseKeyFromHash("#xkey=k"), "");
+  assert.equal(parseKeyFromHash("#key=%E0%A4%A"), "");      // malformed escape: no throw
+  assert.equal(parseKeyFromHash(undefined), "");
+});
+
+test("the missing-key hint names the fragment link, not a query string", () => {
+  for (const lang of ["en", "zh"]) {
+    assert.match(t(lang, "err_key"), /#key=/);
+    assert.doesNotMatch(t(lang, "err_key"), /\?key=/);
+  }
 });
 
 test("ws url follows the page scheme", () => {
