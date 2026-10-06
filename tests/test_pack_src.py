@@ -26,7 +26,7 @@ def test_tarball_has_every_dockerfile_copy_source(members):
     srcs = []
     for line in (ROOT / "docker" / "Dockerfile").read_text().splitlines():
         if line.startswith("COPY ") and "--from=" not in line:
-            srcs += line.split()[1:-1]
+            srcs += [x for x in line.split()[1:] if not x.startswith("--")][:-1]      # skip flags such as --chown=
     assert srcs
     missing = [s for s in srcs if not any(n == s or n.startswith(s.rstrip("/") + "/") for n in names)]
     assert not missing, missing
