@@ -1,5 +1,4 @@
 import asyncio
-import hmac
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -13,6 +12,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from vora.auth import handshake
 from vora.config import ROOT, Settings
 from vora.pipeline import Admission, ClientStalled, Executors, Pipeline
 
@@ -68,9 +68,10 @@ async def _send_loop(ws, pipe: Pipeline) -> None:
         return
 
 
-async def serve_session(ws, models: Models, s: Settings, sessions: set) -> None:
+async def serve_session(ws, models: Models, s: Settings, sessions: set, already_accepted: bool = False) -> None:
     """Duck-typed on `ws` (accept/receive/send_json/send_bytes/close) so tests can drive it with a stub."""
-    await ws.accept()
+    if not already_accepted:
+        await ws.accept()
     if len(sessions) >= s.max_sessions:
         await _close(ws, 1013)
         return
@@ -161,14 +162,13 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
         if origin and urlparse(origin).netloc != ws.headers.get("host") and origin not in s.allowed_origins:
             await _close(ws, 1008)   # any web page could otherwise drive a localhost server from the user's browser
             return
-        if s.access_key and not hmac.compare_digest(ws.query_params.get("key", "").encode(), s.access_key.encode()):
-            await ws.accept()      # accept first: a refused handshake reaches a browser as a bare 1006, without the reason
-            await ws.close(code=1008, reason=CLOSE_REASONS[4401])
-            return
+        await ws.accept()          # accept first: a refused handshake reaches a browser as a bare 1006, without the reason
+        if not await handshake(ws, s):
+            return                 # closed 1008; checked before readiness, so a stranger learns nothing about the box
         if not app.state.ready:
             await _close(ws, 1013)
             return
-        await serve_session(ws, app.state.models, s, app.state.sessions)
+        await serve_session(ws, app.state.models, s, app.state.sessions, already_accepted=True)
 
     client_dir = ROOT / "client"
     if client_dir.exists():

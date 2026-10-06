@@ -339,17 +339,21 @@ def test_client_files_revalidate():
 
 
 def test_access_key_required_when_configured():
-    """A box reachable from any network (evaluators on unknown networks, VPN with rotating IPs) must not be open to anyone who finds the port."""
+    """A box reachable from any network (evaluators on unknown networks, VPN with rotating IPs) must not be open to anyone who finds the port.
+    The key is the first message (tests/test_auth.py covers the handshake in detail)."""
     s = Settings(access_key="s3cret-key")
-    with TestClient(create_app(models=models([[]]), settings=s)) as c:
+    with TestClient(create_app(models=models([[[fin("hello there")]]]), settings=s)) as c:
         wait_ready(c)
-        for url in ("/ws", "/ws?key=wrong"):
-            with pytest.raises(WebSocketDisconnect) as e:
-                with c.websocket_connect(url) as ws:
-                    ws.receive_text()
-            assert e.value.code == 1008 and "key" in (e.value.reason or "")
-        with c.websocket_connect("/ws?key=s3cret-key") as ws:
-            ws.send_text('{"type": "stop"}')
+        for first in ('{"type": "auth", "key": "wrong"}', '{"type": "config", "lang": "en"}'):
+            with c.websocket_connect("/ws") as ws:
+                ws.send_text(first)
+                msg = ws.receive()
+                assert msg["code"] == 1008 and "key" in msg["reason"]
+        with c.websocket_connect("/ws") as ws:
+            ws.send_text('{"type": "auth", "key": "s3cret-key"}')
+            ws.send_bytes(FRAME)
+            got = recv_until(ws)                              # authenticated: a full turn is served
+        assert "final" in [d["type"] for k, d in got if k == "json"]
         assert c.get("/health").status_code == 200          # health stays public (no secrets in it)
 
 

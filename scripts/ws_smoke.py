@@ -1,9 +1,11 @@
 """End-to-end smoke over the real WebSocket: stream a wav at real-time pace, expect final, context, audio and metrics.
 Usage: python scripts/ws_smoke.py ws://127.0.0.1:8000/ws client/samples/q_warranty_en.wav [--lang en] [--timeout 30] [-v]
+Access key (servers with VORA_ACCESS_KEY): --key K or env VORA_KEY; it is sent as the first message, never in the URL.
 Exit code 0 = all seen; 1 = something missing (printed); 2 = could not connect; 3 = server closed the socket (e.g. no access key)."""
 import argparse
 import asyncio
 import json
+import os
 import sys
 import time
 from math import gcd
@@ -26,7 +28,7 @@ def load_pcm16(path: str) -> bytes:
     return (np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes()
 
 
-async def run(url: str, wav: str, lang: str, timeout: float, verbose: bool, insecure: bool = False) -> dict:
+async def run(url: str, wav: str, lang: str, timeout: float, verbose: bool, insecure: bool = False, key: str = "") -> dict:
     import ssl
     import websockets
     pcm = load_pcm16(wav) + bytes(int(1.6 * 16000) * 2)          # trailing silence so the endpoint fires
@@ -37,6 +39,8 @@ async def run(url: str, wav: str, lang: str, timeout: float, verbose: bool, inse
         if insecure:                                   # the demo box uses a self-signed certificate
             ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
     async with websockets.connect(url, max_size=None, ssl=ctx) as ws:
+        if key:
+            await ws.send(json.dumps({"type": "auth", "key": key}))      # must be the first message
         await ws.send(json.dumps({"type": "config", "lang": lang}))
 
         async def reader():
@@ -77,11 +81,12 @@ def main(argv=None) -> int:
     ap.add_argument("--lang", default="en")
     ap.add_argument("--timeout", type=float, default=30.0)
     ap.add_argument("-v", "--verbose", action="store_true")
+    ap.add_argument("--key", default=os.environ.get("VORA_KEY", ""), help="access key (default: env VORA_KEY)")
     ap.add_argument("--insecure", action="store_true", help="accept a self-signed certificate (wss://)")
     a = ap.parse_args(argv)
     import websockets
     try:
-        seen = asyncio.run(run(a.url, a.wav, a.lang, a.timeout, a.verbose, a.insecure))
+        seen = asyncio.run(run(a.url, a.wav, a.lang, a.timeout, a.verbose, a.insecure, a.key))
     except websockets.exceptions.ConnectionClosed as e:     # e.g. 1008 "access key missing or wrong"
         rc = e.rcvd or e.sent
         print(json.dumps({"ok": False, "closed": getattr(rc, "code", None), "reason": getattr(rc, "reason", "")}))
