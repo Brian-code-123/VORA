@@ -38,7 +38,8 @@ def main() -> None:
     a = ap.parse_args()
     out, t0 = {}, time.time()
     for suite, aug, kb in cells():
-        r = eval_suite.run(suite, aug, a.split, a.final, a.n, kb, faith=a.faith and aug == "clean" and kb == "bank")
+        r = eval_suite.run(suite, aug, a.split, a.final, a.n, kb, faith=a.faith and aug == "clean" and kb == "bank",
+                           out_dir=ROOT / "results" / "suites" / "matrix")   # keep results/suites/*.json (they hold the latency runs)
         r.pop("rows", None)
         out[f"{suite}|{aug}|{a.split}"] = r
         asr, rt = r["asr"], r.get("retrieval")
