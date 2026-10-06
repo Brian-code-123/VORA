@@ -11,6 +11,7 @@ import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.datastructures import MutableHeaders
 
 from vora.auth import AuthThrottle, handshake
 from vora.config import ROOT, Settings
@@ -118,6 +119,38 @@ async def serve_session(ws, models: Models, s: Settings, sessions: set, already_
         sessions.discard(pipe)
 
 
+# The page is plain same-origin ES modules: no inline script or style, no third-party host. `connect-src 'self'` covers the
+# page's own WebSocket (ws/wss follow the page scheme). No HSTS: with a self-signed certificate browsers cannot enforce it.
+SECURITY_HEADERS = {
+    "Content-Security-Policy": ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; "
+                                "media-src 'self' blob:; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"),
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Permissions-Policy": "microphone=(self)",
+}
+
+
+class SecurityHeaders:
+    """Pure ASGI middleware (no BaseHTTPMiddleware: it would wrap streamed static files and range responses)."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_headers(message):
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                for k, v in SECURITY_HEADERS.items():
+                    headers[k] = v
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
+
+
 class ClientFiles(StaticFiles):
     """The client is a handful of small ES modules: revalidate on every load (ETag) so an upgrade never runs stale JS."""
 
@@ -149,6 +182,7 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
         task.cancel()
 
     app = FastAPI(lifespan=lifespan)
+    app.add_middleware(SecurityHeaders)
 
     @app.get("/health")
     async def health():
