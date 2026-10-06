@@ -13,3 +13,10 @@ jobs:
         env: { CMAKE_ARGS: "-DGGML_METAL=OFF" }
       # model/index-dependent tests skip themselves when models/ is absent; perf tests need real hardware
       - run: uv run pytest -m "not perf" -q
+      # A06: known-vulnerable dependencies. Audits the locked set (uv.lock). Ignored IDs must be explained in docs/rulings.md
+      # (tests/test_ci_workflow.py). A vulnerability-database outage fails this step loudly: rerun it, never skip it.
+      - name: Audit locked dependencies
+        run: |
+          uv export --extra dev --no-hashes --no-emit-project -o /tmp/req.txt
+          uvx pip-audit -r /tmp/req.txt --no-deps --disable-pip --progress-spinner off \
+            --ignore-vuln PYSEC-2026-2447 --ignore-vuln GHSA-w8v5-vhqr-4h9v
