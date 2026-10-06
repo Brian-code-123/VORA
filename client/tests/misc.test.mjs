@@ -44,6 +44,11 @@ test("access key: never in the ws url (URLs are logged); wrong-key close gets it
   assert.deepEqual(closeInfo(1008, { reason: "access key missing or wrong" }), { key: "err_key", retry: false });
 });
 
+test("too many failed attempts get their own message and are not retried automatically", () => {
+  assert.deepEqual(closeInfo(1008, { reason: "too many failed attempts, wait a minute" }), { key: "err_throttled", retry: false });
+  for (const lang of ["en", "zh"]) assert.ok(t(lang, "err_throttled").length > 10);
+});
+
 test("key is read from the URL fragment, which browsers never send to the server", () => {
   assert.equal(parseKeyFromHash("#key=a%20b"), "a b");
   assert.equal(parseKeyFromHash("#foo=1&key=k"), "k");

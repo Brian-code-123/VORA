@@ -26,6 +26,7 @@ export function reduce(s, ev) {
       if (!LIVE.has(s.phase) && s.phase !== "connecting") return s;
       if (ev.code === 1000) return to("ended", { reason: "idle", speaking: false });
       if (ev.code === 1013) return to(ev.loading ? "loading" : "busy", { speaking: false });
+      if (ev.code === 1008 && /attempts/i.test(ev.reason || "")) return to("error", { error: "throttled", speaking: false });
       if (ev.code === 1008 && /key/i.test(ev.reason || "")) return to("error", { error: "key", speaking: false });
       return to("error", { error: CLOSE[ev.code] || "network", speaking: false });
     }
