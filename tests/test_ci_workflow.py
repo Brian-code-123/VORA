@@ -17,7 +17,7 @@ def audit_step():
 
 def test_ci_audits_dependencies():
     step = audit_step()
-    assert "uv export" in step["run"], "audit the locked set, not whatever happens to be installed"
+    assert "uv export --locked" in step["run"], "audit the committed lock, and fail when it no longer matches pyproject.toml"
     assert not step.get("continue-on-error"), "an audit that cannot fail audits nothing"
 
 
