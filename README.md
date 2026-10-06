@@ -8,7 +8,7 @@ Technical report (3 pages): [`docs/report.pdf`](docs/report.pdf) · full detail:
 
 - **Local (best latency):** see Quickstart, then open `http://localhost:8000`, press Start and ask "How long is the warranty on the VORA X200?" or "怎么恢复出厂设置".
 - **No microphone:** use the "Sample question" menu. "Real callers" are public MInDS-14 phone recordings of bank questions; they are off-topic for this knowledge base, so they show real-voice speech recognition and the "not sure" refusal.
-- **Hosted demo (AWS, 2 vCPU):** private link of the form `https://<IP>/?key=…`, generated in AWS CloudShell (`cat ~/vora-demo-link.txt`). About 4–6 s per answer on that box. Script: [`docs/demo-script.md`](docs/demo-script.md).
+- **Hosted demo (AWS, 2 vCPU):** private link of the form `https://<IP>/#key=…`, generated in AWS CloudShell (`cat ~/vora-demo-link.txt`). About 4–6 s per answer on that box. Script: [`docs/demo-script.md`](docs/demo-script.md).
 
 ## Results at a glance
 

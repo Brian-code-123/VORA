@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run INSIDE AWS CloudShell (it already has the console login; no keys leave AWS). From the folder holding vora-src.tar.gz:
 #   tar xzf vora-src.tar.gz scripts/aws_deploy.sh && bash scripts/aws_deploy.sh <YOUR_PUBLIC_IP> [demo|a1|both]
-# demo: t4g.small (arm64, 2 vCPU, 2 GB + 4 GB swap), 30 GB gp3, HTTPS on port 443 for any network, /ws needs an access key, a
+# demo: t4g.small (arm64, 2 vCPU, 2 GB + 4 GB swap), 30 GB gp3, HTTPS on port 443 for any network, /ws needs an access key (first message), a
 #       self-signed certificate (browsers need HTTPS for the microphone). Restarts with the box. No SSH port is opened.
 # a1:   a1.xlarge (Graviton1 = 4x Cortex-A72, the Raspberry Pi 4 core) runs scripts/pi_bench.sh in the image, uploads the
 #       results to the bucket, and terminates itself; hard stop after 3 h whatever happens.
@@ -82,7 +82,7 @@ docker run -d --name vora --restart unless-stopped -p 443:8000 -v /opt/vora/cert
 for i in $(seq 1 120); do curl -kfs https://127.0.0.1/health >/dev/null && break; sleep 5; done
 say READY https://${IP}/ after $((i*5)) s
 for f in q_warranty_en.wav:en real/zh_balance.wav:zh; do    # self-test through the real socket, with and without the key
-  say "smoke ${f}: $(docker exec vora python /opt/smoke/ws_smoke.py "wss://127.0.0.1:8000/ws?key=$KEY" /app/client/samples/${f%%:*} --lang ${f##*:} --insecure 2>&1 | tail -1)"
+  say "smoke ${f}: $(docker exec -e VORA_KEY="$KEY" vora python /opt/smoke/ws_smoke.py wss://127.0.0.1:8000/ws /app/client/samples/${f%%:*} --lang ${f##*:} --insecure 2>&1 | tail -1)"
 done
 say "smoke no key: $(docker exec vora python /opt/smoke/ws_smoke.py wss://127.0.0.1:8000/ws /app/client/samples/q_warranty_en.wav --insecure --timeout 5 2>&1 | tail -1)"
 EOF
@@ -91,7 +91,7 @@ EOF
   aws ec2 wait instance-running --instance-ids "$DEMO_ID"
   DIP=$(aws ec2 describe-instances --instance-ids "$DEMO_ID" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
   echo "demo instance: $DEMO_ID  (ready in ~10 min)"
-  echo "OPEN: https://${DIP}/?key=${KEY}"
+  echo "OPEN: https://${DIP}/#key=${KEY}"   # a fragment is never sent to the server, so the key stays out of its access log
 fi
 
 if [ "$MODE" = a1 ] || [ "$MODE" = both ]; then

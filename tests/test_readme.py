@@ -57,7 +57,7 @@ def test_readme_has_no_ip_or_key():
     ips = set(re.findall(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", README)) - {"127.0.0.1", "0.0.0.0"}
     assert not ips, f"public IP in README: {ips}"
     assert not re.search(r"\b[0-9a-f]{24}\b", README), "24-hex string (access key?) in README"
-    assert "key=" not in README.replace("?key=…", ""), "query-string key in README"
+    assert "key=" not in README.replace("#key=…", ""), "a key= other than the #key=… placeholder in README"
 
 
 def test_license_is_apache_2():
@@ -68,3 +68,17 @@ def test_license_is_apache_2():
 def test_pyproject_has_no_readme_field():
     """docker/Dockerfile copies only pyproject.toml and src/ before `pip install .`: a readme field would break the build."""
     assert "readme" not in tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
+
+
+def test_no_query_string_key_links_remain():
+    """uvicorn logs request paths with query strings, so the access key lives in the URL fragment (#key=) only."""
+    files = [ROOT / "README.md", ROOT / "docs" / "deploy.md", ROOT / "docs" / "demo-script.md", ROOT / "client" / "js" / "i18n.js",
+             *sorted((ROOT / "scripts").glob("*.sh"))]
+    bad = [f.name for f in files if "?key=" in f.read_text(encoding="utf-8")]
+    assert not bad, bad
+
+
+def test_aws_deploy_prints_fragment_link_and_passes_key_by_env():
+    sh = (ROOT / "scripts" / "aws_deploy.sh").read_text()
+    assert 'echo "OPEN: https://${DIP}/#key=${KEY}"' in sh
+    assert 'VORA_KEY="$KEY"' in sh and "/ws?key=" not in sh
