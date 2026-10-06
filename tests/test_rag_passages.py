@@ -24,6 +24,7 @@ def test_hit_has_focus_default():
     assert Hit("E01", "text", 0.5).focus == ""
 
 
+@pytest.mark.skipif(not all((S.models_dir / f"embed_{l}").exists() for l in ("en", "zh")), reason="run: python scripts/fetch_models.py")
 def test_index_roundtrip_has_passages_per_language(tmp_path):
     kb = tmp_path / "kb"
     kb.mkdir()
