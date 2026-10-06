@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run INSIDE AWS CloudShell (it already has the console login; no keys leave AWS). From the folder holding vora-src.tar.gz:
 #   tar xzf vora-src.tar.gz scripts/aws_deploy.sh && bash scripts/aws_deploy.sh <YOUR_PUBLIC_IP> [demo|a1|both]
-# demo: t4g.small (arm64, 2 vCPU, 2 GB + 4 GB swap), 30 GB gp3, port 8000 open ONLY to YOUR_PUBLIC_IP, HTTPS with a
+# demo: t4g.small (arm64, 2 vCPU, 2 GB + 4 GB swap), 30 GB gp3, HTTPS on port 443 for any network, /ws needs an access key, a
 #       self-signed certificate (browsers need HTTPS for the microphone). Restarts with the box. No SSH port is opened.
 # a1:   a1.xlarge (Graviton1 = 4x Cortex-A72, the Raspberry Pi 4 core) runs scripts/pi_bench.sh in the image, uploads the
 #       results to the bucket, and terminates itself; hard stop after 3 h whatever happens.
@@ -26,18 +26,17 @@ PUT_URL=$(python3 -c "import boto3,sys; print(boto3.client('s3', region_name='$R
 AMI=$(aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64 --query Parameter.Value --output text)
 VPC=$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
 
-sg() {   # $1 name, $2 "open8000"|"none"
+sg() {   # $1 name, $2 "open443"|"none"
   local id
   id=$(aws ec2 describe-security-groups --filters Name=group-name,Values="$1" Name=vpc-id,Values="$VPC" --query 'SecurityGroups[0].GroupId' --output text)
   if [ "$id" = "None" ]; then
     id=$(aws ec2 create-security-group --group-name "$1" --description "VORA ($1)" --vpc-id "$VPC" \
          --tag-specifications "ResourceType=security-group,Tags=[{Key=project,Value=vora}]" --query GroupId --output text)
   fi
-  if [ "$2" = "open8000" ]; then   # reachable from any network (VPN, public Wi-Fi); /ws requires the access key
-    for c in $(aws ec2 describe-security-groups --group-ids "$id" --query 'SecurityGroups[0].IpPermissions[].IpRanges[].CidrIp' --output text); do
-      [ "$c" != "0.0.0.0/0" ] && aws ec2 revoke-security-group-ingress --group-id "$id" --protocol tcp --port 8000 --cidr "$c" >/dev/null
-    done
-    aws ec2 authorize-security-group-ingress --group-id "$id" --protocol tcp --port 8000 --cidr 0.0.0.0/0 >/dev/null 2>&1 || true
+  if [ "$2" = "open443" ]; then   # reachable from any network on the standard HTTPS port; /ws requires the access key
+    aws ec2 revoke-security-group-ingress --group-id "$id" --ip-permissions "$(aws ec2 describe-security-groups --group-ids "$id" \
+      --query 'SecurityGroups[0].IpPermissions' --output json)" >/dev/null 2>&1 || true        # drop old 8000 rules
+    aws ec2 authorize-security-group-ingress --group-id "$id" --protocol tcp --port 443 --cidr 0.0.0.0/0 >/dev/null 2>&1 || true
   fi
   echo "$id"
 }
@@ -72,26 +71,27 @@ if [ "$MODE" = demo ] || [ "$MODE" = both ]; then
         --query 'Reservations[].Instances[].InstanceId' --output text)
   [ -n "$old" ] && aws ec2 terminate-instances --instance-ids $old >/dev/null && echo "replacing old demo: $old"
   { common_userdata; echo "KEY=$KEY"; cat <<'EOF'
+ip link set dev "$(ip -o route get 1.1.1.1 | awk '{print $5}')" mtu 1400   # VPN paths dropped full-size TLS packets (handshake stalled)
 TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
 IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4)
 mkdir -p /opt/vora/certs && openssl req -x509 -newkey rsa:2048 -nodes -days 60 -keyout /opt/vora/certs/vora.key \
   -out /opt/vora/certs/vora.crt -subj "/CN=vora-demo" -addext "subjectAltName=IP:${IP}" 2>/dev/null
 chmod 644 /opt/vora/certs/vora.key
-docker run -d --name vora --restart unless-stopped -p 8000:8000 -v /opt/vora/certs:/certs:ro -v /opt/vora/scripts:/opt/smoke:ro \
+docker run -d --name vora --restart unless-stopped -p 443:8000 -v /opt/vora/certs:/certs:ro -v /opt/vora/scripts:/opt/smoke:ro \
   -e VORA_SSL_CERT=/certs/vora.crt -e VORA_SSL_KEY=/certs/vora.key -e VORA_ACCESS_KEY="$KEY" -e VORA_LLM_THREADS=2 -e VORA_ASR_THREADS=1 vora
-for i in $(seq 1 120); do curl -kfs https://127.0.0.1:8000/health >/dev/null && break; sleep 5; done
-say READY https://${IP}:8000 after $((i*5)) s
+for i in $(seq 1 120); do curl -kfs https://127.0.0.1/health >/dev/null && break; sleep 5; done
+say READY https://${IP}/ after $((i*5)) s
 for f in q_warranty_en.wav:en real/zh_balance.wav:zh; do    # self-test through the real socket, with and without the key
   say "smoke ${f}: $(docker exec vora python /opt/smoke/ws_smoke.py "wss://127.0.0.1:8000/ws?key=$KEY" /app/client/samples/${f%%:*} --lang ${f##*:} --insecure 2>&1 | tail -1)"
 done
 say "smoke no key: $(docker exec vora python /opt/smoke/ws_smoke.py wss://127.0.0.1:8000/ws /app/client/samples/q_warranty_en.wav --insecure --timeout 5 2>&1 | tail -1)"
 EOF
   } > /tmp/ud-demo.sh
-  DEMO_ID=$(launch t4g.small vora-demo "$(sg vora-demo-sg open8000)" /tmp/ud-demo.sh "")
+  DEMO_ID=$(launch t4g.small vora-demo "$(sg vora-demo-sg open443)" /tmp/ud-demo.sh "")
   aws ec2 wait instance-running --instance-ids "$DEMO_ID"
   DIP=$(aws ec2 describe-instances --instance-ids "$DEMO_ID" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
   echo "demo instance: $DEMO_ID  (ready in ~10 min)"
-  echo "OPEN: https://${DIP}:8000/?key=${KEY}"
+  echo "OPEN: https://${DIP}/?key=${KEY}"
 fi
 
 if [ "$MODE" = a1 ] || [ "$MODE" = both ]; then
