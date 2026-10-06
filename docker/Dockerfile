@@ -12,16 +12,21 @@ RUN pip install --no-cache-dir --prefix=/install .
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /install /usr/local
+# Not root: a bug in the server, a model parser or a dependency then cannot touch the system. Only the empty /app is chowned;
+# everything after USER is created by (or --chown'ed to) the app user, so no layer ever duplicates the 1.2 GB of models.
+RUN useradd --system --uid 10001 --create-home --shell /usr/sbin/nologin vora && mkdir /app && chown vora:vora /app
 WORKDIR /app
 ENV VORA_HOST=0.0.0.0 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/src
-COPY scripts/fetch_models.py scripts/quantize_tts.py scripts/
+    PYTHONPATH=/app/src \
+    HOME=/home/vora
+USER vora
+COPY --chown=vora:vora scripts/fetch_models.py scripts/quantize_tts.py scripts/
 RUN python scripts/fetch_models.py
-COPY src ./src
-COPY kb ./kb
-COPY eval ./eval
-COPY client ./client
+COPY --chown=vora:vora src ./src
+COPY --chown=vora:vora kb ./kb
+COPY --chown=vora:vora eval ./eval
+COPY --chown=vora:vora client ./client
 RUN python -m vora.rag.ingest
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=3 CMD curl -fs http://127.0.0.1:8000/health || exit 1

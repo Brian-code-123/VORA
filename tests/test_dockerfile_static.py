@@ -15,7 +15,7 @@ def copy_sources():
     for line in DOCKERFILE.splitlines():
         m = re.match(r"\s*COPY\s+(?:--from=\S+\s+)?(.+)", line)
         if m and "--from" not in line:
-            parts = m.group(1).split()
+            parts = [x for x in m.group(1).split() if not x.startswith("--")]      # flags such as --chown=
             out += parts[:-1]          # last token is the destination
     return out
 
@@ -76,7 +76,8 @@ def test_dockerignore_excludes_local_data_keys_and_dev_only_files():
 def test_dockerfile_copies_what_ingest_needs():
     from pathlib import Path
     df = Path("docker/Dockerfile").read_text()
-    assert "COPY eval ./eval" in df and "COPY kb ./kb" in df and "vora.rag.ingest" in df   # calibration reads eval/rag_qa + offtopic_dev
+    flat = re.sub(r"COPY(?:\s+--\S+)*", "COPY", df)         # ignore flags such as --chown=
+    assert "COPY eval ./eval" in flat and "COPY kb ./kb" in flat and "vora.rag.ingest" in df   # calibration reads eval/rag_qa + offtopic_dev
 
 
 def test_ws_smoke_exits_nonzero_on_no_audio_and_on_no_server(tmp_path):
@@ -89,3 +90,43 @@ def test_ws_smoke_exits_nonzero_on_no_audio_and_on_no_server(tmp_path):
     assert check({"events": [{"type": "final"}, {"type": "context"}, {"type": "metrics"}], "audio_bytes": 0}) == ["audio"]
     r = subprocess.run([sys.executable, "scripts/ws_smoke.py", "ws://127.0.0.1:9/ws", str(w), "--timeout", "2"], capture_output=True, text=True, timeout=60)
     assert r.returncode == 2                                        # could not connect
+
+
+# ---- the container must not run as root (OWASP A05) ----------------------------------------------------------------
+def final_stage_lines():
+    lines = DOCKERFILE.splitlines()
+    starts = [i for i, l in enumerate(lines) if re.match(r"\s*FROM\s", l)]
+    return [l.strip() for l in lines[starts[-1]:] if l.strip() and not l.strip().startswith("#")]
+
+
+def test_final_stage_runs_as_non_root():
+    stage = final_stage_lines()
+    users = [i for i, l in enumerate(stage) if l.startswith("USER ")]
+    assert users, "the final stage never leaves root"
+    last = stage[users[-1]].split()[1]
+    assert last.split(":")[0] not in ("root", "0"), last
+    cmd = next(i for i, l in enumerate(stage) if l.startswith("CMD "))
+    assert users[-1] < cmd
+
+
+def test_copies_after_user_are_chowned_to_it():
+    stage = final_stage_lines()
+    first_user = next(i for i, l in enumerate(stage) if l.startswith("USER "))
+    plain = [l for l in stage[first_user:] if l.startswith("COPY ") and "--chown=" not in l and "--from=" not in l]
+    assert not plain, f"these would be root-owned and unwritable for the app user: {plain}"
+
+
+def test_no_recursive_chown_layer():
+    """`chown -R /app` after the models are downloaded would copy 1.2 GB into a new layer."""
+    assert not re.search(r"chown\s+-R", DOCKERFILE)
+
+
+def test_models_are_downloaded_as_the_app_user():
+    stage = final_stage_lines()
+    user = next(i for i, l in enumerate(stage) if l.startswith("USER "))
+    fetch = next(i for i, l in enumerate(stage) if "fetch_models.py" in l and l.startswith("RUN "))
+    assert user < fetch, "downloaded models would be root-owned"
+
+
+def test_aws_deploy_logs_container_uid():
+    assert "docker exec vora id -u" in (ROOT / "scripts" / "aws_deploy.sh").read_text()

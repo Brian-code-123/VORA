@@ -85,6 +85,7 @@ for f in q_warranty_en.wav:en real/zh_balance.wav:zh; do    # self-test through 
   say "smoke ${f}: $(docker exec -e VORA_KEY="$KEY" vora python /opt/smoke/ws_smoke.py wss://127.0.0.1:8000/ws /app/client/samples/${f%%:*} --lang ${f##*:} --insecure 2>&1 | tail -1)"
 done
 say "smoke no key: $(docker exec vora python /opt/smoke/ws_smoke.py wss://127.0.0.1:8000/ws /app/client/samples/q_warranty_en.wav --insecure --timeout 5 2>&1 | tail -1)"
+say "uid: $(docker exec vora id -u)"      # expected 10001: the container must not run as root
 EOF
   } > /tmp/ud-demo.sh
   DEMO_ID=$(launch t4g.small vora-demo "$(sg vora-demo-sg open443)" /tmp/ud-demo.sh "")
