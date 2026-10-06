@@ -8,3 +8,7 @@ data/
 index_bank/
 certs/
 *.busy.json
+.DS_Store
+*.egg-info/
+.env
+vora-src.tar.gz
