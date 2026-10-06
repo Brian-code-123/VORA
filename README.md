@@ -103,6 +103,25 @@ Markers: `perf` (latency and memory, needs models and a quiet host), `eval` (acc
 
 Reproducing the numbers: results files are written only with `VORA_WRITE_RESULTS=1`; test splits only with `--final`; latency only on a quiet host (other processes under 30% CPU, checked during the run). Close other apps and browser tabs first; `scripts/rerun_quiet.sh` waits for a quiet host and keeps an earlier quiet result if a rerun turns out busy.
 
+## Security
+
+The hosted demo is reachable from the internet, so it was reviewed against the OWASP Top 10 (2021). What is in place, and where:
+
+| Risk | Control |
+|---|---|
+| A01 access control | `/ws` needs an access key, compared in constant time (`src/vora/auth.py`), plus an Origin check (`src/vora/server.py`). The page itself is public and holds no data. |
+| A02 cryptographic failures | HTTPS on 443 only. The key is never in a URL: the link has the form `https://<IP>/#key=…` (a fragment is never sent to the server) and the WebSocket authenticates with its first message. The certificate is self-signed, so its SHA-256 fingerprint is printed at deploy time and checked by hand (`docs/deploy.md`). |
+| A03 injection | No SQL or shell is built from input; the page writes text with `textContent`. Prompt injection was measured: the key and the system prompt were never repeated (0 of 36 answers), but the 0.5B model does follow an injected "say PWNED" about half the time when context was retrieved (`docs/rulings.md`). It has no tools and sees no secret. |
+| A04 insecure design | 5 failed authentications per address per minute, then that address is refused; unauthenticated sockets time out after 5 s and hold no session slot; at most 4 sessions; frame size and idle limits. |
+| A05 misconfiguration | The container runs as uid 10001 (checked on the box at deploy). Strict CSP, `nosniff`, no referrer, microphone limited to the page (`src/vora/server.py`). Only port 443 is open and IMDSv2 is required. |
+| A06 vulnerable components | CI runs `pip-audit` over `uv.lock`; one advisory (diskcache, unused) is ignored with a written reason. |
+| A07 authentication | One shared key per deployment (96 bits); changing it means redeploying. |
+| A08 integrity | Models are pinned by Hugging Face revision. |
+| A09 logging | The key is in no log (tested against a real uvicorn server); failed attempts are logged by address only. |
+| A10 SSRF | The server never fetches a URL taken from user input. |
+
+Accepted risks: a self-signed certificate (a bare IP has no CA-signed option), a single shared key, no HSTS (browsers cannot enforce it for a self-signed certificate), no alerting (the box has no log access, so nobody is notified), no protection against a distributed attack, and no separate hash list for the models.
+
 ## Known limits
 
 - **G5 faithfulness 89%, not 95%.** Off-topic refusal on the blind set is 60%.
