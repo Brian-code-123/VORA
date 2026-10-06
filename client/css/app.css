@@ -35,6 +35,8 @@ header.top .lang { margin-left: auto; }
 main.layout { display: grid; gap: var(--gap); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 0.875rem 1rem; min-width: 0; }
 .card h2 { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); margin: 0 0 0.375rem; font-weight: 600; }
+.card h2.reply-title { margin-top: 0.75rem; }          /* no inline style: the page's CSP forbids it */
+.card-log { margin-top: var(--gap); }
 .text { max-width: 75ch; overflow-wrap: anywhere; }
 .partial { color: var(--mute); }
 
