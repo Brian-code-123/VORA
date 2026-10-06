@@ -252,7 +252,10 @@ def finish(res: dict, qm: dict, out_dir: Path | None = None) -> dict:
     from vora.hostcheck import write_result
     res.update(quiet=bool(qm["quiet"]), max_other_cpu_pct=qm["max_other_cpu_pct"], p90_other_cpu_pct=qm["p90_other_cpu_pct"], host=host())
     d = Path(out_dir) if out_dir else ROOT / "results" / "suites"
-    write_result(d / f"{res['suite']}__{res['aug']}__{res['split']}.json", res)
+    p = d / f"{res['suite']}__{res['aug']}__{res['split']}.json"
+    if not res["quiet"] and p.exists() and json.loads(p.read_text()).get("quiet"):
+        p = p.with_suffix(".busy.json")   # a busy rerun must not replace a quiet result; the gate glob skips this name
+    write_result(p, res)
     return res
 
 
