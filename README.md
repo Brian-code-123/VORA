@@ -89,7 +89,7 @@ Not tracked: `data/` (cached public datasets), `index/`, `index_bank/`, `.venv/`
 | Evaluate (accuracy) | `suites.py`, `augment.py`, `eval_suite.py`, `run_matrix.py`, `eval_asr.py`, `eval_rag.py`, `eval_tts.py`, `eval_endpoint.py`, `refvad.py` |
 | Benchmark (speed, memory) | `bench.py`, `bench_concurrent.py`, `baseline_batch.py`, `mem_profile.py`, `final_measure.sh`, `rerun_quiet.sh` |
 | A/B experiments (not in the live path) | `ab_compare.py`, `agc_ab.py`, `denoise.py`, `denoise_ab.py`, `secondpass_ab.py`, `export_onnx_llm.py` |
-| Deploy and smoke-test | `ws_smoke.py`, `deploy_pi.sh`, `pi_bench.sh`, `aws_deploy.sh`, `aws_teardown.sh` |
+| Deploy and smoke-test | `pack_src.sh`, `ws_smoke.py`, `deploy_pi.sh`, `pi_bench.sh`, `aws_deploy.sh`, `aws_teardown.sh` |
 | Report | `report_gates.py`, `make_report_tables.py`, `build_report.sh` |
 
 ## Testing
