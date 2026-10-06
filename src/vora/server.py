@@ -12,7 +12,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from vora.auth import handshake
+from vora.auth import AuthThrottle, handshake
 from vora.config import ROOT, Settings
 from vora.pipeline import Admission, ClientStalled, Executors, Pipeline
 
@@ -134,6 +134,7 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.ready, app.state.models, app.state.sessions, app.state.error = False, models, set(), None
+        app.state.throttle = AuthThrottle(s.auth_max_fails, s.auth_window_s)
 
         async def load():
             try:
@@ -163,7 +164,7 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
             await _close(ws, 1008)   # any web page could otherwise drive a localhost server from the user's browser
             return
         await ws.accept()          # accept first: a refused handshake reaches a browser as a bare 1006, without the reason
-        if not await handshake(ws, s):
+        if not await handshake(ws, s, app.state.throttle):
             return                 # closed 1008; checked before readiness, so a stranger learns nothing about the box
         if not app.state.ready:
             await _close(ws, 1013)
