@@ -6,6 +6,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true }   # llama-cpp-python compiles from source: run 1 took 14m46s uncached
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }   # client tests run under Node in tests/test_client_js.py
       - run: uv venv --python 3.12 && uv pip install -e ".[dev]"
         env: { CMAKE_ARGS: "-DGGML_METAL=OFF" }
       # model/index-dependent tests skip themselves when models/ is absent; perf tests need real hardware
