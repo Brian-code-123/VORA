@@ -23,15 +23,19 @@
   "instance": "i-<instance>",
   "type": "t4g.small",
   "region": "us-east-1",
-  "ip": "<old-demo-ip>",
+  "source": "main 0665bdf via scripts/pack_src.sh",
   "access": "https on port 443 from any network; /ws needs the access key (kept only in CloudShell ~/vora-demo-link.txt)",
   "mtu": 1400,
-  "build_s": 480,
+  "build_s": 484,
   "image": "1.52GB",
+  "ready_after_start_s": 25,
   "verified_2026-10-06": {
-   "health_from_owner_mac_via_vpn": "{\"ready\":true,\"max_sessions\":4}",
+   "previous_box": "i-<instance> terminated; exactly one vora-demo running",
+   "health_from_owner_mac": "{\"ready\":true}",
    "ws_without_key": "closed 1008 'access key missing or wrong'",
-   "index_http": 200
+   "index_http": 200,
+   "new_sample_label_served": true,
+   "self_test_with_key_en": "ok, audio 134862 bytes, first_content_audio_ms 3975"
   },
   "keep_until": "about 2026-11-05 (end of the evaluation period)"
  },
