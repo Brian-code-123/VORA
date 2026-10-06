@@ -29,7 +29,7 @@ from vora.asr import load_recognizers, AsrSession
 r = load_recognizers(S)
 for l in ('en', 'zh'): AsrSession(r, l).feed(b'\\x00\\x00' * 1600)
 from vora.rag.retriever import Retriever
-Retriever(S).search('warranty')
+rr = Retriever(S); rr.search('warranty'); rr.search('保修期多久')   # both language lanes, as the server warms them
 from vora.tts import Tts
 t = Tts(S); list(t.synth('Hello there.')); list(t.synth('你好。'))
 """,
