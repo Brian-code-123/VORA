@@ -1,158 +1,83 @@
-# VORA: streaming voice interaction with ASR, RAG and TTS on CPU
+# VORA: streaming voice Q&A on CPU (ASR → RAG → LLM → TTS)
 
-Everything is free and open source and runs on CPU only. Numbers in the tables are generated from `results/*.json` by `scripts/make_report_tables.py`; the gate table at the top of section 3 is the honest summary of which brief targets are met.
+Free, open-source models, CPU only, English and Mandarin. Every number below comes from `results/*.json` (final run 2026-10-06, Apple M2, 8 cores, test splits read once with `--final`). Full design notes and every earlier table: `docs/appendix.md`.
 
 ## 1. Architecture
 
-```mermaid
-flowchart LR
-  Mic[Browser mic 16 kHz PCM16, 100 ms frames] -->|WebSocket binary| ASR[sherpa-onnx streaming ASR: zipformer en / CTC zh, int8]
-  ASR -->|partial text| UI[live transcript]
-  ASR -->|stable partial| Pre[prefetch retrieval, optional shadow turn]
-  ASR -->|final = new text at endpoint| Ret[hybrid retrieval: bge-small + BM25 + FAISS]
-  Pre --> Ret
-  Ret --> LLM[Qwen2.5-0.5B Q4_K_M token stream]
-  LLM --> Guard[answer guard: negation, numbers, refusal; yes/no answered from the text]
-  Guard --> Chunk[progressive chunker: 1 word, 3 words, then sentences]
-  Chunk --> TTS[Piper VITS via sherpa-onnx: en int8, zh x_low with patched lexicon]
-  TTS -->|PCM16 16 kHz, 200 ms pieces| Spk[WebAudio playback]
-```
+Browser mic (16 kHz PCM16, 100 ms frames, AudioWorklet) → WebSocket → **streaming ASR** (sherpa-onnx: zipformer-20M en int8 41.6 MB, CTC small zh int8 25 MB) → partial text to the UI; stable partials prefetch retrieval → **hybrid retrieval** (int8 bge-small en/zh per language, FAISS + sentence passages + BM25, calibrated refusal threshold) → **Qwen2.5-0.5B Q4_K_M** (llama.cpp) token stream → **answer guard** (negation, figures, refusals answered from the retrieved text) → chunker (1 word, 3 words, then sentences) → **Piper VITS TTS** (en LJSpeech int8, zh huayan) → 16 kHz audio back on the same socket.
 
-One WebSocket per user carries audio up and JSON events (`partial`, `final`, `context`, `token`, `metrics`, `cancel`) plus audio down. ASR, retrieval, LLM and TTS run on separate executors. The LLM worker only fills a sentence queue, so it never waits on a slow client; only the TTS worker blocks on the bounded output queue (backpressure per user). An admission counter caps in-flight LLM turns, so a third user gets an immediate "busy" reply instead of waiting unseen.
+Each user gets one socket; ASR, retrieval, LLM and TTS run on separate executors with a bounded output queue, so a slow client only blocks its own TTS. Speaking over the answer cancels it (barge-in). The browser client is plain ES modules with a state machine covering every state (loading, busy, mic errors, close codes, iOS interruption) and was checked at 10 screen sizes, light and dark.
 
-| Part | Choice | Size | Why |
+## 2. Gates (brief targets)
+
+| Gate | Target | Result | Measured |
 |---|---|---|---|
-| ASR en | streaming zipformer en-20M, int8 | 41.6 MB | Streaming, ≤50 MB. |
-| ASR zh | streaming zipformer small CTC zh, int8 (2025-04-01) | 25 MB | Beat the 14M transducer on the same 60 AISHELL-1 test clips in the same wrapper (CER 5.2% vs 16.7%); the final 50-clip evaluation gives 6.0%. The bilingual zh-en model has a 182 MB encoder and fails the limit. |
-| Embedding | bge-small-zh-v1.5 (fastembed, ONNX) | – | Small, handles zh plus English terms. |
-| Vector DB | FAISS flat + BM25 (jieba) + query synonyms | KB is tiny | BM25 keeps product codes such as VORA-X200 retrievable; `kb/synonyms.json` maps user words ("temperature") to KB wording ("degrees Celsius"). |
-| LLM | Qwen2.5-0.5B-Instruct Q4_K_M (llama.cpp) | 469 MB | 0.5B, Apache-2.0. ONNX int8 export is benchmarked, not shipped. |
-| TTS | Piper VITS: en lessac-low int8, zh huayan x_low | 18 MB / 20 MB | Only small VITS voices with a sherpa-onnx runtime. Kitten (24 MB, Apache-2.0) was tested and is 3x slower. |
+| G1 latency, synthetic en audio | p50 ≤1500, p90 ≤1800 ms | PASS | p50 1006 / p90 1438 ms |
+| G1r latency, real voices (MInDS-14) | answered p50 ≤1500, p90 ≤1800 ms | PASS | p90: en-US 1337, en-GB 1422, en-AU 1725, zh 1507 ms (§3) |
+| G2 TTS first chunk | p95 ≤200 ms | PASS | en 70 / zh 89 ms |
+| G3 ASR+RAG+TTS memory | ≤500 MB USS | PASS | 305 MB (macOS); 465 MB in the Linux container |
+| G4 ASR accuracy, clean read speech | WER/CER ≤15% | PASS | en LibriSpeech 8.4%, zh AISHELL 5.8% |
+| G5 retrieval + faithfulness | top-3 ≥80%, faithful ≥95% | FAIL | top-3 96%, faithful 89% of 100 (blind 81.7%) |
+| G6 two users at once | each p50 ≤2× single | PASS | ×1.36 (1034 / 1215 vs 891 ms) |
+| G7 Docker + Pi-class proof | arm64, amd64, limited cores, Pi-class CPU | UNVERIFIED | 3 of 4 done; Pi-class run refused by AWS free plan |
+| G8 permissive licences | no unknown licences | FAIL | zh voice huayan: licence unknown (kept by owner ruling) |
 
-## 2. Streaming implementation
+Latency = speech end to first audio of the answer, in-process through the real models. LLM memory is reported separately: 653 MB.
 
-**Partial ASR and endpointing.** The recognizer is fed 100 ms frames. Every changed hypothesis is a `partial`; a hypothesis unchanged for two frames is `stable`. At an endpoint (0.4 s trailing silence) the final is only the text added since the previous final, and the stream is **not reset**: resetting threw away the encoder context and cost about 6 CER points (and about 30% WER on second utterances). If the text ends mid-sentence ("how long is the", "保修期是"), the endpoint is held for up to 500 ms of audio (1.2 s per utterance) in the same stream; filler sounds ("uh", "嗯") are stripped and a lone filler is not a turn. The stream starts with 0.8 s of silence because the small zipformers drop the first words of abruptly starting audio.
+## 3. Real human speech (third-party, not self-authored)
 
-**Real-time RAG.** On a stable partial retrieval is prefetched on its own thread; the final reuses it only when the text is exactly equal. ASR-mangled product names are fuzzy-mapped to a glossary, colloquial words get domain synonyms, and a calibrated minimum score rejects off-topic questions (fixed "not sure" reply, no LLM call). A speculative **shadow turn** (setting `speculate`, default on with ≥6 cores and a single session) starts the whole answer on a stable partial, muted (no tokens, context, audio or echo bookkeeping) until the final text matches exactly; a different final, a changed partial, a second user or a busy model discards it. In a paired A/B on a quiet host (25 English questions, all promoted) it was faster in 22 of 25 with a median gain of 153 ms (p90 1699 → 1348 ms); the G1 result below includes it.
+Questions and audio come from MInDS-14 (PolyAI, CC-BY-4.0): real callers asking a bank about 14 intents, recorded over the phone at 8 kHz. They are answered from a separate demo bank knowledge base written from the intent names only, before any utterance was read. Accuracy is on 100 test clips per cell; latency on 42 fixed clips per language (14 per English accent).
 
-**Answer guard.** A 0.5B model ignores negation and invents figures, so: yes/no questions are answered by quoting the best sentence of the retrieved text; for other questions the first tokens are checked (refusal phrases, answer contradicting the text, figures not in the text, quantity asked but no figure given) and replaced or completed from the text.
-
-**Incremental TTS.** Tokens go through a chunker that cuts the first audio chunk after one word and the second after three (int8 synthesis costs about 0.2 s per second of audio, so a short first chunk is what keeps first audio near 200 ms); later chunks end at sentence boundaries. Mixed zh/en sentences are split by script. The zh voice's lexicon uses a phoneme that its token table lacks, which silently dropped every z/c/s syllable (自, 次, 词 ...); a derived patched lexicon fixes that, and any remaining out-of-vocabulary character is counted (`tts_oov`) and logged. A new final or sustained new speech cancels the running turn (per-turn cancel event), drains queued audio and tells the client to stop playback.
-
-## 3. Performance analysis
-
-<!-- TABLES:START -->
-**Gates (brief targets) before → after this remediation**
-
-| Gate | Target | Before | Now | Measured now |
+| Scene | ASR error | Top-3 (ASR text / exact text) | Faithful (ASR / exact text) | Answered p50 / p90 ms (n) |
 |---|---|---|---|---|
-| G1 end-to-end latency (en audio) | p50 <=1500 ms, p90 <=1800 ms | FAIL | **PASS** | p50 1097 / p90 1468 ms |
-| G2 TTS first chunk | p95 <=200 ms | FAIL | **PASS** | en p95 147 / zh 173 ms |
-| G3 ASR+RAG+TTS memory | <=500 MB (USS) | FAIL | **PASS** | 272 MB |
-| G4 ASR accuracy | WER/CER <=15% | UNVERIFIED | **PASS** | en 7.8%, zh AISHELL 6.0% |
-| G5 RAG top-3 + faithfulness | top-3 >=80%, faithfulness >=95% | FAIL | **FAIL** | top-3 93%, faithful 92% |
-| G6 2 concurrent users | each p50 <=2x single | UNVERIFIED | **PASS** | "2 users: A p50 1597, B p50 1326 ms vs single 852 ms (worst x1.87)" |
-| G7 Docker + Pi proof | image builds, health 200, Pi run | UNVERIFIED | **UNVERIFIED** | not built / no Pi |
-| G8 permissive licences | no custom/unknown | FAIL | **FAIL** | non-permissive: tts_en, tts_zh |
+| en-US phone, 8 kHz | WER 44.0% | 90% / 98% | 52% / 67% | 1061 / 1337 (13 answered, 1 refused) |
+| en-GB phone | WER 49.1% | 74% / 93% | 42% / 57% | 1178 / 1422 (10, 3) |
+| en-AU phone | WER 42.0% | 76% / 96% | 43% / 56% | 1034 / 1725 (11, 3) |
+| zh-CN phone | CER 21.5% | 83% / 92% | 59% / 60% | 1006 / 1507 (28, 14) |
 
-*Host: macOS-26.6.2-arm64-arm-64bit, 8 cores, CPU-only, 1-min load average 3.9 (quiet host). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N=42 turns, 42 distinct questions, each asked once.*
+Latency counts answered turns, as the gate defines it; refused turns get a fixed short reply and are 7–33% of the latency clips (zh highest). Speech end is cross-checked against the Silero VAD (median gap 68 ms on en-US).
 
-**Latency (ms, p50 / p95)**
+Noise and room effects on the same speakers (top-3 on ASR text):
 
-| Stage | Budget | Measured |
+| Scene | en-US WER / top-3 | zh-CN CER / top-3 |
 |---|---|---|
-| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | 911 / 1309 |
-| Retrieval + LLM first token (oracle text) | ≤500 | 148 / 341 |
-| TTS first chunk (oracle text) | ≤200 | 130 / 663 |
-| RAG+LLM+TTS after final text (oracle) | | 348 / 860 |
-| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **1258 / 2169** |
-| End-to-end measured, English audio only (n=26) | ≤1500 | 1110 / 1532 |
-| End-to-end measured, Chinese audio (n=16) | ≤1500 | not meaningful: 1 of 16 turns retrieved anything (the ASR misheard the synthetic Chinese speech), so all took the fast 'not sure' path |
+| clean phone | 44.0% / 90% | 21.5% / 83% |
+| ambient noise 10 dB | 45.4% / 87% | 22.9% / 83% |
+| ambient noise 5 dB | 53.8% / 74% | 25.6% / 77% |
+| babble 10 dB | 77.5% / 70% | 56.2% / 81% |
+| reverb 0.6 s | 92.3% / 8% | 39.5% / 56% |
+| quiet (−30 dB) / loud (+12 dB, clipped) | 41.9% / 88%, 44.7% / 80% | 21.7% / 84%, 21.9% / 82% |
 
-**Streaming vs batch baseline (same models, same questions)**
+Read speech (WER/CER, clean → ambient 10 dB): LibriSpeech clean 5.9% → 7.4% (phone codec 8.3%), LibriSpeech other 12.8% → 16.0%, FLEURS en 25.9% → 28.7%, AISHELL 5.2% → 5.8%, FLEURS zh 12.3% → 14.6%.
 
-| | p50 | p95 |
-|---|---|---|
-| Batch: endpoint + retrieve + full LLM + full TTS | 2017 | 3721 |
-| Streaming (estimate) | 1258 | 2169 |
+**Reading it.** Phone speech is hard for 16 kHz models at the 50 MB size limit (WER 42–49%). Retrieval still finds the right answer most of the time because a few key words are enough: the exact-transcript column shows the gap that ASR costs. Reverberation is the failure case: the English model collapses (8% top-3), so the system refuses rather than guessing (77% refused). Noise reduction (GTCRN) was tested and made accuracy worse, so it is not in the live path.
 
-**ASR accuracy (streaming wrapper, 50 clips per set)**
+## 4. What changed in this round
 
-| Set | Metric | Clean | 10 dB noise | RTF |
-|---|---|---|---|---|
-| en_librispeech_clean | WER | 7.8% | 10.2% | 0.074 |
-| en_fleurs | WER | 27.5% | 52.9% | 0.082 |
-| zh_aishell | CER | 6.0% | 12.8% | 0.047 |
-| zh_fleurs | CER | 15.1% | 20.8% | 0.053 |
+- Retrieval: a word-boundary bug dropped synonyms for Latin words written next to Chinese ("5g的wifi"); fixed. Added per-language int8 embedders, sentence-level passages, normalised BM25 and per-language refusal thresholds tuned on dev only. Blind sets are frozen by sha256 and used once.
+- English voice: LJSpeech (public domain, trained from scratch) replaced lessac; first chunk p95 70 ms.
+- Memory in Linux: int8 embedders without fastembed, numpy resampler: 560 → 465 MB USS.
+- Automatic gain control before ASR fixes quiet speakers (LibriSpeech at −30 dB: WER 42.9% → 5.6%, dev split) and costs at most 1.3 points elsewhere.
+- Deployment: Docker images for arm64 and amd64, a demo on AWS (below), and an access key for the WebSocket.
 
-**RAG and TTS**
+## 5. Deployment
 
-| Metric | Result | Target |
-|---|---|---|
-| Top-3 retrieval, dev (n=28) | 100.0% | ≥80% |
-| Top-3 retrieval, held-out reworded (n=14) | 92.9% | ≥80% |
-| Off-topic queries rejected (n=10) | 90% | – |
-| Answer faithfulness, keyword check (n=40) | 92% | ≥95% |
-| – of which negation questions / blind held-out | 91% / 85% | – |
-| TTS MOS proxy (UTMOS22) en / zh | 4.33 / 3.51 | ≥3.5 |
+`docker build -f docker/Dockerfile -t vora .` fetches pinned models and builds the index. Then `docker run -p 8000:8000 vora` and open `http://localhost:8000`. For other devices, use HTTPS (`scripts/make_cert.sh`), because browsers allow the microphone only on secure pages. Set `VORA_ACCESS_KEY` when the port is reachable from outside.
 
-**Memory (USS = unique set size added by loading; median of 3 fresh processes)**
-
-| Component | MB |
+| Proof | Result |
 |---|---|
-| ASR + RAG + TTS in one process (incl. shared library imports; target ≤500) | 272 (runs 257.2, 272.5, 274.4) |
-| LLM Qwen2.5-0.5B Q4_K_M | 669 |
+| arm64 image (native) | built, ready in 84 s, WebSocket smoke test passes in English, Chinese and with a real voice |
+| amd64 image (emulated) | built 1.06 GB, boots, smoke test passes; latency under emulation not meaningful |
+| Pi 4 shape (`--cpus=4 --memory=1g`, fast M2 cores) | first audio p50 979 / p95 2811 ms; Linux USS 465 MB |
+| AWS t4g.small demo (2 Graviton2 vCPU, 2 GB) | HTTPS on 443, access key required; 3.8–5.6 s per answer: works, does not meet G1 |
+| Pi-class CPU (a1.xlarge, Cortex-A72) | not run: AWS free plan refused the instance type |
+| Jetson | not run: no hardware. Same arm64 image, CPU only |
 
-**LLM runtime: ONNX vs GGUF (same prompt, M2 CPU)**
+## 6. Limitations (stated, not hidden)
 
-| Runtime | First token (ms) | Decode tok/s | Size |
-|---|---|---|---|
-| ONNX fp32 (optimum) | 1583 | 7.9 | – |
-| ONNX int8 (optimum) | 628 | 18.2 | 603 MB |
-| GGUF Q4_K_M (llama.cpp, live path) | 438 | 7.2* | 469 MB |
-
-*GGUF tok/s includes prefill in its denominator, ONNX excludes first token: not like for like.*
-
-**Two users at once (shared models)**
-
-| | p50 ms |
-|---|---|
-| single user | 852 |
-| two users (each) | 1597 (x1.87, USS +-31.6 MB) |
-<!-- TABLES:END -->
-
-**Reading the results.**
-- Latency figures are only trustworthy when the table caption says "quiet host". The benchmark refuses to run on a busy host unless forced, and every result records the host load; perf tests skip instead of flaking.
-- `speech_end` is the last input frame with energy, so the endpoint wait includes the 0.4 s trailing-silence rule plus the ASR's lookahead. It is the largest single component of the response time.
-- Memory is reported as USS (unique pages), the number that frees when the process exits. RSS on macOS over-counts shared and compressed pages and gave 437-638 MB for the same process set.
-- English TTS first chunk depends on the 1-word first chunk; the same voice in fp32 is faster but is 63 MB (over the 30 MB limit).
-- ASR accuracy gates use read speech (LibriSpeech clean for English, AISHELL-1 test for Mandarin). FLEURS (read Wikipedia sentences with numbers and names) and 10 dB noise are reported as the harder numbers.
-- RAG and faithfulness sets are written by us, so treat the top-3 figures as optimistic; the blind held-out part is the honest one.
-- The MOS figure is an automatic predictor (UTMOS22, trained on English), not a listening test.
-
-## 4. Deployment guide
-
-| | |
-|---|---|
-| Hardware | 64-bit CPU, 4 cores, ≥2 GB RAM (LLM alone needs about 0.7 GB), 2 GB disk for models |
-| Software | Python 3.11-3.12, sherpa-onnx, onnxruntime, llama-cpp-python (CPU build), faiss-cpu, fastembed, cn2an, FastAPI + uvicorn. Optional: Docker |
-| Install | `uv venv --python 3.12 && CMAKE_ARGS="-DGGML_METAL=OFF" uv pip install -e ".[dev]"`, `python scripts/fetch_models.py` (pinned revisions; quantizes the English voice), `python -m vora.rag.ingest` |
-| Run | `python -m vora.server`, open `http://127.0.0.1:8000` |
-| Raspberry Pi 4 | 64-bit OS, `scripts/deploy_pi.sh` (Docker); HTTPS for LAN microphones via `--https` (mkcert). `scripts/pi_bench.sh` runs the benchmark on the device. |
-
-The Docker image, compose file and CI workflow are written and statically checked (`tests/test_dockerfile_static.py`) but **were never built or run**. Image size, container memory and Pi numbers are therefore not measured.
-
-## 5. Honest limitations
-
-- **No Raspberry Pi was available** and Docker was not built, so RTF and latency on a Pi 4 are unmeasured. The retrieval + LLM first-token target of 500 ms is not realistic on a Pi 4 (prompt evaluation of a 0.5B model runs at tens of tokens per second on 4×A72). Every number is from an Apple-Silicon Mac.
-- **English accuracy outside clean read speech is poor**: FLEURS and 10 dB noise are far above 15% WER. A denoiser and an offline second pass were planned and not built because the clean-speech gate was already met.
-- **Mandarin end-to-end latency is not measured**: the ASR does not understand the synthetic Chinese speech used for the benchmark, and the optional real-speech recordings were skipped by choice.
-- **Faithfulness is below the 95% target.** The remaining misses are retrieval (an odd wording finds no chunk or the wrong one) and extractive answers that quote a related but not the best sentence. Yes/no questions read like documentation because they are quoted, not generated.
-- **Speculation costs CPU when a guess is wrong** and is disabled with two or more sessions or fewer than 6 cores, so a Raspberry Pi 4 would run without it.
-- **Concurrency**: users share one LLM and serialise on it; a third in-flight turn is told the system is busy.
-- **Endpointing**: 0.4 s trailing silence splits some questions at pauses; the hold only covers text that visibly ends mid-sentence. 0.3 s doubled the splits and was rejected.
-- **Languages**: Mandarin and English only; Cantonese speech and Traditional-Chinese input are not supported. The zh voice and lexicon are Simplified.
-- **Single turn**: no conversation memory; a 30 s utterance cap forces a final.
-- **Evaluation sets are ours.** The KB, the retrieval questions and the 40 faithfulness questions are written by the same author; the "blind held-out" part was written in different wording, but the generic synonym list ("wifi", "temperature", ...) also lifted one held-out question, so its score is mildly optimistic.
-- **Licences**: both Piper voices have non-permissive or unknown dataset licences (`docs/licenses.md`); the zh voice has no permissive alternative under 30 MB that we found.
-- **LLM runtime**: the live path uses GGUF; the ONNX int8 export is benchmarked, not shipped.
+- **G5 faithfulness 89%, not 95%.** The misses are retrieval near-misses and the 0.5B model paraphrasing wrongly; off-topic refusal on the blind set is 60% (6 of 10). On real phone speech faithfulness is far lower, because the ASR text is wrong before retrieval starts.
+- **Raspberry Pi and Jetson unmeasured.** The closest evidence is the 4-core Docker run on M2 cores, which is optimistic. A Pi 4 core is roughly 1.5× slower than the A72 in a1 and far slower than an M2.
+- **Chinese voice licence unknown** (huayan). An Apache-2.0 swap exists (aishell3, 40 MB), but it is over the 30 MB TTS limit.
+- **Phone speech and reverb.** No ≤50 MB streaming English model was found that does better; a second pass model (27.6 MB) would break the per-model size limit together with the first.
+- **Testing.** Real microphones, Firefox, and physical phones were not tested automatically; a manual checklist is in `docs/demo-script.md`. The VORA Box question sets are self-authored and labelled as such; the real-voice results above are not.
+- **Cantonese** is not supported.

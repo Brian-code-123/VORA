@@ -12,7 +12,7 @@ def j(name: str) -> dict:
 
 
 def ms(d: dict, key: str) -> str:
-    return f"{d[key]['p50']:.0f} / {d[key]['p95']:.0f}"
+    return f"{d[key]['p50']:.0f} / {d[key]['p95']:.0f}" if key in d else "not run (final bench was audio-only)"
 
 
 def gates_table() -> str:
@@ -41,7 +41,7 @@ def tables() -> str:
            f"| Retrieval + LLM first token (oracle text) | ≤500 | {ms(o, 'rag_first_token')} |",
            f"| TTS first chunk (oracle text) | ≤200 | {ms(o, 'tts_first_chunk')} |",
            f"| RAG+LLM+TTS after final text (oracle) | | {ms(o, 'total')} |",
-           f"| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | **{b['estimated_total_ms']['p50']:.0f} / {b['estimated_total_ms']['p95']:.0f}** |",
+           f"| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | {ms(b, 'estimated_total_ms') if b['estimated_total_ms'] else 'not run'} |",
            f"| End-to-end measured, English audio only (n={len(en)}) | ≤1500 | {en_p50:.0f} / {en_p95:.0f} |",
            f"| End-to-end measured, Chinese audio (n={len(zh)}) | ≤1500 | not meaningful: {zh_ok} of {len(zh)} turns retrieved anything (the ASR misheard the synthetic Chinese speech), so all took the fast 'not sure' path |",
            "", "**Streaming vs batch baseline (same models, same questions)**", "", "| | p50 | p95 |", "|---|---|---|",
@@ -77,7 +77,7 @@ def tables() -> str:
 
 
 def main() -> None:
-    p = ROOT / "docs" / "report.md"
+    p = ROOT / "docs" / "appendix.md"   # the 3-page report has its own short table, checked by tests/test_report_length.py
     txt = p.read_text()
     new = re.sub(r"(<!-- TABLES:START -->).*?(<!-- TABLES:END -->)", lambda m: f"{m.group(1)}\n{tables()}\n{m.group(2)}", txt, flags=re.S)
     p.write_text(new)
