@@ -1,29 +1,46 @@
 # Demo script
 
-## 2-minute video (record with QuickTime or OBS, screen + audio)
+## Where to run it
+- **Local (best latency):** `docker run -p 8000:8000 vora` or `python -m vora.server`, open `http://localhost:8000`.
+- **AWS demo (any network, slower):** in AWS CloudShell run `cat ~/vora-demo-link.txt` and open the `https://<IP>/?key=…` link. The certificate is self-signed: Chrome → "Advanced" → "Proceed". The page removes the key from the address bar, so screenshots are safe. Expect 4–6 s per answer on the 2-vCPU box; say so.
+- No microphone (or a noisy room): use the "Sample question" menu. Synthetic samples ask VORA Box questions; "Real callers" are MInDS-14 recordings of bank questions, which are off-topic for the VORA Box knowledge base and show real-voice ASR plus the "not sure" refusal.
+
+## 2-minute video
 | Time | Show | Say |
 |---|---|---|
-| 0:00 | Terminal: `python -m vora.server`, `curl :8000/health` → `{"ready":true}` | "Everything runs locally on CPU, no cloud." |
-| 0:10 | Browser `http://127.0.0.1:8000`, English selected, press Start mic | "Streaming ASR sends partial text while I talk." |
-| 0:20 | Ask: "How long is the warranty on the VORA X200?" | Point at the live transcript growing, then the retrieved chunk ids. |
-| 0:40 | Reply plays; show latency card (say the real number) | "Response time: X seconds. First audio starts before the sentence is finished." |
-| 0:55 | Switch to 中文, ask "怎么恢复出厂设置" | "Mandarin uses a separate small streaming model." |
-| 1:15 | Interrupt the reply by speaking | "Barge-in cancels the LLM and TTS and flushes the audio." |
-| 1:30 | Ask something off-topic ("what is the weather") | "No relevant document, so it says it is not sure instead of making something up." |
-| 1:45 | Show `results` table: streaming vs batch baseline | "Same models: batch waits for the whole answer and the whole audio, so the median delay is higher." |
-
-If the microphone is unavailable, use the "Sample question" dropdown (synthetic speech) and say so.
+| 0:00 | Terminal: `curl localhost:8000/health` → `{"ready":true,...}` | "Everything runs on CPU, no cloud API." |
+| 0:10 | Press Start; point at the level meter and red recording dot | "Streaming ASR shows partial text while I talk." |
+| 0:20 | Ask "How long is the warranty on the VORA X200?" | Point at the live transcript, then the context chips (E03). |
+| 0:40 | Answer plays; open the latency card | Read the real number and the stage split (ASR / retrieve / LLM / TTS). |
+| 0:55 | Switch to 中文, ask "怎么恢复出厂设置" | "Mandarin has its own small streaming model." |
+| 1:15 | Talk over the answer | "Barge-in cancels the LLM and TTS and stops playback." |
+| 1:30 | Ask "what is the weather" | "Nothing relevant was retrieved, so it says it is not sure." |
+| 1:45 | Pick a "Real callers" sample (EN-GB) | "Real phone speech: the transcript is rough; this question is outside the knowledge base, so it refuses." |
 
 ## 10-minute live demo + Q&A
-1. (1 min) Architecture diagram from the report.
-2. (3 min) Live demo as above, English then Chinese, show partial text and context.
-3. (2 min) Latency and baseline table; explain endpoint 0.4 s, speculative retrieval, first-clause chunking.
-4. (2 min) Honest limitations: no Pi measured, memory over 500 MB, FLEURS accuracy, 0.5B faithfulness, Cantonese.
+1. (1 min) Architecture line from the report.
+2. (3 min) Live demo as above, English then Chinese.
+3. (2 min) Gate table and real-voice table: what passes, what does not (G5, G7 Pi, G8 zh voice).
+4. (2 min) Limitations and trade-offs below.
 5. (2 min) Q&A.
 
-**Trade-off talking points**
-- Model size vs accuracy: the only ≤50 MB streaming ASRs are weak outside clean read speech. A larger model would fit accuracy, not the size limit.
-- Latency vs naturalness: int8 TTS fits 30 MB but is slower on ARM than fp32; splitting the first chunk early lowers latency and costs prosody.
-- Endpoint delay vs mid-sentence cuts: 0.4 s silence is fast and splits slow speakers.
-- GGUF vs ONNX: GGUF has the lower first-token time and a prefix cache; ONNX int8 decodes faster per token but is larger.
-- Retrieval threshold vs recall: a higher threshold blocks off-topic questions and also some real ones with ASR errors.
+## What we do not claim
+- Not measured on a Raspberry Pi or a Jetson; Pi-class numbers are a 4-core Docker run on Apple M2 cores (optimistic).
+- Faithfulness is 89%, not the 95% target; phone-quality speech is much worse.
+- The Chinese voice (huayan) has an unknown licence.
+- The AWS demo box does not meet the 1.5 s latency target.
+
+## Manual checklist (not covered by automated tests)
+- [ ] Real microphone in Chrome, Safari (macOS), Safari (physical iPhone), Chrome (Android), Firefox, Edge: permission prompt, level meter moves, partial text appears.
+- [ ] Deny the mic permission: error banner names the fix.
+- [ ] Unplug or revoke the mic mid-session: "microphone ended" state, no hang.
+- [ ] iPhone: phone call or app switch during an answer: "tap to resume" banner, then resume works.
+- [ ] Wrong or missing `?key=` on the AWS link: "access key missing or wrong" error, no retry loop.
+- [ ] Two people at once on the AWS link: both get answers.
+
+## Trade-off talking points
+- Model size vs accuracy: the only ≤50 MB streaming ASRs are weak outside clean read speech (phone WER 42–49%).
+- Latency vs naturalness: the first audio chunk is one word, which keeps first audio fast and costs prosody.
+- Endpoint delay vs mid-sentence cuts: 0.4 s silence is fast; unfinished sentences are held up to 500 ms.
+- Retrieval threshold vs recall: a higher threshold refuses more off-topic questions and also some real ones with ASR errors.
+- GGUF vs ONNX: GGUF has the lower first-token time; ONNX int8 decodes faster per token but is larger.

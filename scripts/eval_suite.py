@@ -288,7 +288,8 @@ def _models(kb: str, faith: bool):
 
 
 def run(suite: str, aug: str = "clean", split: str = "dev", final: bool = False, n: int = 0, kb: str = "none",
-        faith: bool = False, latency: bool = False, audio_dir: Path | None = None, force: bool = False) -> dict:
+        faith: bool = False, latency: bool = False, audio_dir: Path | None = None, force: bool = False,
+        out_dir: Path | None = None) -> dict:
     if audio_dir is None and suite not in suites.ALL:
         raise KeyError(f"unknown suite: {suite}")
     from vora.config import Settings
@@ -331,7 +332,7 @@ def run(suite: str, aug: str = "clean", split: str = "dev", final: bool = False,
                     y = np.concatenate([np.zeros(SR // 2, np.int16), x])
                     t["silero_gap_ms"] = round((refvad.speech_end(y) - refvad.pipeline_speech_end(y)) * 1000, 1)
         res["latency"] = latency_summary(turns)
-    return finish(res, mon.stop())
+    return finish(res, mon.stop(), out_dir)
 
 
 def main(argv: list[str] | None = None) -> None:
