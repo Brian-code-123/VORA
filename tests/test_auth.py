@@ -349,3 +349,27 @@ def test_server_throttles_repeated_wrong_keys():
             ws.send_text(json.dumps({"type": "auth", "key": KEY}))
             msg = ws.receive()
             assert msg["code"] == 1008 and msg["reason"] == THROTTLE_REASON
+
+
+async def test_ws_smoke_is_quiet_when_the_server_refuses():
+    """A refused smoke test must end with one JSON line and exit 3, not a pile of 'Task exception was never retrieved'."""
+    import sys
+    from pathlib import Path
+
+    import websockets
+
+    async def handler(ws):
+        await ws.recv()
+        await ws.close(1008, "access key missing or wrong")
+
+    root = Path(__file__).resolve().parent.parent
+    async with websockets.serve(handler, "127.0.0.1", 0) as srv:
+        port = srv.sockets[0].getsockname()[1]
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable, str(root / "scripts" / "ws_smoke.py"), f"ws://127.0.0.1:{port}/ws",
+            str(root / "client" / "samples" / "q_warranty_en.wav"), "--key", "wrong", "--timeout", "5",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        out, err = await asyncio.wait_for(proc.communicate(), 30)
+    assert proc.returncode == 3, (out, err)
+    assert json.loads(out.decode().strip().splitlines()[-1])["closed"] == 1008
+    assert b"never retrieved" not in err and b"Traceback" not in err, err.decode()[-600:]
