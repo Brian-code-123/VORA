@@ -230,3 +230,46 @@ def test_suite_run_does_not_write_without_env(tmp_path: Path, monkeypatch):
     monkeypatch.delenv("VORA_WRITE_RESULTS", raising=False)
     E.finish({"suite": "minds14_zh", "aug": "clean", "split": "dev"}, {"quiet": False, "max_other_cpu_pct": 90.0, "p90_other_cpu_pct": 80.0}, out_dir=tmp_path)
     assert not list(tmp_path.iterdir())
+
+
+QUIET = {"quiet": True, "max_other_cpu_pct": 3.0, "p90_other_cpu_pct": 2.0}
+BUSY = {"quiet": False, "max_other_cpu_pct": 75.0, "p90_other_cpu_pct": 53.0}
+
+
+def _res(tag):
+    return {"suite": "minds14_zh", "aug": "clean", "split": "test", "tag": tag}
+
+
+def test_busy_rerun_does_not_overwrite_quiet_result(tmp_path, monkeypatch):
+    """A rerun on a busy host once replaced a good quiet en-AU file. Busy results go to a sidecar instead."""
+    monkeypatch.setenv("VORA_WRITE_RESULTS", "1")
+    E.finish(_res("good"), QUIET, out_dir=tmp_path)
+    E.finish(_res("noisy"), BUSY, out_dir=tmp_path)
+    main = json.loads((tmp_path / "minds14_zh__clean__test.json").read_text())
+    side = json.loads((tmp_path / "minds14_zh__clean__test.busy.json").read_text())
+    assert main["tag"] == "good" and main["quiet"] is True
+    assert side["tag"] == "noisy" and side["quiet"] is False
+
+
+def test_busy_result_written_when_no_prior_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("VORA_WRITE_RESULTS", "1")
+    E.finish(_res("noisy"), BUSY, out_dir=tmp_path)
+    assert json.loads((tmp_path / "minds14_zh__clean__test.json").read_text())["quiet"] is False   # better than nothing; G1r reads it as UNVERIFIED
+
+
+def test_quiet_result_replaces_busy_prior(tmp_path, monkeypatch):
+    monkeypatch.setenv("VORA_WRITE_RESULTS", "1")
+    E.finish(_res("noisy"), BUSY, out_dir=tmp_path)
+    E.finish(_res("good"), QUIET, out_dir=tmp_path)
+    assert json.loads((tmp_path / "minds14_zh__clean__test.json").read_text())["tag"] == "good"
+
+
+def test_report_gates_ignores_busy_sidecar(tmp_path):
+    from scripts.report_gates import evaluate
+    s = tmp_path / "suites"
+    s.mkdir()
+    lat = lambda p90, quiet: {"quiet": quiet, "latency": {"answered": {"p50": 1000, "p90": p90, "n": 14}}}
+    (s / "minds14_zh__clean__test.json").write_text(json.dumps(lat(1500, True)))
+    (s / "minds14_zh__clean__test.busy.json").write_text(json.dumps(lat(9999, False)))
+    g = {x.id: x for x in evaluate(tmp_path)}["G1r"]
+    assert g.ok is True and "9999" not in g.measured
