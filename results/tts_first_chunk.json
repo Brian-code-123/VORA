@@ -1,1 +1,1 @@
-{"en_p95_ms": 146.7, "zh_p95_ms": 173.3, "n_en": 60, "n_zh": 18, "first_chunk_words": 1, "samples": "3 passes over the same 20 en / 6 zh first-chunk texts", "quiet": true}
+{"en_p95_ms": 69.7, "zh_p95_ms": 89.2, "n_en": 60, "n_zh": 18, "first_chunk_words": 1, "samples": "3 passes over the same 20 en / 6 zh first-chunk texts", "quiet": true}

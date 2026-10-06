@@ -1,0 +1,74 @@
+[
+ {
+  "id": "G1",
+  "name": "end-to-end latency (synthetic en audio)",
+  "target": "p50 <=1500 ms, p90 <=1800 ms",
+  "measured": "p50 1006 / p90 1438 ms",
+  "ok": true,
+  "quiet": true
+ },
+ {
+  "id": "G1r",
+  "name": "end-to-end latency, real voices (MInDS-14)",
+  "target": "answered turns p50 <=1500 ms, p90 <=1800 ms",
+  "measured": "en-AU 1034/1725, en-GB 1178/1422, en-US 1061/1337, zh-CN 1006/1507 ms (p50/p90)",
+  "ok": true,
+  "quiet": true
+ },
+ {
+  "id": "G2",
+  "name": "TTS first chunk",
+  "target": "p95 <=200 ms",
+  "measured": "en p95 70 / zh 89 ms",
+  "ok": true,
+  "quiet": true
+ },
+ {
+  "id": "G3",
+  "name": "ASR+RAG+TTS memory",
+  "target": "<=500 MB (USS)",
+  "measured": "305 MB",
+  "ok": true,
+  "quiet": true
+ },
+ {
+  "id": "G4",
+  "name": "ASR accuracy",
+  "target": "WER/CER <=15%",
+  "measured": "en 8.4%, zh AISHELL 5.8%",
+  "ok": true,
+  "quiet": true
+ },
+ {
+  "id": "G5",
+  "name": "RAG top-3 + faithfulness",
+  "target": "top-3 >=80%, faithfulness >=95%",
+  "measured": "top-3 96% (blind 96%), faithful 89% of 100 (blind 81.7%)",
+  "ok": false,
+  "quiet": true
+ },
+ {
+  "id": "G6",
+  "name": "2 concurrent users",
+  "target": "each p50 <=2x single",
+  "measured": "\"2 users: A p50 1034, B p50 1215 ms vs single 891 ms (worst x1.36)\"",
+  "ok": true,
+  "quiet": true
+ },
+ {
+  "id": "G7",
+  "name": "Docker + Pi-class proof",
+  "target": "arm64 + amd64 image build/boot/smoke, limited-core run, Pi-class CPU run",
+  "measured": "docker_arm64: yes, docker_amd64: yes, limited_core_run: yes, pi_class_measured: unverified; Jetson: unverified (no hardware)",
+  "ok": null,
+  "quiet": true
+ },
+ {
+  "id": "G8",
+  "name": "permissive licences",
+  "target": "no custom/unknown",
+  "measured": "non-permissive: tts_zh",
+  "ok": false,
+  "quiet": true
+ }
+]

@@ -1,0 +1,1481 @@
+{
+ "minds14_en_us|clean|test": {
+  "suite": "minds14_en_us",
+  "aug": "clean",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.4395448079658606,
+   "errors": 618,
+   "ref_len": 1406,
+   "n": 100,
+   "ci": [
+    0.3582498504405666,
+    0.5407602587789085
+   ],
+   "value_numbers_spelled": 0.4395448079658606
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.72,
+   "top3": 0.9,
+   "refused": 2,
+   "top1_ref": 0.93,
+   "top3_ref": 0.98,
+   "top1_ci": [
+    0.6251178763865428,
+    0.7986044083240162
+   ],
+   "top3_ci": [
+    0.8256326956323347,
+    0.9447714583868638
+   ],
+   "top1_ref_ci": [
+    0.8625032899347025,
+    0.9656811756359358
+   ],
+   "top3_ref_ci": [
+    0.9299868370580062,
+    0.9944981477650318
+   ],
+   "refused_rate": 0.02
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 68.00000000000051,
+   "max_ms": 890.0000000000006,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 38.6,
+  "p90_other_cpu_pct": 13.7,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 5.4,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_en_gb|clean|test": {
+  "suite": "minds14_en_gb",
+  "aug": "clean",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.49056603773584906,
+   "errors": 832,
+   "ref_len": 1696,
+   "n": 100,
+   "ci": [
+    0.43811234963684786,
+    0.5419145489845041
+   ],
+   "value_numbers_spelled": 0.49056603773584906
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.58,
+   "top3": 0.74,
+   "refused": 16,
+   "top1_ref": 0.81,
+   "top3_ref": 0.93,
+   "top1_ci": [
+    0.48206307998895265,
+    0.6720177508148869
+   ],
+   "top3_ci": [
+    0.6462882736813836,
+    0.8159542187301354
+   ],
+   "top1_ref_ci": [
+    0.7222097592919214,
+    0.8748534600729575
+   ],
+   "top3_ref_ci": [
+    0.8625032899347025,
+    0.9656811756359358
+   ],
+   "refused_rate": 0.16
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 90.00000000000031,
+   "max_ms": 1605.9999999999998,
+   "n_over_150ms": 7,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 8.7,
+  "p90_other_cpu_pct": 5.8,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 5.0,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_en_au|clean|test": {
+  "suite": "minds14_en_au",
+  "aug": "clean",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.4197452229299363,
+   "errors": 659,
+   "ref_len": 1570,
+   "n": 100,
+   "ci": [
+    0.3720614944837282,
+    0.4797261784160658
+   ],
+   "value_numbers_spelled": 0.4197452229299363
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.65,
+   "top3": 0.76,
+   "refused": 12,
+   "top1_ref": 0.9,
+   "top3_ref": 0.96,
+   "top1_ci": [
+    0.5525426042919797,
+    0.7363589534652198
+   ],
+   "top3_ci": [
+    0.6676748127670786,
+    0.8330878873454004
+   ],
+   "top1_ref_ci": [
+    0.8256326956323347,
+    0.9447714583868638
+   ],
+   "top3_ref_ci": [
+    0.9016278276739262,
+    0.9843369494481519
+   ],
+   "refused_rate": 0.12
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 89.99999999999986,
+   "max_ms": 945.9999999999998,
+   "n_over_150ms": 11,
+   "flagged": true
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 61.2,
+  "p90_other_cpu_pct": 50.8,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 9.2,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_zh|clean|test": {
+  "suite": "minds14_zh",
+  "aug": "clean",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.21465476749647722,
+   "errors": 457,
+   "ref_len": 2129,
+   "n": 100,
+   "ci": [
+    0.14763473183668396,
+    0.2927699454562263
+   ]
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.73,
+   "top3": 0.83,
+   "refused": 6,
+   "top1_ref": 0.8,
+   "top3_ref": 0.92,
+   "top1_ci": [
+    0.6356769977376873,
+    0.8073053908233518
+   ],
+   "top3_ci": [
+    0.7445181876635703,
+    0.8910652394022684
+   ],
+   "top1_ref_ci": [
+    0.7111690380734976,
+    0.8666340774409013
+   ],
+   "top3_ref_ci": [
+    0.8500173312059693,
+    0.9589070305141891
+   ],
+   "refused_rate": 0.06
+  },
+  "offtopic_false_accept": {
+   "rate": 0.164021164021164,
+   "n": 189
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 62.000000000000725,
+   "max_ms": 1833.9999999999995,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 53.3,
+  "p90_other_cpu_pct": 47.2,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 7.6,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_en_us|ambient@10|test": {
+  "suite": "minds14_en_us",
+  "aug": "ambient@10",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.4544807965860597,
+   "errors": 639,
+   "ref_len": 1406,
+   "n": 100,
+   "ci": [
+    0.3672358316922803,
+    0.5576492785793562
+   ],
+   "value_numbers_spelled": 0.4544807965860597
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.75,
+   "top3": 0.87,
+   "refused": 5,
+   "top1_ref": 0.93,
+   "top3_ref": 0.98,
+   "top1_ci": [
+    0.6569535362992417,
+    0.8245490599627574
+   ],
+   "top3_ci": [
+    0.7901947810519012,
+    0.9224290614158573
+   ],
+   "top1_ref_ci": [
+    0.8625032899347025,
+    0.9656811756359358
+   ],
+   "top3_ref_ci": [
+    0.9299868370580062,
+    0.9944981477650318
+   ],
+   "refused_rate": 0.05
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 68.00000000000051,
+   "max_ms": 890.0000000000006,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 52.7,
+  "p90_other_cpu_pct": 45.3,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 10.2,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_en_us|ambient@5|test": {
+  "suite": "minds14_en_us",
+  "aug": "ambient@5",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.5376955903271693,
+   "errors": 756,
+   "ref_len": 1406,
+   "n": 100,
+   "ci": [
+    0.45152158915584184,
+    0.633921344126105
+   ],
+   "value_numbers_spelled": 0.5376955903271693
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.61,
+   "top3": 0.74,
+   "refused": 14,
+   "top1_ref": 0.93,
+   "top3_ref": 0.98,
+   "top1_ci": [
+    0.5120283616749816,
+    0.699832780680298
+   ],
+   "top3_ci": [
+    0.6462882736813836,
+    0.8159542187301354
+   ],
+   "top1_ref_ci": [
+    0.8625032899347025,
+    0.9656811756359358
+   ],
+   "top3_ref_ci": [
+    0.9299868370580062,
+    0.9944981477650318
+   ],
+   "refused_rate": 0.14
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 68.00000000000051,
+   "max_ms": 890.0000000000006,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 48.9,
+  "p90_other_cpu_pct": 36.0,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 8.0,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_en_us|babble@10|test": {
+  "suite": "minds14_en_us",
+  "aug": "babble@10",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.7745376955903271,
+   "errors": 1089,
+   "ref_len": 1406,
+   "n": 100,
+   "ci": [
+    0.6639554819452533,
+    0.9110288474560968
+   ],
+   "value_numbers_spelled": 0.7745376955903271
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.5,
+   "top3": 0.7,
+   "refused": 21,
+   "top1_ref": 0.93,
+   "top3_ref": 0.98,
+   "top1_ci": [
+    0.40382982859014716,
+    0.5961701714098528
+   ],
+   "top3_ci": [
+    0.6041496156718804,
+    0.7810524613377188
+   ],
+   "top1_ref_ci": [
+    0.8625032899347025,
+    0.9656811756359358
+   ],
+   "top3_ref_ci": [
+    0.9299868370580062,
+    0.9944981477650318
+   ],
+   "refused_rate": 0.21
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 68.00000000000051,
+   "max_ms": 890.0000000000006,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 27.4,
+  "p90_other_cpu_pct": 13.0,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 6.1,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_en_us|reverb@0.6|test": {
+  "suite": "minds14_en_us",
+  "aug": "reverb@0.6",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.9231863442389758,
+   "errors": 1298,
+   "ref_len": 1406,
+   "n": 100,
+   "ci": [
+    0.884929318732317,
+    0.9679027919367611
+   ],
+   "value_numbers_spelled": 0.9231863442389758
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.06,
+   "top3": 0.08,
+   "refused": 77,
+   "top1_ref": 0.93,
+   "top3_ref": 0.98,
+   "top1_ci": [
+    0.027785745266656618,
+    0.12476968531222504
+   ],
+   "top3_ci": [
+    0.04109296948581091,
+    0.1499826687940307
+   ],
+   "top1_ref_ci": [
+    0.8625032899347025,
+    0.9656811756359358
+   ],
+   "top3_ref_ci": [
+    0.9299868370580062,
+    0.9944981477650318
+   ],
+   "refused_rate": 0.77
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 68.00000000000051,
+   "max_ms": 890.0000000000006,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 35.4,
+  "p90_other_cpu_pct": 18.0,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 7.1,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_en_us|quiet|test": {
+  "suite": "minds14_en_us",
+  "aug": "quiet",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.4189189189189189,
+   "errors": 589,
+   "ref_len": 1406,
+   "n": 100,
+   "ci": [
+    0.32897615708274897,
+    0.5312172806783915
+   ],
+   "value_numbers_spelled": 0.4189189189189189
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.72,
+   "top3": 0.88,
+   "refused": 5,
+   "top1_ref": 0.93,
+   "top3_ref": 0.98,
+   "top1_ci": [
+    0.6251178763865428,
+    0.7986044083240162
+   ],
+   "top3_ci": [
+    0.8018773199709163,
+    0.9300066263473222
+   ],
+   "top1_ref_ci": [
+    0.8625032899347025,
+    0.9656811756359358
+   ],
+   "top3_ref_ci": [
+    0.9299868370580062,
+    0.9944981477650318
+   ],
+   "refused_rate": 0.05
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 68.00000000000051,
+   "max_ms": 890.0000000000006,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 47.6,
+  "p90_other_cpu_pct": 23.2,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 6.7,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_en_us|loud|test": {
+  "suite": "minds14_en_us",
+  "aug": "loud",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.4473684210526316,
+   "errors": 629,
+   "ref_len": 1406,
+   "n": 100,
+   "ci": [
+    0.35844806763285025,
+    0.5538620265509686
+   ],
+   "value_numbers_spelled": 0.4473684210526316
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.67,
+   "top3": 0.8,
+   "refused": 9,
+   "top1_ref": 0.93,
+   "top3_ref": 0.98,
+   "top1_ci": [
+    0.5730516033971138,
+    0.7543701620610456
+   ],
+   "top3_ci": [
+    0.7111690380734976,
+    0.8666340774409013
+   ],
+   "top1_ref_ci": [
+    0.8625032899347025,
+    0.9656811756359358
+   ],
+   "top3_ref_ci": [
+    0.9299868370580062,
+    0.9944981477650318
+   ],
+   "refused_rate": 0.09
+  },
+  "offtopic_false_accept": {
+   "rate": 0.05235602094240838,
+   "n": 191
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 68.00000000000051,
+   "max_ms": 890.0000000000006,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 49.3,
+  "p90_other_cpu_pct": 31.6,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 5.8,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_zh|ambient@10|test": {
+  "suite": "minds14_zh",
+  "aug": "ambient@10",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.2287458900892438,
+   "errors": 487,
+   "ref_len": 2129,
+   "n": 100,
+   "ci": [
+    0.16204557698936273,
+    0.30703103977678947
+   ]
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.7,
+   "top3": 0.83,
+   "refused": 8,
+   "top1_ref": 0.8,
+   "top3_ref": 0.92,
+   "top1_ci": [
+    0.6041496156718804,
+    0.7810524613377188
+   ],
+   "top3_ci": [
+    0.7445181876635703,
+    0.8910652394022684
+   ],
+   "top1_ref_ci": [
+    0.7111690380734976,
+    0.8666340774409013
+   ],
+   "top3_ref_ci": [
+    0.8500173312059693,
+    0.9589070305141891
+   ],
+   "refused_rate": 0.08
+  },
+  "offtopic_false_accept": {
+   "rate": 0.164021164021164,
+   "n": 189
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 62.000000000000725,
+   "max_ms": 1833.9999999999995,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 11.1,
+  "p90_other_cpu_pct": 7.2,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 4.6,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_zh|ambient@5|test": {
+  "suite": "minds14_zh",
+  "aug": "ambient@5",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.2559887271019258,
+   "errors": 545,
+   "ref_len": 2129,
+   "n": 100,
+   "ci": [
+    0.19228636834904517,
+    0.33415552638032
+   ]
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.66,
+   "top3": 0.77,
+   "refused": 10,
+   "top1_ref": 0.8,
+   "top3_ref": 0.92,
+   "top1_ci": [
+    0.5627754565831095,
+    0.74538620502457
+   ],
+   "top3_ci": [
+    0.6784543514317231,
+    0.8415684525312359
+   ],
+   "top1_ref_ci": [
+    0.7111690380734976,
+    0.8666340774409013
+   ],
+   "top3_ref_ci": [
+    0.8500173312059693,
+    0.9589070305141891
+   ],
+   "refused_rate": 0.1
+  },
+  "offtopic_false_accept": {
+   "rate": 0.164021164021164,
+   "n": 189
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 62.000000000000725,
+   "max_ms": 1833.9999999999995,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 12.2,
+  "p90_other_cpu_pct": 4.2,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 3.7,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_zh|babble@10|test": {
+  "suite": "minds14_zh",
+  "aug": "babble@10",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.56176608736496,
+   "errors": 1196,
+   "ref_len": 2129,
+   "n": 100,
+   "ci": [
+    0.4648552451525752,
+    0.6793817731975627
+   ]
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.59,
+   "top3": 0.81,
+   "refused": 6,
+   "top1_ref": 0.8,
+   "top3_ref": 0.92,
+   "top1_ci": [
+    0.4920125056109662,
+    0.6813284290433533
+   ],
+   "top3_ci": [
+    0.7222097592919214,
+    0.8748534600729575
+   ],
+   "top1_ref_ci": [
+    0.7111690380734976,
+    0.8666340774409013
+   ],
+   "top3_ref_ci": [
+    0.8500173312059693,
+    0.9589070305141891
+   ],
+   "refused_rate": 0.06
+  },
+  "offtopic_false_accept": {
+   "rate": 0.164021164021164,
+   "n": 189
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 62.000000000000725,
+   "max_ms": 1833.9999999999995,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 28.7,
+  "p90_other_cpu_pct": 17.8,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 3.3,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_zh|reverb@0.6|test": {
+  "suite": "minds14_zh",
+  "aug": "reverb@0.6",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.39502113668388916,
+   "errors": 841,
+   "ref_len": 2129,
+   "n": 100,
+   "ci": [
+    0.3328234733364032,
+    0.4666432391876962
+   ]
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.44,
+   "top3": 0.56,
+   "refused": 30,
+   "top1_ref": 0.8,
+   "top3_ref": 0.92,
+   "top1_ci": [
+    0.34671865400968327,
+    0.537720722887437
+   ],
+   "top3_ci": [
+    0.4622792771125631,
+    0.6532813459903167
+   ],
+   "top1_ref_ci": [
+    0.7111690380734976,
+    0.8666340774409013
+   ],
+   "top3_ref_ci": [
+    0.8500173312059693,
+    0.9589070305141891
+   ],
+   "refused_rate": 0.3
+  },
+  "offtopic_false_accept": {
+   "rate": 0.164021164021164,
+   "n": 189
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 62.000000000000725,
+   "max_ms": 1833.9999999999995,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 12.1,
+  "p90_other_cpu_pct": 5.7,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 3.0,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_zh|quiet|test": {
+  "suite": "minds14_zh",
+  "aug": "quiet",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.21653358384217944,
+   "errors": 461,
+   "ref_len": 2129,
+   "n": 100,
+   "ci": [
+    0.14965965494256794,
+    0.2945668628424655
+   ]
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.73,
+   "top3": 0.84,
+   "refused": 4,
+   "top1_ref": 0.8,
+   "top3_ref": 0.92,
+   "top1_ci": [
+    0.6356769977376873,
+    0.8073053908233518
+   ],
+   "top3_ci": [
+    0.7557955544110558,
+    0.8990479765052628
+   ],
+   "top1_ref_ci": [
+    0.7111690380734976,
+    0.8666340774409013
+   ],
+   "top3_ref_ci": [
+    0.8500173312059693,
+    0.9589070305141891
+   ],
+   "refused_rate": 0.04
+  },
+  "offtopic_false_accept": {
+   "rate": 0.164021164021164,
+   "n": 189
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 62.000000000000725,
+   "max_ms": 1833.9999999999995,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 52.6,
+  "p90_other_cpu_pct": 16.9,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 2.9,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "minds14_zh|loud|test": {
+  "suite": "minds14_zh",
+  "aug": "loud",
+  "split": "test",
+  "kb": "bank",
+  "n": 100,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.21888210427430718,
+   "errors": 466,
+   "ref_len": 2129,
+   "n": 100,
+   "ci": [
+    0.15007247248867153,
+    0.29702724620550863
+   ]
+  },
+  "retrieval": {
+   "n": 100,
+   "top1": 0.7,
+   "top3": 0.82,
+   "refused": 7,
+   "top1_ref": 0.8,
+   "top3_ref": 0.92,
+   "top1_ci": [
+    0.6041496156718804,
+    0.7810524613377188
+   ],
+   "top3_ci": [
+    0.7333246397578691,
+    0.8829986834574897
+   ],
+   "top1_ref_ci": [
+    0.7111690380734976,
+    0.8666340774409013
+   ],
+   "top3_ref_ci": [
+    0.8500173312059693,
+    0.9589070305141891
+   ],
+   "refused_rate": 0.07
+  },
+  "offtopic_false_accept": {
+   "rate": 0.164021164021164,
+   "n": 189
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 62.000000000000725,
+   "max_ms": 1833.9999999999995,
+   "n_over_150ms": 4,
+   "flagged": false
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 45.7,
+  "p90_other_cpu_pct": 5.4,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 2.7,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "librispeech_clean|clean|test": {
+  "suite": "librispeech_clean",
+  "aug": "clean",
+  "split": "test",
+  "kb": "none",
+  "n": 97,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.05925925925925926,
+   "errors": 120,
+   "ref_len": 2025,
+   "n": 97,
+   "ci": [
+    0.044104946481452134,
+    0.07606112076823607
+   ],
+   "value_numbers_spelled": 0.05925925925925926
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 74.00000000000006,
+   "max_ms": 381.99999999999966,
+   "n_over_150ms": 9,
+   "flagged": true
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 15.8,
+  "p90_other_cpu_pct": 5.3,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 4.2,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "librispeech_clean|ambient@10|test": {
+  "suite": "librispeech_clean",
+  "aug": "ambient@10",
+  "split": "test",
+  "kb": "none",
+  "n": 97,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.07407407407407407,
+   "errors": 150,
+   "ref_len": 2025,
+   "n": 97,
+   "ci": [
+    0.056865464632454926,
+    0.09399228252295386
+   ],
+   "value_numbers_spelled": 0.07407407407407407
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 74.00000000000006,
+   "max_ms": 381.99999999999966,
+   "n_over_150ms": 9,
+   "flagged": true
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 28.7,
+  "p90_other_cpu_pct": 21.2,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 5.5,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "librispeech_clean|codec|test": {
+  "suite": "librispeech_clean",
+  "aug": "codec",
+  "split": "test",
+  "kb": "none",
+  "n": 97,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.08296296296296296,
+   "errors": 168,
+   "ref_len": 2025,
+   "n": 97,
+   "ci": [
+    0.05793387467566581,
+    0.11512188475308191
+   ],
+   "value_numbers_spelled": 0.08296296296296296
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 74.00000000000006,
+   "max_ms": 381.99999999999966,
+   "n_over_150ms": 9,
+   "flagged": true
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 12.3,
+  "p90_other_cpu_pct": 6.6,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 5.4,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "librispeech_other|clean|test": {
+  "suite": "librispeech_other",
+  "aug": "clean",
+  "split": "test",
+  "kb": "none",
+  "n": 89,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.12835472578763127,
+   "errors": 220,
+   "ref_len": 1714,
+   "n": 89,
+   "ci": [
+    0.09890671952499909,
+    0.16341166044609184
+   ],
+   "value_numbers_spelled": 0.12835472578763127
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 69.99999999999983,
+   "max_ms": 554.0000000000002,
+   "n_over_150ms": 10,
+   "flagged": true
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 39.7,
+  "p90_other_cpu_pct": 35.7,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 6.4,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "librispeech_other|ambient@10|test": {
+  "suite": "librispeech_other",
+  "aug": "ambient@10",
+  "split": "test",
+  "kb": "none",
+  "n": 89,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.1604434072345391,
+   "errors": 275,
+   "ref_len": 1714,
+   "n": 89,
+   "ci": [
+    0.12414506756710164,
+    0.2032120413424796
+   ],
+   "value_numbers_spelled": 0.1604434072345391
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 69.99999999999983,
+   "max_ms": 554.0000000000002,
+   "n_over_150ms": 10,
+   "flagged": true
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 58.5,
+  "p90_other_cpu_pct": 35.5,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 8.3,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "fleurs_en|clean|test": {
+  "suite": "fleurs_en",
+  "aug": "clean",
+  "split": "test",
+  "kb": "none",
+  "n": 94,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.2591847005535984,
+   "errors": 515,
+   "ref_len": 1987,
+   "n": 94,
+   "ci": [
+    0.22216546574369217,
+    0.29776861820360667
+   ],
+   "value_numbers_spelled": 0.24182358771060455
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 478.0000000000002,
+   "max_ms": 2310.0000000000005,
+   "n_over_150ms": 25,
+   "flagged": true
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 49.3,
+  "p90_other_cpu_pct": 34.0,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 7.3,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "fleurs_en|ambient@10|test": {
+  "suite": "fleurs_en",
+  "aug": "ambient@10",
+  "split": "test",
+  "kb": "none",
+  "n": 94,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "wer",
+   "value": 0.2873678912934072,
+   "errors": 571,
+   "ref_len": 1987,
+   "n": 94,
+   "ci": [
+    0.245831960747603,
+    0.3301610296063826
+   ],
+   "value_numbers_spelled": 0.27155599603567887
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 478.0000000000002,
+   "max_ms": 2310.0000000000005,
+   "n_over_150ms": 25,
+   "flagged": true
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 46.2,
+  "p90_other_cpu_pct": 28.1,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 7.2,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "aishell|clean|test": {
+  "suite": "aishell",
+  "aug": "clean",
+  "split": "test",
+  "kb": "none",
+  "n": 93,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.05243161094224924,
+   "errors": 69,
+   "ref_len": 1316,
+   "n": 93,
+   "ci": [
+    0.03776090739372423,
+    0.0695510620255209
+   ]
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 240.00000000000065,
+   "max_ms": 690.0000000000003,
+   "n_over_150ms": 20,
+   "flagged": true
+  },
+  "quiet": true,
+  "max_other_cpu_pct": 40.2,
+  "p90_other_cpu_pct": 28.7,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 6.6,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "aishell|ambient@10|test": {
+  "suite": "aishell",
+  "aug": "ambient@10",
+  "split": "test",
+  "kb": "none",
+  "n": 93,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.057750759878419454,
+   "errors": 76,
+   "ref_len": 1316,
+   "n": 93,
+   "ci": [
+    0.040961885851633996,
+    0.07783152214883413
+   ]
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 240.00000000000065,
+   "max_ms": 690.0000000000003,
+   "n_over_150ms": 20,
+   "flagged": true
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 40.0,
+  "p90_other_cpu_pct": 32.0,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 5.8,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "fleurs_zh|clean|test": {
+  "suite": "fleurs_zh",
+  "aug": "clean",
+  "split": "test",
+  "kb": "none",
+  "n": 96,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.12313327697943083,
+   "errors": 437,
+   "ref_len": 3549,
+   "n": 96,
+   "ci": [
+    0.10208148330201151,
+    0.14502973118272014
+   ]
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 73.99999999999895,
+   "max_ms": 1073.9999999999998,
+   "n_over_150ms": 11,
+   "flagged": true
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 66.6,
+  "p90_other_cpu_pct": 51.4,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 6.1,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ },
+ "fleurs_zh|ambient@10|test": {
+  "suite": "fleurs_zh",
+  "aug": "ambient@10",
+  "split": "test",
+  "kb": "none",
+  "n": 96,
+  "n_skipped_empty_ref": 0,
+  "asr": {
+   "metric": "cer",
+   "value": 0.14567483798253028,
+   "errors": 517,
+   "ref_len": 3549,
+   "n": 96,
+   "ci": [
+    0.12098348630055422,
+    0.172189751336277
+   ]
+  },
+  "speech_end_gap": {
+   "n": 40,
+   "median_ms": 73.99999999999895,
+   "max_ms": 1073.9999999999998,
+   "n_over_150ms": 11,
+   "flagged": true
+  },
+  "quiet": false,
+  "max_other_cpu_pct": 54.8,
+  "p90_other_cpu_pct": 35.2,
+  "host": {
+   "cpu": "arm",
+   "machine": "arm64",
+   "system": "macOS-26.6.2-arm64-arm-64bit",
+   "cores": 8,
+   "loadavg_1m": 7.6,
+   "note": "Apple-Silicon Mac = arm64, NOT x86 and NOT a Raspberry Pi"
+  }
+ }
+}

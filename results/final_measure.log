@@ -1,0 +1,110 @@
+[19:13:51] start
+[19:13:52] perf tests (memory, TTS first chunk)
+.....                                                                    [100%]
+5 passed, 19 deselected in 155.11s (0:02:35)
+[19:16:29] bench (synthetic en/zh, 42 unique questions, speculation default)
+ "rss_mb_after_load": 1333
+}
+[19:19:45] 2 concurrent users
+ "ok": true
+}
+[19:21:16] real voices: minds14_en_us (test split, ASR + retrieval + faithfulness + real-time latency)
+  File "/opt/anaconda3/lib/python3.12/contextlib.py", line 478, in _exit_wrapper
+  File "<repo>/.venv/lib/python3.12/site-packages/llama_cpp/_internals.py", line 75, in free_model
+TypeError: 'NoneType' object is not callable
+[19:28:37] real voices: minds14_en_gb (test split, ASR + retrieval + faithfulness + real-time latency)
+  File "/opt/anaconda3/lib/python3.12/contextlib.py", line 478, in _exit_wrapper
+  File "<repo>/.venv/lib/python3.12/site-packages/llama_cpp/_internals.py", line 75, in free_model
+TypeError: 'NoneType' object is not callable
+[19:36:05] real voices: minds14_en_au (test split, ASR + retrieval + faithfulness + real-time latency)
+  File "/opt/anaconda3/lib/python3.12/contextlib.py", line 478, in _exit_wrapper
+  File "<repo>/.venv/lib/python3.12/site-packages/llama_cpp/_internals.py", line 75, in free_model
+TypeError: 'NoneType' object is not callable
+[19:43:16] real voices: minds14_zh (test split, ASR + retrieval + faithfulness + real-time latency)
+  File "/opt/anaconda3/lib/python3.12/contextlib.py", line 478, in _exit_wrapper
+  File "<repo>/.venv/lib/python3.12/site-packages/llama_cpp/_internals.py", line 75, in free_model
+TypeError: 'NoneType' object is not callable
+[19:54:24] ASR eval (LibriSpeech clean/other, FLEURS, AISHELL)
+zh_fleurs noisy_10dB CER 0.2022 RTF 0.028
+zh_aishell clean CER 0.0577 RTF 0.034
+zh_aishell noisy_10dB CER 0.1305 RTF 0.03
+[19:58:11] scene matrix (test split, 100 clips per cell)
+minds14_en_us      clean       n=100 wer= 44.0%  top3=  90% (ref   98%) refused=  2%  [57s]
+minds14_en_gb      clean       n=100 wer= 49.1%  top3=  74% (ref   93%) refused= 16%  [103s]
+minds14_en_au      clean       n=100 wer= 42.0%  top3=  76% (ref   96%) refused= 12%  [185s]
+minds14_zh         clean       n=100 cer= 21.5%  top3=  83% (ref   92%) refused=  6%  [231s]
+minds14_en_us      ambient@10  n=100 wer= 45.4%  top3=  87% (ref   98%) refused=  5%  [303s]
+minds14_en_us      ambient@5   n=100 wer= 53.8%  top3=  74% (ref   98%) refused= 14%  [367s]
+minds14_en_us      babble@10   n=100 wer= 77.5%  top3=  70% (ref   98%) refused= 21%  [415s]
+minds14_en_us      reverb@0.6  n=100 wer= 92.3%  top3=   8% (ref   98%) refused= 77%  [467s]
+minds14_en_us      quiet       n=100 wer= 41.9%  top3=  88% (ref   98%) refused=  5%  [526s]
+minds14_en_us      loud        n=100 wer= 44.7%  top3=  80% (ref   98%) refused=  9%  [584s]
+minds14_zh         ambient@10  n=100 cer= 22.9%  top3=  83% (ref   92%) refused=  8%  [616s]
+minds14_zh         ambient@5   n=100 cer= 25.6%  top3=  77% (ref   92%) refused= 10%  [648s]
+minds14_zh         babble@10   n=100 cer= 56.2%  top3=  81% (ref   92%) refused=  6%  [682s]
+minds14_zh         reverb@0.6  n=100 cer= 39.5%  top3=  56% (ref   92%) refused= 30%  [714s]
+minds14_zh         quiet       n=100 cer= 21.7%  top3=  84% (ref   92%) refused=  4%  [746s]
+minds14_zh         loud        n=100 cer= 21.9%  top3=  82% (ref   92%) refused=  7%  [778s]
+librispeech_clean  clean       n= 97 wer=  5.9%  [819s]
+librispeech_clean  ambient@10  n= 97 wer=  7.4%  [864s]
+librispeech_clean  codec       n= 97 wer=  8.3%  [905s]
+librispeech_other  clean       n= 89 wer= 12.8%  [946s]
+librispeech_other  ambient@10  n= 89 wer= 16.0%  [991s]
+fleurs_en          clean       n= 94 wer= 25.9%  [1064s]
+fleurs_en          ambient@10  n= 94 wer= 28.7%  [1131s]
+aishell            clean       n= 93 cer=  5.2%  [1154s]
+aishell            ambient@10  n= 93 cer=  5.8%  [1181s]
+fleurs_zh          clean       n= 96 cer= 12.3%  [1244s]
+fleurs_zh          ambient@10  n= 96 cer= 14.6%  [1292s]
+wrote results/suites_final.json
+G1 PASS       end-to-end latency (synthetic en audio) target p50 <=1500 ms, p90 <=1800 ms       measured p50 1006 / p90 1438 ms
+G1r UNVERIFIED end-to-end latency, real voices (MInDS-14) target answered turns p50 <=1500 ms, p90 <=1800 ms measured no real-voice run
+G2 PASS       TTS first chunk                    target p95 <=200 ms                       measured en p95 70 / zh 89 ms
+G3 PASS       ASR+RAG+TTS memory                 target <=500 MB (USS)                     measured 305 MB
+G4 PASS       ASR accuracy                       target WER/CER <=15%                      measured en 8.4%, zh AISHELL 5.8%
+G5 FAIL       RAG top-3 + faithfulness           target top-3 >=80%, faithfulness >=95%    measured top-3 96% (blind 96%), faithful 89% of 100 (blind 81.7%)
+G6 PASS       2 concurrent users                 target each p50 <=2x single               measured "2 users: A p50 1034, B p50 1215 ms vs single 891 ms (worst x1.36)"
+G7 UNVERIFIED Docker + Pi-class proof            target arm64 + amd64 image build/boot/smoke, limited-core run, Pi-class CPU run measured docker_arm64: yes, docker_amd64: yes, limited_core_run: yes, pi_class_measured: unverified; Jetson: unverified (no hardware)
+G8 FAIL       permissive licences                target no custom/unknown                  measured non-permissive: tts_zh
+[20:19:44] done
+[20:21:03] minds14_en_us
+  File "/opt/anaconda3/lib/python3.12/contextlib.py", line 478, in _exit_wrapper
+  File "<repo>/.venv/lib/python3.12/site-packages/llama_cpp/_internals.py", line 75, in free_model
+TypeError: 'NoneType' object is not callable
+[20:28:11] minds14_en_gb
+  File "/opt/anaconda3/lib/python3.12/contextlib.py", line 478, in _exit_wrapper
+  File "<repo>/.venv/lib/python3.12/site-packages/llama_cpp/_internals.py", line 75, in free_model
+TypeError: 'NoneType' object is not callable
+[20:36:10] minds14_en_au
+  File "/opt/anaconda3/lib/python3.12/contextlib.py", line 478, in _exit_wrapper
+  File "<repo>/.venv/lib/python3.12/site-packages/llama_cpp/_internals.py", line 75, in free_model
+TypeError: 'NoneType' object is not callable
+[20:42:46] minds14_zh
+refusing to measure latency: busy host (CPU >30% busy): perf numbers would be noise; set VORA_FORCE_PERF=1 to force. --force records it with quiet=false.
+G1 PASS       end-to-end latency (synthetic en audio) target p50 <=1500 ms, p90 <=1800 ms       measured p50 1006 / p90 1438 ms
+G1r UNVERIFIED end-to-end latency, real voices (MInDS-14) target answered turns p50 <=1500 ms, p90 <=1800 ms measured en-AU 1010/1406, en-GB 1402/3080, en-US 1116/1224 ms (p50/p90) (busy host)  [busy host]
+G2 PASS       TTS first chunk                    target p95 <=200 ms                       measured en p95 70 / zh 89 ms
+G3 PASS       ASR+RAG+TTS memory                 target <=500 MB (USS)                     measured 305 MB
+G4 PASS       ASR accuracy                       target WER/CER <=15%                      measured en 8.4%, zh AISHELL 5.8%
+G5 FAIL       RAG top-3 + faithfulness           target top-3 >=80%, faithfulness >=95%    measured top-3 96% (blind 96%), faithful 89% of 100 (blind 81.7%)
+G6 PASS       2 concurrent users                 target each p50 <=2x single               measured "2 users: A p50 1034, B p50 1215 ms vs single 891 ms (worst x1.36)"
+G7 UNVERIFIED Docker + Pi-class proof            target arm64 + amd64 image build/boot/smoke, limited-core run, Pi-class CPU run measured docker_arm64: yes, docker_amd64: yes, limited_core_run: yes, pi_class_measured: unverified; Jetson: unverified (no hardware)
+G8 FAIL       permissive licences                target no custom/unknown                  measured non-permissive: tts_zh
+[20:42:48] rerun done
+[20:44:18] quiet rerun minds14_en_us try 1
+[20:50:54] quiet rerun minds14_en_gb try 1
+[20:57:55] quiet rerun minds14_en_au try 1
+[21:04:44] quiet rerun minds14_en_au try 2
+[21:12:31] quiet rerun minds14_en_au try 3
+[21:20:49] quiet rerun minds14_zh try 1
+[21:34:04] quiet rerun minds14_zh try 2
+G1 PASS       end-to-end latency (synthetic en audio) target p50 <=1500 ms, p90 <=1800 ms       measured p50 1006 / p90 1438 ms
+G1r PASS       end-to-end latency, real voices (MInDS-14) target answered turns p50 <=1500 ms, p90 <=1800 ms measured en-AU 1034/1725, en-GB 1178/1422, en-US 1061/1337, zh-CN 1006/1507 ms (p50/p90)
+G2 PASS       TTS first chunk                    target p95 <=200 ms                       measured en p95 70 / zh 89 ms
+G3 PASS       ASR+RAG+TTS memory                 target <=500 MB (USS)                     measured 305 MB
+G4 PASS       ASR accuracy                       target WER/CER <=15%                      measured en 8.4%, zh AISHELL 5.8%
+G5 FAIL       RAG top-3 + faithfulness           target top-3 >=80%, faithfulness >=95%    measured top-3 96% (blind 96%), faithful 89% of 100 (blind 81.7%)
+G6 PASS       2 concurrent users                 target each p50 <=2x single               measured "2 users: A p50 1034, B p50 1215 ms vs single 891 ms (worst x1.36)"
+G7 UNVERIFIED Docker + Pi-class proof            target arm64 + amd64 image build/boot/smoke, limited-core run, Pi-class CPU run measured docker_arm64: yes, docker_amd64: yes, limited_core_run: yes, pi_class_measured: unverified; Jetson: unverified (no hardware)
+G8 FAIL       permissive licences                target no custom/unknown                  measured non-permissive: tts_zh
+[21:44:25] quiet rerun done
