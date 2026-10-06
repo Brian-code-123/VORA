@@ -43,6 +43,7 @@ test("close codes", () => {
   assert.equal(reduce(live, { type: "close", code: 1013, loading: false }).phase, "busy");
   assert.deepEqual([reduce(live, { type: "close", code: 1008 }).phase, reduce(live, { type: "close", code: 1008 }).error], ["error", "origin"]);
   assert.equal(reduce(live, { type: "close", code: 1008, reason: "access key missing or wrong" }).error, "key");
+  assert.equal(reduce(live, { type: "close", code: 1008, reason: "too many failed attempts, wait a minute" }).error, "throttled");
   assert.equal(reduce(live, { type: "close", code: 1009 }).error, "frame");
   assert.equal(reduce(live, { type: "close", code: 1011 }).error, "stalled");
   assert.equal(reduce(live, { type: "close", code: 1006 }).error, "network");
