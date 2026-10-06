@@ -33,8 +33,22 @@ items below are verified).
 Speculative turns (`VORA_SPECULATE`) switch themselves off below 6 cores, so a 4-core Pi runs without them.
 
 ## Phones and tablets on the LAN
-See docs/ui.md (TLS certificate via `scripts/make_cert.sh`, `VORA_HOST=0.0.0.0`). Never expose the server to the internet:
-there is no authentication.
+See docs/ui.md (TLS certificate via `scripts/make_cert.sh`, `VORA_HOST=0.0.0.0`). Before exposing the server beyond your
+own network, set `VORA_ACCESS_KEY`: without it anyone who can reach the port can use the models.
+
+## AWS demo box (t4g.small, HTTPS on 443, access key)
+A redeploy creates a new IP and a new access key, so links already shared stop working. The script replaces the old box
+(terminates it first), so the demo is down for about 10 minutes.
+1. On the Mac, with everything committed: `scripts/pack_src.sh` writes `vora-src.tar.gz` (HEAD only; refuses
+   uncommitted changes).
+2. Log in to the AWS console and open CloudShell. Move any old copy out of the way first (upload refuses an existing
+   name): `mv -f vora-src.tar.gz vora-src-old.tar.gz`. Then Actions → Upload file.
+3. In CloudShell (the link with the key goes only into `~/vora-demo-link.txt`, never to the screen):
+   `tar xzf vora-src.tar.gz scripts/aws_deploy.sh scripts/aws_teardown.sh && (umask 077; bash scripts/aws_deploy.sh any demo 2>&1 | tee >(grep '^OPEN:' > ~/vora-demo-link.txt) | grep -v '^OPEN:' | tail -8)`
+4. After about 10 minutes, from the Mac: `curl -ks https://<IP>/health` gives `{"ready":true,...}`, and
+   `python scripts/ws_smoke.py wss://<IP>/ws client/samples/q_warranty_en.wav --insecure --timeout 10` exits 3 with
+   1008 "access key missing or wrong". Open the link from `cat ~/vora-demo-link.txt` and play a sample.
+5. Tear down when done: `bash scripts/aws_teardown.sh all` (checks that nothing is left).
 
 ## Licences inside the image
 See docs/licenses.md. Note: the image contains `espeak-ng-data` (GPL-3.0) and the zh voice whose dataset licence is
