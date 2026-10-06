@@ -44,6 +44,10 @@ test("access key: never in the ws url (URLs are logged); wrong-key close gets it
   assert.deepEqual(closeInfo(1008, { reason: "access key missing or wrong" }), { key: "err_key", retry: false });
 });
 
+test("minimum Safari matches the page's CSP (connect-src 'self' covers ws:// only from Safari 15.4)", () => {
+  for (const lang of ["en", "zh"]) assert.match(t(lang, "err_no_worklet"), /Safari 15\.4\+/);
+});
+
 test("too many failed attempts get their own message and are not retried automatically", () => {
   assert.deepEqual(closeInfo(1008, { reason: "too many failed attempts, wait a minute" }), { key: "err_throttled", retry: false });
   for (const lang of ["en", "zh"]) assert.ok(t(lang, "err_throttled").length > 10);
