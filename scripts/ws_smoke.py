@@ -55,14 +55,18 @@ async def run(url: str, wav: str, lang: str, timeout: float, verbose: bool, inse
                 if d.get("type") == "metrics":
                     return
         task = asyncio.create_task(reader())
-        t0 = time.perf_counter()
-        for i in range(0, len(pcm), 3200):                     # 100 ms frames, real-time pace
-            await ws.send(pcm[i:i + 3200])
-            await asyncio.sleep(max(0.0, t0 + (i + 3200) / 32000 - time.perf_counter()))
         try:
-            await asyncio.wait_for(task, timeout)
-        except asyncio.TimeoutError:
+            t0 = time.perf_counter()
+            for i in range(0, len(pcm), 3200):                     # 100 ms frames, real-time pace
+                await ws.send(pcm[i:i + 3200])
+                await asyncio.sleep(max(0.0, t0 + (i + 3200) / 32000 - time.perf_counter()))
+            try:
+                await asyncio.wait_for(task, timeout)
+            except asyncio.TimeoutError:
+                pass
+        finally:                                                   # a refused socket: collect the reader's exception, no log noise
             task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
     return seen
 
 
