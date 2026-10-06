@@ -3,7 +3,7 @@
 ## Where to run it
 - **Local (best latency):** `docker run -p 8000:8000 vora` or `python -m vora.server`, open `http://localhost:8000`.
 - **AWS demo (any network, slower):** in AWS CloudShell run `cat ~/vora-demo-link.txt` and open the `https://<IP>/?key=…` link. The certificate is self-signed: Chrome → "Advanced" → "Proceed". The page removes the key from the address bar, so screenshots are safe. Expect 4–6 s per answer on the 2-vCPU box; say so.
-- No microphone (or a noisy room): use the "Sample question" menu. Synthetic samples ask VORA Box questions; "Real callers" are MInDS-14 recordings of bank questions, which are off-topic for the VORA Box knowledge base and show real-voice ASR plus the "not sure" refusal.
+- No microphone (or a noisy room): use the "Sample question" menu. Synthetic samples ask VORA Box questions; "Real callers" are MInDS-14 recordings of bank questions, which are off-topic for the VORA Box knowledge base and show real-voice ASR plus the "not sure" refusal.- **Room:** quiet and not echoey, headset or a mic close to the mouth. Reverberation is the measured failure case (en-US top-3 drops to 8%), and the system then says it is not sure. If an answer says "not sure", repeat the question closer to the mic.
 
 ## 2-minute video
 | Time | Show | Say |
