@@ -82,3 +82,11 @@ def test_aws_deploy_prints_fragment_link_and_passes_key_by_env():
     sh = (ROOT / "scripts" / "aws_deploy.sh").read_text()
     assert 'echo "OPEN: https://${DIP}/#key=${KEY}"' in sh
     assert 'VORA_KEY="$KEY"' in sh and "/ws?key=" not in sh
+
+
+def test_readme_security_section_lists_controls_and_accepted_risks():
+    """The demo is reachable from the internet: the README says what protects it and what was knowingly left open."""
+    sec = README.split("## Security", 1)[1].split("\n## ", 1)[0] if "## Security" in README else ""
+    assert sec, "README.md has no Security section"
+    for needle in ("OWASP", "A01", "A05", "A09", "uid 10001", "pip-audit", "Accepted risks", "self-signed", "shared key", "no HSTS", "no alerting"):
+        assert needle in sec, f"Security section should mention: {needle}"
