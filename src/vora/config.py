@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     max_inflight_turns: int = 2   # LLM turns running+queued; the next one gets the busy reply immediately
     access_key: str = ""            # non-empty: the first /ws message must be {"type":"auth","key":<access_key>} (a box reachable from any network). "" = off (localhost use)
     auth_timeout_s: float = 5.0     # a socket that has not authenticated by then is closed (it holds no session slot meanwhile)
+    auth_max_fails: int = 5         # failed handshakes per address within auth_window_s before that address is refused
+    auth_window_s: float = 60.0
     ssl_cert: str = ""
     ssl_key: str = ""
     tts_en_voice: Literal["ljspeech", "lessac"] = "ljspeech"   # ljspeech: public domain, 22.05 kHz, from scratch. lessac: Blizzard 2013 licence (custom)

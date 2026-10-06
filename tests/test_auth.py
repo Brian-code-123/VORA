@@ -208,3 +208,144 @@ async def test_ws_smoke_sends_auth_first_when_given_a_key(key, expected):
             pass
     assert [m["type"] for m in seen] == expected
     assert key == "" or seen[0]["key"] == key
+
+
+# ---- throttling of failed attempts (per address, sliding window) ------------------------------------------------
+from types import SimpleNamespace  # noqa: E402
+
+from vora.auth import THROTTLE_REASON, AuthThrottle  # noqa: E402
+
+
+class Clock:
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+
+def thr(clock=None, **kw):
+    return AuthThrottle(clock=clock or Clock(), **kw)
+
+
+def test_four_failures_do_not_block_fifth_does():
+    t = thr()
+    for _ in range(4):
+        t.fail("1.2.3.4")
+    assert not t.blocked("1.2.3.4")
+    t.fail("1.2.3.4")
+    assert t.blocked("1.2.3.4")
+
+
+def test_block_expires_after_window():
+    c = Clock()
+    t = thr(c)
+    for _ in range(5):
+        t.fail("a")
+    c.now = 59.9
+    assert t.blocked("a")
+    c.now = 60.0
+    assert not t.blocked("a")
+
+
+def test_window_is_sliding_not_fixed():
+    c = Clock()
+    t = thr(c)
+    for ts in (0, 10, 20, 30, 40):
+        c.now = ts
+        t.fail("a")
+    assert t.blocked("a")
+    c.now = 60.5                       # the failure at t=0 has left the window: 4 remain
+    assert not t.blocked("a")
+    t.fail("a")                        # 10, 20, 30, 40, 60.5 -> 5 again
+    assert t.blocked("a")
+    c.now = 70.5                       # 10 has left: 4 remain
+    assert not t.blocked("a")
+
+
+def test_unknown_address_shares_one_bucket():
+    t = thr()
+    for _ in range(5):
+        t.fail(None)
+    assert t.blocked(None) and t.blocked("?") and not t.blocked("1.1.1.1")
+
+
+def test_ipv6_and_ipv4_tracked_separately():
+    t = thr()
+    for _ in range(5):
+        t.fail("::1")
+    assert t.blocked("::1") and not t.blocked("127.0.0.1")
+
+
+def test_memory_capped_at_max_ips_oldest_evicted():
+    c = Clock()
+    t = thr(c, max_ips=3)
+    for _ in range(4):
+        t.fail("a")                    # one short of blocked, but the least recently active
+    for i, ip in enumerate(("b", "c", "d"), start=1):
+        c.now = i
+        t.fail(ip)
+    assert len(t) <= 3
+    c.now = 5
+    t.fail("a")                        # evicted earlier: counts from 1, not 5
+    assert not t.blocked("a")
+
+
+def with_client(ws, host):
+    ws.client = SimpleNamespace(host=host)
+    return ws
+
+
+async def test_blocked_address_is_refused_before_reading_even_with_the_right_key():
+    t = thr()
+    for _ in range(5):
+        t.fail("9.9.9.9")
+    ws = with_client(AuthWs(auth(KEY)), "9.9.9.9")
+    assert await handshake(ws, S(), t) is False
+    assert ws.closed == 1008 and ws.reason == THROTTLE_REASON and ws.reads == 0
+
+
+async def test_failed_handshakes_are_counted_wrong_key_timeout_and_garbage():
+    t = thr(max_fails=3)
+    for frames in ([auth("nope")], [], [text("garbage")]):
+        assert await handshake(with_client(AuthWs(*frames), "7.7.7.7"), S(), t) is False
+    assert t.blocked("7.7.7.7")
+
+
+async def test_success_does_not_clear_earlier_failures():
+    t = thr(max_fails=2)
+    assert await handshake(with_client(AuthWs(auth("x")), "5.5.5.5"), S(), t) is False
+    assert await handshake(with_client(AuthWs(auth(KEY)), "5.5.5.5"), S(), t) is True
+    assert await handshake(with_client(AuthWs(auth("y")), "5.5.5.5"), S(), t) is False        # second failure
+    assert await handshake(with_client(AuthWs(auth(KEY)), "5.5.5.5"), S(), t) is False        # now blocked
+
+
+async def test_blocked_attempts_do_not_extend_the_block():
+    c = Clock()
+    t = thr(c, max_fails=2)
+    for _ in range(2):
+        await handshake(with_client(AuthWs(auth("x")), "4.4.4.4"), S(), t)
+    for _ in range(10):                # hammering while blocked
+        c.now += 1
+        await handshake(with_client(AuthWs(auth("x")), "4.4.4.4"), S(), t)
+    c.now = 61
+    assert not t.blocked("4.4.4.4")    # the two real failures are 60 s old; the refused attempts were not recorded
+
+
+def test_throttle_reason_has_no_key_word():
+    """The page maps a 1008 whose reason mentions a key to the wrong-key hint; a throttle needs its own message."""
+    assert "key" not in THROTTLE_REASON.lower() and "attempts" in THROTTLE_REASON
+
+
+def test_server_throttles_repeated_wrong_keys():
+    s = Settings(access_key=KEY, auth_max_fails=3, auth_window_s=60.0)
+    with TestClient(create_app(models=one_turn_models(), settings=s)) as c:
+        wait_ready(c)
+        for _ in range(3):
+            with c.websocket_connect("/ws") as ws:
+                ws.send_text(json.dumps({"type": "auth", "key": "wrong"}))
+                assert ws.receive()["reason"] == "access key missing or wrong"
+        with c.websocket_connect("/ws") as ws:                      # the right key from the same address is refused too
+            ws.send_text(json.dumps({"type": "auth", "key": KEY}))
+            msg = ws.receive()
+            assert msg["code"] == 1008 and msg["reason"] == THROTTLE_REASON
