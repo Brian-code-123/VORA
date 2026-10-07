@@ -4,10 +4,13 @@ FROM python:3.12-slim AS build
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential cmake git && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY pyproject.toml ./
+COPY docker/constraints.txt ./constraints.txt
 COPY src ./src
 # llama-cpp-python has no arm64 wheel: it compiles here (10-20 min under qemu, ~3 min native). Portable CPU build.
 ENV CMAKE_ARGS="-DGGML_NATIVE=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF"
-RUN pip install --no-cache-dir --prefix=/install .
+# Install exactly what uv.lock locks (docker/constraints.txt, made by scripts/make_constraints.sh): an unpinned `pip install .` picked up
+# llama-cpp-python 0.3.36 the day it was released, it failed to compile on the box, and CI had audited a different set.
+RUN pip install --no-cache-dir -c constraints.txt --prefix=/install .
 
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 curl && rm -rf /var/lib/apt/lists/*

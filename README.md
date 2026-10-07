@@ -85,7 +85,7 @@ Not tracked: `data/` (cached public datasets), `index/`, `index_bank/`, `.venv/`
 
 | Purpose | Scripts |
 |---|---|
-| Set up and serve | `fetch_models.py`, `quantize_tts.py`, `build_bank_index.py`, `check_gates.py`, `make_samples.py`, `make_cert.sh` |
+| Set up and serve | `make_constraints.sh`, `fetch_models.py`, `quantize_tts.py`, `build_bank_index.py`, `check_gates.py`, `make_samples.py`, `make_cert.sh` |
 | Evaluate (accuracy) | `suites.py`, `augment.py`, `eval_suite.py`, `run_matrix.py`, `eval_asr.py`, `eval_rag.py`, `eval_tts.py`, `eval_endpoint.py`, `refvad.py` |
 | Benchmark (speed, memory) | `bench.py`, `bench_concurrent.py`, `baseline_batch.py`, `mem_profile.py`, `final_measure.sh`, `rerun_quiet.sh` |
 | A/B experiments (not in the live path) | `ab_compare.py`, `agc_ab.py`, `denoise.py`, `denoise_ab.py`, `secondpass_ab.py`, `export_onnx_llm.py` |

@@ -139,3 +139,38 @@ def test_aws_deploy_prints_certificate_fingerprint():
     assert 'say "cert $(openssl x509 -in /opt/vora/certs/vora.crt -noout -fingerprint -sha256)"' in sh
     assert sh.index("openssl req -x509") < sh.index("-fingerprint -sha256") < sh.index("docker run -d --name vora")
     assert "-fingerprint -sha256" in (ROOT / "docs" / "deploy.md").read_text()
+
+
+# ---- the image installs exactly what uv.lock locks (a new upstream release broke the build on the box) ----------------
+def test_image_installs_with_the_locked_versions():
+    """`pip install .` resolved the newest llama-cpp-python (0.3.36, compiled from source on arm64) and the build failed 30 s in,
+    while 0.3.35 from uv.lock had built fine. CI audits uv.lock, so the image must install the same versions."""
+    assert "COPY docker/constraints.txt" in DOCKERFILE
+    assert re.search(r"pip install[^\n]*(-c|--constraint)[ =]+\S*constraints\.txt[^\n]* \.", DOCKERFILE)
+
+
+def test_constraints_file_matches_uv_lock():
+    import shutil
+    import tempfile
+    import pytest
+    if shutil.which("uv") is None:
+        pytest.skip("needs uv")
+    with tempfile.TemporaryDirectory() as d:
+        out = Path(d) / "c.txt"
+        subprocess.run(["uv", "export", "--locked", "--no-hashes", "--no-emit-project", "-o", str(out), "-q"], cwd=ROOT, check=True)
+
+        def pins(p):
+            return sorted(l.strip() for l in Path(p).read_text().splitlines() if "==" in l)
+        assert pins(ROOT / "docker" / "constraints.txt") == pins(out), "regenerate: scripts/make_constraints.sh"
+
+
+def test_constraints_pin_the_llama_cpp_version_that_is_known_to_build():
+    text = (ROOT / "docker" / "constraints.txt").read_text()
+    assert "llama-cpp-python==0.3.35" in text
+    assert "pytest" not in text and "jiwer" not in text, "dev dependencies do not belong in the runtime image"
+
+
+def test_make_constraints_script_exists_and_is_valid_bash():
+    p = ROOT / "scripts" / "make_constraints.sh"
+    assert p.exists() and subprocess.run(["bash", "-n", str(p)]).returncode == 0
+    assert "uv export --locked" in p.read_text()
