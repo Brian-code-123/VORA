@@ -272,6 +272,32 @@ async def test_echo_of_own_reply_is_ignored():
     assert p.llm.calls == ["first question"]
 
 
+async def test_follow_up_question_is_not_mistaken_for_an_echo_of_a_short_spoken_chunk():
+    """Bug found while recording the demo: the first TTS chunk is ONE word ("The"), and `r in t` made any question containing
+    that word an echo of our own reply, so a follow-up within 10 s ("what is the wake word") was silently dropped."""
+    p = P([[fin("how long is the warranty")], [fin("what is the wake word")]],
+          llm=FakeLlm(tokens=("The ", "warranty ", "is ", "two ", "years. ")))
+    await feed_all(p, 1)
+    await p.wait_idle()
+    await feed_all(p, 1)
+    await p.wait_idle()
+    assert p.llm.calls == ["how long is the warranty", "what is the wake word"]
+    types = [m[1]["type"] for m in drain(p) if m[0] == "json"]
+    assert "echo_ignored" not in types
+
+
+async def test_is_echo_ignores_spoken_chunks_too_short_to_prove_anything_but_still_catches_real_echo():
+    p = P([])
+    for chunk in ("The", "warranty is", "two years."):
+        p._spoken.append((p.clock(), chunk))
+    assert not p._is_echo("what is the wake word")                 # contains "the" and "is": not an echo
+    assert not p._is_echo("how many years is it")
+    assert p._is_echo("the warranty is two years")                  # the mic heard our speaker
+    assert p._is_echo("warranty is two years")                      # a part of what we said
+    p._spoken.append((p.clock(), "The VORA X200 warranty is two years."))
+    assert p._is_echo("ok the vora x200 warranty is two years thanks")      # our long sentence inside a longer heard text
+
+
 async def test_stalled_client_raises():
     from vora.pipeline import ClientStalled
     p = P([[fin("q one")], [fin("q two")], [fin("q three")]], queue_max=1, stall_timeout_s=0.2,
