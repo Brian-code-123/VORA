@@ -23,25 +23,24 @@
   "instance": "i-<instance>",
   "type": "t4g.small",
   "region": "us-east-1",
-  "source": "main 9905496 via scripts/pack_src.sh",
+  "source": "main 09a1efd via scripts/pack_src.sh",
   "access": "https on port 443 from any network; /ws authenticates with the access key as its first message; the link has a #key= fragment (kept only in CloudShell ~/vora-demo-link.txt)",
   "mtu": 1400,
-  "build_s": 479,
-  "image": "1.52GB",
+  "build_s": 533,
+  "image": "1.51GB",
   "ready_after_start_s": 25,
   "keep_until": "about 2026-11-05 (end of the evaluation period)",
-  "verified_2026-10-07": {
-   "previous_box": "i-<instance> terminated; exactly one vora-demo running",
-   "container_uid": "10001 (non-root build: fetch_models and ingest ran as the app user)",
-   "headers_served": "CSP, nosniff, no-referrer, permissions-policy",
-   "new_sample_label_served": true,
+  "verified_2026-10-07_second_deploy": {
+   "build": "first attempt succeeded, 0 retries (the previous box failed its build for a reason that is still unknown)",
+   "previous_box": "the failed box i-<instance> was terminated by the script only after this one answered /health",
+   "container_uid": "10001",
+   "security_headers_and_new_label_served": true,
    "ws_without_key": "closed 1008 'access key missing or wrong'",
-   "ws_key_in_url": "refused (a URL key is no longer a credential)",
-   "throttle": "after 5 failed attempts from one address the next ones got 1008 'too many failed attempts, wait a minute'",
-   "certificate_fingerprint": "console value equals the value the owner's Mac sees (openssl s_client)",
-   "self_test_with_key_en": "ok, audio 131516 bytes, first_content_audio_ms 3825",
-   "self_test_with_key_zh_real_voice": "ok, audio 276768 bytes, first_content_audio_ms 5432, final '挺显示我的账户…' (bank question; reply text not logged)",
-   "not_tested_on_box": "browser page with a real microphone; the key's absence from the box's own logs (no log access; covered by tests/test_auth_logging.py against a real uvicorn server)"
+   "throttle": "after 5 failed attempts from one address: 1008 'too many failed attempts, wait a minute'",
+   "certificate_fingerprint": "console value equals the value the owner's Mac sees",
+   "self_test_with_key_en": "ok, audio 126690 bytes, first_content_audio_ms 3781",
+   "self_test_with_key_zh_real_voice": "ok, audio 288768 bytes, first_content_audio_ms 5411",
+   "not_tested_on_box": "browser page with a real microphone"
   }
  },
  "docker_amd64": {
