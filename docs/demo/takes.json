@@ -1,0 +1,167 @@
+{
+ "english": {
+  "latency_ms": 674.3,
+  "takes_ok": 5,
+  "takes": 5,
+  "all": [
+   {
+    "ok": true,
+    "latency_ms": 676.0,
+    "heard": "how long is the warranty on the vorics two hundred"
+   },
+   {
+    "ok": true,
+    "latency_ms": 686.9,
+    "heard": "how long is the warranty on the vorics two hundred"
+   },
+   {
+    "ok": true,
+    "latency_ms": 674.3,
+    "heard": "how long is the warranty on the vorics two hundred"
+   },
+   {
+    "ok": true,
+    "latency_ms": 663.9,
+    "heard": "how long is the warranty on the vorics two hundred"
+   },
+   {
+    "ok": true,
+    "latency_ms": 664.3,
+    "heard": "how long is the warranty on the vorics two hundred"
+   }
+  ],
+  "audio_after_last_step_db": -27.1
+ },
+ "mandarin": {
+  "latency_ms": 1031.0,
+  "takes_ok": 5,
+  "takes": 5,
+  "all": [
+   {
+    "ok": true,
+    "latency_ms": 1048.4,
+    "heard": "\u5982\u4f55\u6062\u590d\u51fa\u573a\u8bbe\u7f6e"
+   },
+   {
+    "ok": true,
+    "latency_ms": 1091.1,
+    "heard": "\u5982\u4f55\u6062\u590d\u51fa\u573a\u8bbe\u7f6e"
+   },
+   {
+    "ok": true,
+    "latency_ms": 1027.3,
+    "heard": "\u5982\u4f55\u6062\u590d\u51fa\u573a\u8bbe\u7f6e"
+   },
+   {
+    "ok": true,
+    "latency_ms": 1026.1,
+    "heard": "\u5982\u4f55\u6062\u590d\u51fa\u573a\u8bbe\u7f6e"
+   },
+   {
+    "ok": true,
+    "latency_ms": 1031.0,
+    "heard": "\u5982\u4f55\u6062\u590d\u51fa\u573a\u8bbe\u7f6e"
+   }
+  ],
+  "audio_after_last_step_db": -21.0
+ },
+ "barge_in": {
+  "latency_ms": 1250.2,
+  "takes_ok": 1,
+  "takes": 5,
+  "all": [
+   {
+    "ok": false,
+    "latency_ms": 967.5,
+    "heard": "what is lord"
+   },
+   {
+    "ok": false,
+    "latency_ms": 1700.3,
+    "heard": "worth"
+   },
+   {
+    "ok": false,
+    "latency_ms": 0,
+    "heard": ""
+   },
+   {
+    "ok": false,
+    "latency_ms": 0,
+    "heard": ""
+   },
+   {
+    "ok": true,
+    "latency_ms": 1250.2,
+    "heard": "word"
+   }
+  ],
+  "audio_after_last_step_db": -22.9
+ },
+ "refusal": {
+  "latency_ms": 916.5,
+  "takes_ok": 5,
+  "takes": 5,
+  "all": [
+   {
+    "ok": true,
+    "latency_ms": 2373.5,
+    "heard": "what is the capital of france"
+   },
+   {
+    "ok": true,
+    "latency_ms": 1076.7,
+    "heard": "what is the capital of france"
+   },
+   {
+    "ok": true,
+    "latency_ms": 916.5,
+    "heard": "what is the capital of france"
+   },
+   {
+    "ok": true,
+    "latency_ms": 821.3,
+    "heard": "what is the capital of france"
+   },
+   {
+    "ok": true,
+    "latency_ms": 820.4,
+    "heard": "what is the capital of france"
+   }
+  ],
+  "audio_after_last_step_db": -25.4
+ },
+ "real_voice": {
+  "latency_ms": 916.6,
+  "takes_ok": 5,
+  "takes": 5,
+  "all": [
+   {
+    "ok": true,
+    "latency_ms": 908.9,
+    "heard": "'s phrase my card"
+   },
+   {
+    "ok": true,
+    "latency_ms": 921.4,
+    "heard": "'s freeze my card"
+   },
+   {
+    "ok": true,
+    "latency_ms": 916.6,
+    "heard": "'s phrase my card"
+   },
+   {
+    "ok": true,
+    "latency_ms": 917.0,
+    "heard": "'s phrase my card"
+   },
+   {
+    "ok": true,
+    "latency_ms": 860.2,
+    "heard": "'s phrase my card"
+   }
+  ],
+  "audio_after_last_step_db": -25.2
+ }
+}
