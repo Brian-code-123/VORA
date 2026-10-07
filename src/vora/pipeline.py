@@ -32,6 +32,7 @@ PREFETCH_INTERVAL_S = 0.5
 BARGE_IN_CHANGES = 2        # changed partials ...
 BARGE_IN_WINDOW_S = 1.5     # ... within this window (real ASR changes text about every 3rd 100 ms frame)
 ECHO_WINDOW_S = 10.0
+MIN_ECHO_CHUNK = 10         # letters/digits: a spoken chunk shorter than this is not evidence that the mic heard our speaker
 VOICED_MIN_RMS = 250.0
 
 
@@ -187,8 +188,14 @@ class Pipeline:
         now, t = self.clock(), _alnum(text)
         if len(t) < 6:
             return False
-        recent = [_alnum(s) for ts, s in self._spoken if now - ts < ECHO_WINDOW_S]
-        return any(t in r or r in t or difflib.SequenceMatcher(None, t, r).ratio() >= 0.75 for r in recent if r)
+        recent = [r for r in (_alnum(s) for ts, s in self._spoken if now - ts < ECHO_WINDOW_S) if r]
+        if not recent:
+            return False
+        if t in "".join(recent):                                   # what the mic heard is a stretch of what we said
+            return True
+        # A spoken chunk inside the heard text proves nothing when it is short: the first TTS chunk is one word ("The"), which
+        # made any follow-up containing that word an "echo" and silently dropped it.
+        return any((len(r) >= MIN_ECHO_CHUNK and r in t) or t in r or difflib.SequenceMatcher(None, t, r).ratio() >= 0.75 for r in recent)
 
     async def on_audio(self, pcm: bytes) -> None:
         if self.stalled:
