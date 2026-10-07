@@ -90,7 +90,7 @@ Not tracked: `data/` (cached public datasets), `index/`, `index_bank/`, `.venv/`
 | Benchmark (speed, memory) | `bench.py`, `bench_concurrent.py`, `baseline_batch.py`, `mem_profile.py`, `final_measure.sh`, `rerun_quiet.sh` |
 | A/B experiments (not in the live path) | `ab_compare.py`, `agc_ab.py`, `denoise.py`, `denoise_ab.py`, `secondpass_ab.py`, `export_onnx_llm.py` |
 | Deploy and smoke-test | `pack_src.sh`, `ws_smoke.py`, `deploy_pi.sh`, `pi_bench.sh`, `aws_deploy.sh`, `aws_teardown.sh` |
-| Report | `report_gates.py`, `make_report_tables.py`, `build_report.sh` |
+| Report and demo video | `report_gates.py`, `make_report_tables.py`, `build_report.sh`, `make_demo_video.py` |
 
 ## Testing
 
@@ -127,6 +127,7 @@ Accepted risks: a self-signed certificate (a bare IP has no CA-signed option), a
 - **G5 faithfulness 89%, not 95%.** Off-topic refusal on the blind set is 60%.
 - **Raspberry Pi and Jetson are unmeasured.** The closest evidence is a 4-core Docker run on M2 cores (optimistic).
 - **Phone-quality speech** is hard for ≤50 MB models: WER 42–49%.
+- **Interrupting the answer** (barge-in) works, but the interrupting question is recognised less reliably than a normal one: in the demo recording only 1 of 5 takes found an answer to it (`docs/demo/takes.json`).
 - **Reverberation** is the failure case: en-US reverb 0.6 s gives top-3 8% with 77% refused (the system says it is not sure rather than guessing). Use a quiet, non-echoey room or a headset.
 - **Chinese voice licence** (huayan) is unknown; the permissive alternative is over the 30 MB size limit.
 - Cantonese is not supported.

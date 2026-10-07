@@ -6,7 +6,10 @@
 - No microphone (or a noisy room): use the "Sample question" menu. Synthetic samples ask VORA Box questions; "Real callers" are MInDS-14 recordings of bank questions, which are off-topic for the VORA Box knowledge base and show real-voice ASR plus the "not sure" refusal.
 - **Room:** quiet and not echoey, headset or a mic close to the mouth. Reverberation is the measured failure case (en-US top-3 drops to 8%), and the system then says it is not sure. If an answer says "not sure", repeat the question closer to the mic.
 
-## 2-minute video
+## 2-minute video (recorded automatically)
+`python scripts/make_demo_video.py` (server running, Chrome and ffmpeg installed) records `docs/demo/vora-demo.mp4` from the real system and writes the script it follows to `docs/demo-video-script.md`. The microphone is a recorded question played through Chrome's fake microphone; to use your own voice, pass `--mic english=your.wav` (one file per scene id). Close other apps first, otherwise the latencies in the video are inflated.
+
+## 2-minute video, live narration version
 | Time | Show | Say |
 |---|---|---|
 | 0:00 | Terminal: `curl localhost:8000/health` → `{"ready":true,...}` | "Everything runs on CPU, no cloud API." |

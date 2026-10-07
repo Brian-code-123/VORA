@@ -12,3 +12,4 @@ certs/
 *.egg-info/
 .env
 vora-src.tar.gz
+docs/demo/*.mp4
