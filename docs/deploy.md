@@ -37,8 +37,11 @@ See docs/ui.md (TLS certificate via `scripts/make_cert.sh`, `VORA_HOST=0.0.0.0`)
 own network, set `VORA_ACCESS_KEY`: without it anyone who can reach the port can use the models.
 
 ## AWS demo box (t4g.small, HTTPS on 443, access key)
-A redeploy creates a new IP and a new access key, so links already shared stop working. The script replaces the old box
-(terminates it first), so the demo is down for about 10 minutes.
+A redeploy creates a new IP and a new access key, so links already shared stop working once the old box is gone. The old box
+keeps running until the new one answers `/health` (the script waits up to 20 minutes and then terminates it); if the new box
+never gets ready the old demo is left running and the script prints how to read the new box's console. A failed image build
+prints the host's limits, all error lines and the last 80 lines to the console and uploads the whole log to the bucket
+(`results/build-log.txt`). Both boxes run side by side for those minutes.
 1. On the Mac, with everything committed: `scripts/pack_src.sh` writes `vora-src.tar.gz` (HEAD only; refuses
    uncommitted changes).
 2. Log in to the AWS console and open CloudShell. Move any old copy out of the way first (upload refuses an existing

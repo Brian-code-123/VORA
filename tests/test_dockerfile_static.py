@@ -143,8 +143,8 @@ def test_aws_deploy_prints_certificate_fingerprint():
 
 # ---- the image installs exactly what uv.lock locks (a new upstream release broke the build on the box) ----------------
 def test_image_installs_with_the_locked_versions():
-    """`pip install .` resolved the newest llama-cpp-python (0.3.36, compiled from source on arm64) and the build failed 30 s in,
-    while 0.3.35 from uv.lock had built fine. CI audits uv.lock, so the image must install the same versions."""
+    """Reproducibility: CI audits uv.lock, so the image must install those versions, not whatever pip finds newest on build day.
+    (This is not claimed to fix the 2026-10-07 box build failure: the same unpinned build succeeded on a laptop.)"""
     assert "COPY docker/constraints.txt" in DOCKERFILE
     assert re.search(r"pip install[^\n]*(-c|--constraint)[ =]+\S*constraints\.txt[^\n]* \.", DOCKERFILE)
 
@@ -174,3 +174,34 @@ def test_make_constraints_script_exists_and_is_valid_bash():
     p = ROOT / "scripts" / "make_constraints.sh"
     assert p.exists() and subprocess.run(["bash", "-n", str(p)]).returncode == 0
     assert "uv export --locked" in p.read_text()
+
+
+# ---- a failed deploy must be diagnosable and must not take the working demo down with it ------------------------------
+DEPLOY_SH = (ROOT / "scripts" / "aws_deploy.sh").read_text()
+
+
+def test_old_demo_box_is_terminated_only_after_the_new_one_answers_health():
+    """2026-10-07: the script terminated the old box first, the new box's image build failed, and there was no demo at all."""
+    demo = DEPLOY_SH[DEPLOY_SH.index('if [ "$MODE" = demo ]'):DEPLOY_SH.index('if [ "$MODE" = a1 ]')]
+    assert demo.index("launch t4g.small") < demo.index("terminate-instances"), "terminate must come after the launch"
+    poll = demo.index("/health")
+    assert poll < demo.index("terminate-instances"), "terminate must come after waiting for the new box to be ready"
+    assert "left running" in demo, "when the new box never gets ready the old one must stay, and the script must say so"
+
+
+def test_build_failure_prints_enough_to_diagnose_it_and_saves_the_whole_log():
+    """The console keeps ~64 KB and the old code printed `tail -30` of the build: the compiler's own message was cut off, and the
+    cause of a failed build had to be guessed (wrongly)."""
+    ud = DEPLOY_SH[DEPLOY_SH.index("common_userdata()"):DEPLOY_SH.index("launch()")]
+    for needle in ("free -m", "df -h", "nproc", "grep -nE", "tail -80", "--upload-file /var/log/vora-build.log", "LOG_PUT_URL"):
+        assert needle in ud, needle
+    assert "tail -30" not in ud
+
+
+def test_image_build_is_attempted_twice_before_giving_up():
+    ud = DEPLOY_SH[DEPLOY_SH.index("common_userdata()"):DEPLOY_SH.index("launch()")]
+    assert re.search(r"for try in 1 2", ud) and "docker build" in ud
+
+
+def test_deploy_script_is_valid_bash_after_the_change():
+    assert subprocess.run(["bash", "-n", str(ROOT / "scripts" / "aws_deploy.sh")]).returncode == 0

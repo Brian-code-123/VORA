@@ -23,6 +23,7 @@ fi
 aws s3 cp vora-src.tar.gz "s3://$B/src.tar.gz" --only-show-errors
 SRC_URL=$(aws s3 presign "s3://$B/src.tar.gz" --expires-in 43200)
 PUT_URL=$(python3 -c "import boto3,sys; print(boto3.client('s3', region_name='$REGION').generate_presigned_url('put_object', Params={'Bucket': '$B', 'Key': 'results/a1-results.tar.gz'}, ExpiresIn=43200))")
+LOG_PUT_URL=$(python3 -c "import boto3; print(boto3.client('s3', region_name='$REGION').generate_presigned_url('put_object', Params={'Bucket': '$B', 'Key': 'results/build-log.txt'}, ExpiresIn=43200))")
 AMI=$(aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64 --query Parameter.Value --output text)
 VPC=$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
 
@@ -51,7 +52,23 @@ fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /
 dnf install -y docker tar >/dev/null && systemctl enable --now docker
 mkdir -p /opt/vora && curl -fsS "$SRC_URL" | tar xz -C /opt/vora
 cd /opt/vora
-t0=\$(date +%s); docker build -f docker/Dockerfile -t vora . > /var/log/vora-build.log 2>&1 || { say BUILD FAILED; tail -30 /var/log/vora-build.log > /dev/console; exit 1; }
+# A failed build used to print only the last 30 lines: the compiler's own message was cut off and the cause had to be guessed. Print the host's
+# limits, every error line and the last 80 lines, and keep the whole log in the bucket (the console holds only ~64 KB).
+fail() {
+  say BUILD FAILED
+  { echo "--- host: \$(nproc) cpu"; free -m; df -h /; echo "--- error lines of both attempts:"
+    grep -nE 'error|Error|ERROR|fatal|Killed|No space|cannot|failed' /var/log/vora-build-1.log /var/log/vora-build-2.log | tail -40 | cut -c1-220
+    echo "--- last lines of the second attempt:"; tail -80 /var/log/vora-build-2.log | cut -c1-220; } > /dev/console
+  curl -fsS -X PUT --upload-file /var/log/vora-build.log "$LOG_PUT_URL" > /dev/null && say "build log uploaded to the bucket (results/build-log.txt)"
+  exit 1
+}
+t0=\$(date +%s)
+for try in 1 2; do
+  docker build -f docker/Dockerfile -t vora . > /var/log/vora-build-\$try.log 2>&1 && break
+  cp /var/log/vora-build-\$try.log /var/log/vora-build.log
+  say "image build attempt \$try failed"
+  [ \$try = 2 ] && fail
+done
 say built in \$(( \$(date +%s)-t0 )) s, image \$(docker images vora --format '{{.Size}}')
 EOF
 }
@@ -69,7 +86,6 @@ if [ "$MODE" = demo ] || [ "$MODE" = both ]; then
   KEY=$(openssl rand -hex 12)          # shown once below, on YOUR screen only; also inside the instance user-data
   old=$(aws ec2 describe-instances --filters Name=tag:Name,Values=vora-demo Name=instance-state-name,Values=pending,running,stopping,stopped \
         --query 'Reservations[].Instances[].InstanceId' --output text)
-  [ -n "$old" ] && aws ec2 terminate-instances --instance-ids $old >/dev/null && echo "replacing old demo: $old"
   { common_userdata; echo "KEY=$KEY"; cat <<'EOF'
 ip link set dev "$(ip -o route get 1.1.1.1 | awk '{print $5}')" mtu 1400   # VPN paths dropped full-size TLS packets (handshake stalled)
 TOKEN=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
@@ -94,6 +110,19 @@ EOF
   DIP=$(aws ec2 describe-instances --instance-ids "$DEMO_ID" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
   echo "demo instance: $DEMO_ID  (ready in ~10 min)"
   echo "OPEN: https://${DIP}/#key=${KEY}"   # a fragment is never sent to the server, so the key stays out of its access log
+  if [ -n "$old" ]; then   # the old demo goes only when its replacement works: a failed build must not leave no demo at all
+    echo "the old demo ($old) keeps running until the new box answers /health (up to 20 min)"
+    ready=0
+    for i in $(seq 1 80); do
+      curl -ksf -m 5 "https://${DIP}/health" 2>/dev/null | grep -q '"ready":true' && { ready=1; break; }
+      sleep 15
+    done
+    if [ $ready = 1 ]; then
+      aws ec2 terminate-instances --instance-ids $old >/dev/null && echo "new box ready; terminated the old demo: $old"
+    else
+      echo "NEW BOX NOT READY after 20 min: the old demo ($old) is left running. Why: aws ec2 get-console-output --latest --instance-id $DEMO_ID --query Output --output text | grep -A40 'VORA: BUILD FAILED'"
+    fi
+  fi
 fi
 
 if [ "$MODE" = a1 ] || [ "$MODE" = both ]; then

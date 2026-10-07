@@ -8,8 +8,9 @@ COPY docker/constraints.txt ./constraints.txt
 COPY src ./src
 # llama-cpp-python has no arm64 wheel: it compiles here (10-20 min under qemu, ~3 min native). Portable CPU build.
 ENV CMAKE_ARGS="-DGGML_NATIVE=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF"
-# Install exactly what uv.lock locks (docker/constraints.txt, made by scripts/make_constraints.sh): an unpinned `pip install .` picked up
-# llama-cpp-python 0.3.36 the day it was released, it failed to compile on the box, and CI had audited a different set.
+# Install exactly what uv.lock locks (docker/constraints.txt, made by scripts/make_constraints.sh), so the image has the versions CI tested and
+# audited, not whatever pip finds newest on build day. (A failed build on the box on 2026-10-07 was NOT shown to be caused by this: the same
+# unpinned build succeeds on a laptop. Pinning is for reproducibility; see docs/rulings.md.)
 RUN pip install --no-cache-dir -c constraints.txt --prefix=/install .
 
 FROM python:3.12-slim
