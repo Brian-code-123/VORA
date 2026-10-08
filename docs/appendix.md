@@ -5,6 +5,23 @@
 
 Everything is free and open source and runs on CPU only. Numbers in the tables are generated from `results/*.json` by `scripts/make_report_tables.py`; the gate table at the top of section 3 is the honest summary of which brief targets are met.
 
+## Noise, reverb and read speech (final run, 2026-10-06)
+
+Moved here from the 3-page report to keep it within its page limit. Same speakers as the real-speech table in `docs/report.md` section 3; top-3 is measured on the ASR text.
+
+| Scene | en-US WER / top-3 | zh-CN CER / top-3 |
+|---|---|---|
+| clean phone | 44.0% / 90% | 21.5% / 83% |
+| ambient noise 10 dB | 45.4% / 87% | 22.9% / 83% |
+| ambient noise 5 dB | 53.8% / 74% | 25.6% / 77% |
+| babble 10 dB | 77.5% / 70% | 56.2% / 81% |
+| reverb 0.6 s | 92.3% / 8% | 39.5% / 56% |
+| quiet (−30 dB) / loud (+12 dB, clipped) | 41.9% / 88%, 44.7% / 80% | 21.7% / 84%, 21.9% / 82% |
+
+Speech end is cross-checked against the Silero VAD (median gap 68 ms on en-US). Noise reduction (GTCRN) was tested and made accuracy worse, so it is not in the live path.
+
+Read speech (WER/CER, clean to ambient noise at 10 dB): LibriSpeech clean 5.9% to 7.4% (phone codec 8.3%), LibriSpeech other 12.8% to 16.0%, FLEURS en 25.9% to 28.7%, AISHELL 5.2% to 5.8%, FLEURS zh 12.3% to 14.6%.
+
 ## (earlier round) 1. Architecture
 
 ```mermaid
