@@ -1,6 +1,6 @@
 # Security
 
-VORA is a demo of a streaming voice pipeline, not a hardened product. What protects the hosted demo, and what was knowingly left open, is in the **Security** section of [README.md](README.md); the measured prompt-injection results and the dependency-audit decisions are in [docs/rulings.md](docs/rulings.md).
+VORA is a demo of a streaming voice pipeline, not a hardened product. What protects the hosted demo, and what was knowingly left open, is in the Security section of [README.md](README.md); the measured prompt-injection results and the dependency-audit decisions are in [docs/rulings.md](docs/rulings.md).
 
 ## Reporting a problem
 
