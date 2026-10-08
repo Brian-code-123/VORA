@@ -1,14 +1,14 @@
 # VORA
 
-Streaming voice question answering on CPU: speech in, spoken answer out, in English and Mandarin. Free, open-source models only (ASR ≤50 MB, TTS ≤30 MB, LLM ≤1B parameters), answering from a local knowledge base, with every result checked against public speech recorded by real people.
+Streaming voice question answering on CPU: speech in, spoken answer out, in English and Mandarin. Free, open-source models only (ASR ≤50 MB, TTS ≤30 MB, LLM ≤1B parameters), answering from a local knowledge base. Accuracy and latency are also measured on public recordings of real people.
 
 Technical report (3 pages): [`docs/report.pdf`](docs/report.pdf) · full detail: [`docs/appendix.md`](docs/appendix.md)
 
 ## Demo
 
-- **Local (best latency):** see Quickstart, then open `http://localhost:8000`, press Start and ask "How long is the warranty on the VORA X200?" or "怎么恢复出厂设置".
-- **No microphone:** use the "Sample question" menu. "Real callers" are public MInDS-14 phone recordings of bank questions; they are off-topic for this knowledge base, so they show real-voice speech recognition and the "not sure" refusal.
-- **Hosted demo (AWS, 2 vCPU):** private link of the form `https://<IP>/#key=…`, generated in AWS CloudShell (`cat ~/vora-demo-link.txt`). About 4–6 s per answer on that box. Script: [`docs/demo-script.md`](docs/demo-script.md).
+- Local, for the best latency: follow the Quickstart, open `http://localhost:8000`, press Start and ask "How long is the warranty on the VORA X200?" or "怎么恢复出厂设置".
+- No microphone: use the "Sample question" menu. "Real callers" are public MInDS-14 phone recordings of bank questions; they are off-topic for this knowledge base, so they show real-voice speech recognition and the "not sure" refusal.
+- Hosted demo (AWS, 2 vCPU): a private link of the form `https://<IP>/#key=…`, generated in AWS CloudShell (`cat ~/vora-demo-link.txt`). Answers take about 4 to 6 s on that box. Script: [`docs/demo-script.md`](docs/demo-script.md).
 
 ## Results at a glance
 
@@ -26,7 +26,7 @@ Final run 2026-10-06, Apple M2 (8 cores, CPU only), quiet host, test splits read
 | G7 Docker + Pi-class proof | arm64, amd64, limited cores, Pi-class CPU | UNVERIFIED | 3 of 4; Pi-class run refused by the AWS free plan |
 | G8 permissive licences | no unknown licences | FAIL | Chinese voice (huayan) licence unknown |
 
-Real phone speech (MInDS-14, 100 test clips per accent): WER 42–49% (en), CER 21.5% (zh), yet the right answer is in the top 3 for 74–90%. Details and noise scenes: report section 3.
+Real phone speech (MInDS-14, 100 test clips per accent): WER 42 to 49% (en), CER 21.5% (zh), and the right answer is still in the top 3 for 74 to 90%. Details and noise scenes: report section 3.
 
 ## Architecture
 
@@ -81,7 +81,7 @@ Folders are kept where the code, Dockerfile and tests expect them; nothing here 
 
 Not tracked: `data/` (cached public datasets), `index/`, `index_bank/`, `.venv/`.
 
-**Scripts**
+Scripts:
 
 | Purpose | Scripts |
 |---|---|
@@ -124,12 +124,12 @@ Accepted risks: a self-signed certificate (a bare IP has no CA-signed option), a
 
 ## Known limits
 
-- **G5 faithfulness 89%, not 95%.** Off-topic refusal on the blind set is 60%.
-- **Raspberry Pi and Jetson are unmeasured.** The closest evidence is a 4-core Docker run on M2 cores (optimistic).
-- **Phone-quality speech** is hard for ≤50 MB models: WER 42–49%.
-- **Interrupting the answer** (barge-in) works, but the interrupting question is recognised less reliably than a normal one: in the demo recording only 1 of 5 takes found an answer to it (`docs/demo/takes.json`).
-- **Reverberation** is the failure case: en-US reverb 0.6 s gives top-3 8% with 77% refused (the system says it is not sure rather than guessing). Use a quiet, non-echoey room or a headset.
-- **Chinese voice licence** (huayan) is unknown; the permissive alternative is over the 30 MB size limit.
+- G5 faithfulness is 89%, below the 95% target. Off-topic refusal on the blind set is 60%.
+- Raspberry Pi and Jetson are unmeasured. The closest evidence is a 4-core Docker run on M2 cores, which is optimistic.
+- Phone-quality speech is hard for ≤50 MB models: WER 42 to 49%.
+- Interrupting the answer (barge-in) works, but the interrupting question is recognised less reliably than a normal one. In the demo recording only 1 of 5 takes found an answer to it (`docs/demo/takes.json`).
+- Reverberation is the failure case: en-US reverb 0.6 s gives top-3 8% with 77% refused, because the system says it is not sure instead of guessing. Use a quiet room or a headset.
+- The Chinese voice (huayan) has an unknown licence. The permissive alternative is over the 30 MB size limit.
 - Cantonese is not supported.
 
 ## Licences
