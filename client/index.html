@@ -13,36 +13,54 @@
     <h1 data-i18n="title">VORA Voice</h1>
     <label class="lang"><span class="vh" data-i18n="language">Language</span>
       <select id="lang"><option value="en">English</option><option value="zh">中文</option></select></label>
+    <button id="clear" type="button" data-i18n="new_chat">New chat</button>
     <p class="sub" data-i18n="subtitle"></p>
   </header>
 
   <div id="banner" class="banner" role="alert" hidden></div>
 
   <main class="layout">
-    <section class="convo" aria-labelledby="h-now">
-      <div class="card">
-        <h2 id="h-now" data-i18n="you">You</h2>
-        <div id="live" class="text partial" aria-live="polite">…</div>
-        <h2 data-i18n="vora" class="reply-title">VORA</h2>
-        <div id="reply" class="text" aria-live="polite">…</div>
-      </div>
-      <div class="card card-log">
-        <div class="row-head"><h2 data-i18n="conversation">Conversation</h2><button id="clear" type="button" data-i18n="clear">Clear</button></div>
-        <div id="log" aria-live="off"></div>
-      </div>
+    <section class="hero">
+      <button id="go" class="orb" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        <span id="go-label" class="vh" data-i18n="start">Start</span>
+      </button>
+      <h2 id="hello" class="hello" data-i18n="hello">Ask me anything</h2>
+      <p class="hint" data-i18n="hint"></p>
+      <p id="micnote" class="hint micnote" data-i18n="mic_notice"></p>
+      <div id="examples" class="examples"></div>
     </section>
 
-    <aside class="side">
-      <div class="card"><h2 data-i18n="sources">Sources</h2><div id="ctx" class="chips"><span class="muted">–</span></div></div>
-      <div class="card">
+    <section id="chat" class="chat" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation"></section>
+
+    <details id="more" class="card more">
+      <summary data-i18n="more">Show details</summary>
+      <section>
+        <h2 data-i18n="sources">Sources</h2><div id="ctx" class="chips"><span class="muted">–</span></div>
+      </section>
+      <section>
         <h2 data-i18n="latency">Latency</h2>
         <div><span id="lat" class="lat-big">–</span> <span id="lat-sub" class="muted"></span></div>
         <svg id="chart" class="chart" viewBox="0 0 240 88" preserveAspectRatio="none" role="img" aria-label="Last responses"></svg>
         <div id="stages" class="stages"></div>
-      </div>
-      <details class="card"><summary data-i18n="details">Details</summary><dl id="details"></dl><div id="events" class="muted"></div></details>
+        <dl id="details"></dl><div id="events" class="muted"></div>
+      </section>
+      <section class="tools">
+        <label><span class="vh" data-i18n="sample">Try a sample</span>
+          <select id="sample">
+            <option value="" data-i18n="sample_none">Sample question…</option>
+            <optgroup label="VORA Box (synthetic voice)">
+              <option value="q_warranty_en">How long is the X200 warranty? (EN)</option>
+              <option value="q_reset_en">How do I factory reset? (EN)</option>
+              <option value="q_warranty_zh">X200保修期多久？ (中文)</option>
+            </optgroup>
+            <optgroup label="Real callers, MInDS-14 (bank questions, off-topic here)" id="real-samples"></optgroup>
+          </select></label>
+        <label class="filebtn"><span data-i18n="file">Audio file</span><input id="file" type="file" accept="audio/*"></label>
+        <button id="mute" type="button" aria-pressed="false" data-i18n="mute_out">Mute voice</button>
+      </section>
       <p class="attrib" data-i18n="attribution"></p>
-    </aside>
+    </details>
   </main>
 </div>
 
@@ -52,21 +70,6 @@
       <span class="dot" aria-hidden="true"></span><span id="st"></span>
     </div>
     <div class="meter" role="meter" aria-label="Microphone level" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><i id="lvl"></i></div>
-    <div class="tools">
-      <button id="go" class="primary" type="button" data-i18n="start">Start</button>
-      <label><span class="vh" data-i18n="sample">Try a sample</span>
-        <select id="sample">
-          <option value="" data-i18n="sample_none">Sample question…</option>
-          <optgroup label="VORA Box (synthetic voice)">
-            <option value="q_warranty_en">How long is the X200 warranty? (EN)</option>
-            <option value="q_reset_en">How do I factory reset? (EN)</option>
-            <option value="q_warranty_zh">X200保修期多久？ (中文)</option>
-          </optgroup>
-          <optgroup label="Real callers, MInDS-14 (bank questions, off-topic here)" id="real-samples"></optgroup>
-        </select></label>
-      <label class="filebtn"><span data-i18n="file">Audio file</span><input id="file" type="file" accept="audio/*"></label>
-      <button id="mute" type="button" aria-pressed="false" data-i18n="mute_out">Mute voice</button>
-    </div>
   </div>
 </footer>
 <script type="module" src="js/main.js"></script>

@@ -6,8 +6,12 @@ Technical report (3 pages): [`docs/report.pdf`](docs/report.pdf) · full detail:
 
 ## Demo
 
-- Local, for the best latency: follow the Quickstart, open `http://localhost:8000`, press Start and ask "How long is the warranty on the VORA X200?" or "怎么恢复出厂设置".
-- No microphone: use the "Sample question" menu. "Real callers" are public MInDS-14 phone recordings of bank questions; they are off-topic for this knowledge base, so they show real-voice speech recognition and the "not sure" refusal.
+![The VORA page: tap an example question, the mic ring changes as it listens, thinks and speaks, and the answer appears in a chat](docs/img/demo.gif)
+
+*An example question played into the page (the GIF has no sound). The ring is red while it hears you, dashed while it thinks and green while it speaks.*
+
+- Local, for the best latency: follow the Quickstart, open `http://localhost:8000`, press the mic button and ask "How long is the warranty on the VORA X200?" or "怎么恢复出厂设置".
+- No microphone: tap an example question on the first screen, or open "Show details" for the sample menu and audio file input (add `?debug=1` to open it on load, with the latency chart and sources). "Real callers" are public MInDS-14 phone recordings of bank questions; they are off-topic for this knowledge base, so they show real-voice speech recognition and the "not sure" refusal.
 - Hosted demo (AWS, 2 vCPU): a private link of the form `https://<IP>/#key=…`, generated in AWS CloudShell (`cat ~/vora-demo-link.txt`). Answers take about 4 to 6 s on that box. Script: [`docs/demo-script.md`](docs/demo-script.md).
 
 ## Results at a glance
@@ -55,6 +59,7 @@ uv venv --python 3.12 && CMAKE_ARGS="-DGGML_METAL=OFF" uv pip install -e ".[dev]
 python scripts/fetch_models.py      # pinned revisions, writes models/MANIFEST.json
 python -m vora.rag.ingest           # builds index/ from kb/
 python -m vora.server               # http://localhost:8000
+npm run dev                         # the same, using .venv if it exists (no npm install needed)
 ```
 
 Docker (any arm64 or amd64 host): `docker build -f docker/Dockerfile -t vora . && docker run -p 8000:8000 vora`.
@@ -97,6 +102,7 @@ Scripts:
 ```bash
 pytest -m "not perf and not eval and not integration"   # fast suite, ~1.5 min with models
 cd client && npm test                                   # client logic under Node
+npm test                                                # both suites from the repo root
 ```
 
 Markers: `perf` (latency and memory, needs models and a quiet host), `eval` (accuracy, needs models and cached datasets), `integration` (network or Chrome). Tests that need models skip themselves without them; that is what CI runs (`.github/workflows/ci.yml`).

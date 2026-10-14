@@ -1,0 +1,10 @@
+{
+  "name": "vora",
+  "private": true,
+  "description": "Streaming voice question answering on CPU. The page in client/ is plain ES modules served by the Python server, so there is no build step.",
+  "scripts": {
+    "dev": "sh -c 'if [ -x .venv/bin/python ]; then exec .venv/bin/python -m vora.server; else exec python -m vora.server; fi'",
+    "start": "npm run dev",
+    "test": "node --test client/tests && sh -c 'if [ -x .venv/bin/python ]; then exec .venv/bin/python -m pytest -m \"not perf and not eval and not integration\"; else exec python -m pytest -m \"not perf and not eval and not integration\"; fi'"
+  }
+}

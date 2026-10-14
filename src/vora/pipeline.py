@@ -355,8 +355,10 @@ class Pipeline:
         self._spoken.extend(spoken)
         if ctx_ready:
             await self._emit_bg({"type": "context", "ids": g.context_ids})
+        acc = ""
         for t in tokens:
-            await self._emit_bg({"type": "token", "text": t}, droppable=True)
+            acc += t
+            await self._emit_bg({"type": "token", "text": t, "full": acc}, droppable=True)   # `full`: a dropped token leaves no hole
         # buffered audio is released by the TTS thread (the only writer) or, if it already finished, by _run_turn
 
     async def _run_turn(self, text: str, trace: LatencyTrace, ev: threading.Event, prefetched, held_ms: float = 0.0,
@@ -371,6 +373,7 @@ class Pipeline:
             if promoted:            # promoted while we were still retrieving: _promote_shadow left the event to us
                 await self._emit_bg({"type": "context", "ids": gate.context_ids})
         sent_q: queue.Queue = queue.Queue()
+        answer: list[str] = []      # every token, in order: the screen text must not depend on the droppable token messages
         stamps: dict[str, float] = gate.stamps if gate is not None else {}
         def record_spoken(sentence: str) -> None:
             if gate is not None:
@@ -403,6 +406,7 @@ class Pipeline:
                 for tok in self.llm.stream(text, hits, ev):
                     if ev.is_set():
                         return
+                    answer.append(tok)
                     if "first_token" not in trace.marks:
                         trace.mark("first_token")
                     if gate is not None:
@@ -413,7 +417,7 @@ class Pipeline:
                     else:
                         held = False
                     if not held:
-                        asyncio.run_coroutine_threadsafe(self._emit_bg({"type": "token", "text": tok}, droppable=True), self.loop)
+                        asyncio.run_coroutine_threadsafe(self._emit_bg({"type": "token", "text": tok, "full": "".join(answer)}, droppable=True), self.loop)
                     for c in chunker.push(tok):
                         record_spoken(c)
                         sent_q.put((c, False))
@@ -500,6 +504,7 @@ class Pipeline:
         first_content = stamps.get("first_content", stamps.get("first_audio"))
         if first_content is not None:
             trace.marks["first_audio"] = first_content  # content audio is what the brief's 1.5 s means
+        await self._emit_bg({"type": "answer", "text": "".join(answer)})   # complete text; the live tokens above may have been dropped
         m = trace.report()
         m["tts_oov"] = getattr(self.tts, "oov_total", 0)
         m["hold_ms"] = held_ms

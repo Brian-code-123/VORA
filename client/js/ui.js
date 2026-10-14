@@ -1,10 +1,10 @@
 // DOM rendering. Reads state, never changes it.
 import { t } from "./i18n.js";
 import { stages } from "./stats.js";
+import { appendToken, cutText, overflow, PLACEHOLDER } from "./turns.js";
 
 const $ = (id) => document.getElementById(id);
 const sec = (ms) => (ms == null ? "–" : `${(ms / 1000).toFixed(2)} s`);
-const LOG_CAP = 100;
 
 export function applyStrings(lang) {
   document.documentElement.lang = lang === "zh" ? "zh-Hans" : "en";
@@ -17,12 +17,13 @@ const PHASE_KEY = { idle: "st_idle", connecting: "st_connecting", loading: "st_l
 export function renderStatus(lang, s, extra = "") {
   const box = $("status");
   box.dataset.phase = s.phase;
+  document.body.dataset.phase = s.phase;      // drives the orb animation
   let key = PHASE_KEY[s.phase];
   if (s.phase === "ended") key = "st_ended_idle";
   if (s.phase === "error") key = `err_${s.error}`;
   $("st").textContent = extra || t(lang, key);
   const live = ["connecting", "listening", "hearing", "thinking", "speaking"].includes(s.phase);
-  $("go").textContent = t(lang, live ? "stop" : "start");
+  $("go-label").textContent = t(lang, live ? "stop" : "start");
   $("go").setAttribute("aria-pressed", String(live));
   $("go").disabled = s.phase === "unsupported";
 }
@@ -44,26 +45,72 @@ export function banner(lang, kind, key, action) {
 export function level(v) {
   const pct = Math.min(100, Math.round(Math.sqrt(v) * 160));          // perceptual-ish scale
   $("lvl").style.width = `${pct}%`;
+  $("go").style.setProperty("--lvl", (pct / 100).toFixed(2));
   $("lvl").parentElement.setAttribute("aria-valuenow", v.toFixed(3));
 }
 
-export function partial(text) { const el = $("live"); el.textContent = text; el.className = "text partial"; }
-export function finalText(lang, text) {
-  const el = $("live"); el.textContent = text; el.className = "text";
-  $("reply").textContent = "…";
-  logLine(lang, "u", text);
-}
-export function token(text) { const el = $("reply"); el.textContent = el.textContent === "…" ? text : el.textContent + text; }
+let curMe = null, curReply = null;      // the bubbles of the turn in progress
 
-export function logLine(lang, kind, text) {
-  const log = $("log"), p = document.createElement("p");
-  p.className = kind;
-  if (kind !== "note") p.dataset.who = t(lang, kind === "u" ? "you" : "vora");
-  p.textContent = text;
-  if (/[一-鿿]/.test(text)) p.lang = "zh-Hans";
-  log.append(p);
-  while (log.children.length > LOG_CAP) log.firstChild.remove();
-  log.scrollTop = log.scrollHeight;
+function bubble(lang, kind, whoKey) {
+  const box = document.createElement("div"), who = document.createElement("span"), text = document.createElement("div");
+  box.className = `bubble ${kind}`; who.className = "who"; who.dataset.i18n = whoKey; who.textContent = t(lang, whoKey);
+  text.className = "text";
+  box.append(who, text);
+  const chat = $("chat");
+  chat.append(box);
+  while (overflow(chat.children.length) > 0) chat.firstChild.remove();
+  document.body.classList.add("chatting");
+  box.scrollIntoView?.({ block: "nearest" });
+  return { box, text };
+}
+
+export function partial(lang, text) {
+  curMe ??= bubble(lang, "me", "you");
+  curMe.text.textContent = text; curMe.text.className = "text partial";
+  curMe.box.scrollIntoView?.({ block: "nearest" });
+}
+export function finalText(lang, text) {
+  curMe ??= bubble(lang, "me", "you");
+  curMe.text.textContent = text; curMe.text.className = "text";
+  curMe = null;
+  curReply = bubble(lang, "vora", "vora");
+  curReply.text.textContent = PLACEHOLDER;
+}
+export function token(text, full) {
+  if (!curReply) return;
+  curReply.text.textContent = typeof full === "string" ? full : appendToken(curReply.text.textContent, text);   // `full` survives dropped tokens
+  curReply.box.scrollIntoView?.({ block: "nearest" });
+}
+export function setReply(text) { if (curReply) curReply.text.textContent = text; }   // the complete answer replaces the live tokens
+export function markCut() {
+  if (!curReply) return;
+  curReply.text.textContent = cutText(curReply.text.textContent);
+  curReply.box.classList.add("cut");
+}
+export function turnDone() { curReply = null; }
+export function note(lang, key) {
+  const p = document.createElement("p");
+  p.className = "note"; p.dataset.i18n = key; p.textContent = t(lang, key);
+  $("chat").append(p);
+  p.scrollIntoView?.({ block: "nearest" });
+}
+export function resetChat() {
+  $("chat").replaceChildren();
+  curMe = curReply = null;
+  document.body.classList.remove("chatting");
+}
+
+const EXAMPLES = {
+  en: [["q_warranty_en", "How long is the X200 warranty?"], ["q_reset_en", "How do I factory reset?"]],
+  zh: [["q_warranty_zh", "X200保修期多久？"]],
+};
+export function setExamplesDisabled(off) { for (const b of document.querySelectorAll(".suggest")) b.disabled = off; }
+export function examples(lang, pick) {
+  $("examples").replaceChildren(...EXAMPLES[lang].map(([id, text]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "suggest"; b.textContent = text; b.onclick = () => pick(id);
+    return b;
+  }));
 }
 
 export function sources(lang, ids) {

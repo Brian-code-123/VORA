@@ -12,7 +12,7 @@
   }
   window.scrollTo(0, document.documentElement.scrollHeight);
   const dock = document.querySelector(".dock").getBoundingClientRect();
-  const last = [...document.querySelectorAll("main .card, .attrib")].at(-1).getBoundingClientRect();
+  const last = [...document.querySelectorAll("#chat, #more")].at(-1).getBoundingClientRect();
   if (last.bottom > dock.top + 1) out.push(`dock covers content: last bottom ${Math.round(last.bottom)} > dock top ${Math.round(dock.top)}`);
   window.scrollTo(0, 0);
   return { vw, vh, violations: out.slice(0, 20) };

@@ -9,31 +9,31 @@ Plain HTML + ES modules, no build step, no npm dependency. Served by the FastAPI
 | `js/state.js` | session state machine (pure, tested in Node) |
 | `js/stats.js`, `js/net.js`, `js/env.js`, `js/i18n.js` | latency history, close codes / retries, feature detection, en + 简体中文 strings (pure, tested) |
 | `js/audio.js` | AudioContext, microphone through the worklet, reply playback |
+| `js/turns.js` | chat helpers: token append, interrupted text, turn cap (pure, tested) |
 | `js/ui.js`, `js/main.js` | rendering and wiring |
 | `worklet.js` | mic → 16 kHz PCM16 100 ms frames + input level every ~50 ms (tested in a Node `vm` sandbox) |
 | `samples/real/` | six MInDS-14 clips (CC-BY-4.0, see `ATTRIBUTION.md`) |
 
 ## What the user sees
-- One **status pill** with a coloured dot for every state: ready, connecting, models loading (auto-retry), listening
-  (red dot), hearing you (pulsing), thinking, speaking (green; talk to interrupt), busy, session ended, error.
-- **Microphone level meter**; "no sound for 5 s" hint when the mic is silent.
-- Live transcript, streaming answer, **source chips** (or "no matching document").
-- **Latency**: last response (green ≤ 1.5 s, amber above), median of the last 12 turns, a bar chart with the 1.5 s
-  target line, and a per-stage breakdown (speech end → text, retrieve + first word, first voice chunk).
-- **Details**: speculative start, sentence-end hold, unspeakable characters, interrupted / echo-ignored events.
-- Conversation log (capped at 100 lines), Clear, Mute voice, sample questions (synthetic + real voices), audio file.
-- Errors in plain words with a fix: mic permission denied / missing / busy / revoked, HTTPS needed off localhost,
-  browser without AudioWorklet, origin refused, frame too large, client stalled, connection lost (3 automatic retries
-  with back-off, then a Reconnect button), server busy, models loading.
-- Keyboard: Space = start/stop, Esc = stop. Focus ring on every control. `aria-live` transcript and status.
+- A large microphone button. Press it to start and press it again to stop. Its ring shows what is happening: connecting
+  (spinning dashes), listening (red), hearing you (grows with your voice), thinking (turning dashes), speaking (green).
+- A greeting, one line on what to do, and two example questions. Tapping an example plays that question, so a new visitor
+  can try the page without allowing the microphone. When the example is done the page goes back to idle.
+- The conversation as chat bubbles: you on the right, VORA on the left, newest at the bottom (last 20 turns). A reply that
+  was interrupted ends with "…" and a dashed edge. "New chat" clears the bubbles and brings the greeting back.
+- A status line at the bottom with the microphone level. Errors appear in a banner in plain words with a fix: microphone
+  permission denied, missing, busy or removed, HTTPS needed off localhost, browser without AudioWorklet, connection lost
+  (3 automatic retries, then a Reconnect button), server busy, models loading.
+- Everything for engineers sits in one collapsed "Show details" panel: source documents, latency chart and stage times,
+  the speculative-start and hold figures, example and file inputs, mute. `?debug=1` opens it on load.
+- Keyboard: Space = start/stop, Esc = stop. Focus ring on every control. The conversation is an `aria-live` log.
 
 ## Layouts
-Mobile first. Bottom control dock (thumb reach, safe-area aware; the page is padded by its measured height).
-≥720 px: conversation | side panel. ≥1024 px: wider side panel. Phone landscape (height ≤ 500 px): no subtitle,
-two columns. Text in `rem`, lines ≤ 75 ch, touch targets ≥ 44 px (48 px on coarse pointers), light/dark from the OS,
-`prefers-reduced-motion`, `forced-colors`.
+Mobile first, one centred column (max 44 rem). Bottom status bar, safe-area aware; the page is padded by its measured
+height. Phone landscape (height ≤ 500 px): smaller orb, no greeting. Text in `rem`, lines ≤ 75 ch, touch targets ≥ 44 px
+(48 px on coarse pointers), light/dark from the OS, `prefers-reduced-motion`, `forced-colors`.
 
-## Verified (2026-10-05)
+## Verified (2026-10-05, before the first-screen redesign)
 - `node --test client/tests` (also run by `pytest tests/test_client_js.py`): state machine, stats, close codes,
   feature detection, i18n key parity, WCAG AA contrast of every text token pair (light + dark), worklet resampling.
 - Built-in browser (Chromium): `client/tests/layout_check.js` → zero violations at 320×568, 375×812, 412×915,
@@ -43,6 +43,12 @@ two columns. Text in `rem`, lines ≤ 75 ch, touch targets ≥ 44 px (48 px on c
   insecure-context notice, status ready (`docs/img/ui-ios-safari-iphone17pro.jpg`). Sample playback not driven: the native
   select picker does not open from the automation, so WebKit audio stays on the manual list.
 - Screenshots: `docs/img/ui-phone-375-dark.jpg`, `ui-desktop-1440-light.jpg`, `ui-desktop-1440-dark.jpg`.
+
+## Verified after the redesign (2026-10-14)
+- `node --test client/tests` and `tests/test_client_js.py` pass. In the built-in browser: idle, example flow back to idle,
+  second turn, New chat, `?debug=0` and `?debug=1`, light and dark, 375 px, 812x375, and a layout check at 320 and 1440 px
+  with no violations; no console errors.
+- Not run after the redesign: axe-core, and the full-size sweep above.
 
 ## Not verified here (manual checklist in docs/demo-script.md)
 A real microphone, Firefox, Edge, a physical iPhone / Android phone, Safari on macOS. The code follows their rules

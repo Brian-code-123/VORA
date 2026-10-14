@@ -13,8 +13,8 @@
 | Time | Show | Say |
 |---|---|---|
 | 0:00 | Terminal: `curl localhost:8000/health` returns `{"ready":true,...}` | "Everything runs on CPU, no cloud API." |
-| 0:10 | Press Start; point at the level meter and red recording dot | "Streaming ASR shows partial text while I talk." |
-| 0:20 | Ask "How long is the warranty on the VORA X200?" | Point at the live transcript, then the context chips (E03). |
+| 0:10 | Press the mic button; point at the level meter and the red ring | "Streaming ASR shows partial text while I talk." |
+| 0:20 | Ask "How long is the warranty on the VORA X200?" | Point at the live transcript, then open Show details (or load with `?debug=1`) for the context chips (E03). |
 | 0:40 | Answer plays; open the latency card | Read the real number and the stage split (ASR / retrieve / LLM / TTS). |
 | 0:55 | Switch to 中文, ask "怎么恢复出厂设置" | "Mandarin has its own small streaming model." |
 | 1:15 | Talk over the answer | "Barge-in cancels the LLM and TTS and stops playback." |

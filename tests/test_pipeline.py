@@ -338,3 +338,52 @@ async def test_hold_ms_reported_in_metrics():
     await p.wait_idle()
     m = [x[1] for x in drain(p) if x[0] == "json" and x[1]["type"] == "metrics"][0]
     assert m["hold_ms"] == 420.0
+
+
+@pytest.mark.asyncio
+async def test_the_complete_answer_text_is_sent_even_when_live_tokens_are_dropped():
+    """The output queue is small and tokens are droppable, so a slow reader saw the printed answer stop mid-sentence while the
+    spoken one was complete. The turn now ends with one `answer` message holding the whole text."""
+    words = tuple(f"w{i} " for i in range(40))
+    p = P([[fin("how long is the warranty")]], llm=FakeLlm(tokens=words), tts=FakeTts(chunks=20), queue_max=2)
+    await p.on_audio(b"\x00\x00" * 1600)
+    seen = []
+
+    async def read():
+        while True:
+            kind, payload = await p.out.get()
+            if kind == "json":
+                seen.append(payload)
+                if payload["type"] == "metrics":
+                    return
+            await asyncio.sleep(0.01)          # a reader slower than the producers
+
+    await asyncio.wait_for(read(), 20)
+    answers = [m["text"] for m in seen if m["type"] == "answer"]
+    assert answers == ["".join(words)]
+    assert [m["type"] for m in seen][-2:] == ["answer", "metrics"]
+
+
+@pytest.mark.asyncio
+async def test_a_dropped_token_leaves_no_hole_in_the_text_the_screen_builds():
+    """An interrupted turn never gets the final `answer` message, so the screen is built from live tokens. Each carries the
+    text so far: whichever ones a slow reader misses, what it shows is a prefix of the answer, never a sentence with holes."""
+    words = tuple(f"w{i} " for i in range(40))
+    p = P([[fin("how long is the warranty")]], llm=FakeLlm(tokens=words), tts=FakeTts(chunks=20), queue_max=2)
+    await p.on_audio(b"\x00\x00" * 1600)
+    tokens = []
+
+    async def read():
+        while True:
+            kind, payload = await p.out.get()
+            if kind == "json":
+                if payload["type"] == "token":
+                    tokens.append(payload)
+                if payload["type"] == "metrics":
+                    return
+            await asyncio.sleep(0.01)
+
+    await asyncio.wait_for(read(), 20)
+    whole = "".join(words)
+    assert tokens, "no token reached the reader"
+    assert all(whole.startswith(t["full"]) and t["full"].endswith(t["text"]) for t in tokens)

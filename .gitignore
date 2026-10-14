@@ -12,3 +12,4 @@ certs/
 .env
 vora-src.tar.gz
 docs/demo/*.mp4
+node_modules/
