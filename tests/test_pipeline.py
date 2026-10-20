@@ -387,3 +387,27 @@ async def test_a_dropped_token_leaves_no_hole_in_the_text_the_screen_builds():
     whole = "".join(words)
     assert tokens, "no token reached the reader"
     assert all(whole.startswith(t["full"]) and t["full"].endswith(t["text"]) for t in tokens)
+
+
+async def test_cancelling_a_waiter_is_not_swallowed_by_wait_idle():
+    p = P([[fin("hello there")]], llm=FakeLlm(delay=0.05), tts=FakeTts(delay=0.02))
+    await feed_all(p, 1)
+    waiter = asyncio.create_task(p.wait_idle())
+    await asyncio.sleep(0.02)
+    waiter.cancel()
+    with pytest.raises(asyncio.CancelledError):   # the caller's own cancellation must reach the caller
+        await waiter
+    await p.close()
+
+
+async def test_close_cleans_up_and_still_propagates_the_callers_cancellation():
+    p = P([[fin("hello there")]], llm=FakeLlm(delay=0.05), tts=FakeTts(chunks=50, delay=0.02))
+    await feed_all(p, 1)
+    await asyncio.sleep(0.05)
+    closer = asyncio.create_task(p.close())
+    await asyncio.sleep(0)
+    closer.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await closer
+    await asyncio.sleep(0.1)
+    assert p.llm.cancelled >= 1          # the turn was cancelled and cleaned up before the error went up

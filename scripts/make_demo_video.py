@@ -456,12 +456,20 @@ def make_mic_wav(scene: Scene, work: Path, override: Path | None = None) -> Path
     return clean_wav(tmp, out)
 
 
+def _stop_process(proc: subprocess.Popen) -> None:
+    proc.terminate()
+    try:
+        proc.wait(5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
 async def record_take(scene: Scene, server: str, mic_wav: Path, work: Path, take: int) -> dict:
     import websockets
     tdir = work / f"{scene.id}_take{take}"
     (tdir / "frames").mkdir(parents=True, exist_ok=True)
     port = free_port()
-    proc = subprocess.Popen(["nice", "-n", "10", CHROME, "--headless=new", f"--remote-debugging-port={port}", f"--user-data-dir={tdir / 'profile'}",
+    proc = await asyncio.to_thread(subprocess.Popen, ["nice", "-n", "10", CHROME, "--headless=new", f"--remote-debugging-port={port}", f"--user-data-dir={tdir / 'profile'}",
                              "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream",
                              "--disable-features=AudioServiceSandbox",      # else the sandboxed audio service cannot read the wav: silence
                              f"--use-file-for-fake-audio-capture={mic_wav}%noloop", "--autoplay-policy=no-user-gesture-required",
@@ -561,11 +569,7 @@ async def record_take(scene: Scene, server: str, mic_wav: Path, work: Path, take
                     t.cancel()
             cdp.task.cancel()
     finally:
-        proc.terminate()
-        try:
-            proc.wait(5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+        await asyncio.to_thread(_stop_process, proc)
     return result
 
 
@@ -665,7 +669,7 @@ async def main_async(a) -> int:
     (out_dir / "takes.json").write_text(json.dumps({k: {"latency_ms": v["latency_ms"], "takes_ok": sum(t["ok"] for t in v["all"]), "takes": v["n"], "all": v["all"],
                                                            "audio_after_last_step_db": v["audio_after_last_step_db"]} for k, v in chosen.items()}, indent=1))
     (ROOT / "docs" / "demo-video-script.md").write_text(script_markdown(SCENES, CARDS), encoding="utf-8")
-    dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", final], capture_output=True, text=True).stdout)
+    dur = float((await asyncio.to_thread(subprocess.run, ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", final], capture_output=True, text=True)).stdout)
     print(f"wrote {final} ({dur:.0f} s, {final.stat().st_size / 1e6:.1f} MB); work dir kept at {work}")
     for p_ in problems:
         print("PROBLEM:", p_, file=sys.stderr)

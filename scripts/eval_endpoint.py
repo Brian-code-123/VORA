@@ -32,7 +32,7 @@ def run_set(name: str, settings: Settings, hold_ms: int, n: int = 50) -> dict:
         extra += max(0, finals - 1)
         if finals:
             waits.append(max(0.0, ((finals and t_first) - len(pcm) / SR)) * 1000 if finals == 1 else float("nan"))
-    w = [v for v in waits if v == v]
+    w = [v for v in waits if not np.isnan(v)]
     return {"clips": clips, "single_final_clips": len(w), "wait_ms_p50": round(float(np.percentile(w, 50)), 0), "wait_ms_p95": round(float(np.percentile(w, 95)), 0),
             "extra_finals_per_clip": round(extra / clips, 3)}
 

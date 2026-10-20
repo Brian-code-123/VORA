@@ -236,7 +236,8 @@ class Pipeline:
             try:
                 await self._turn
             except asyncio.CancelledError:
-                pass
+                if asyncio.current_task().cancelling():   # we were cancelled, not the turn
+                    raise
 
     async def close(self) -> None:
         await self._cancel_turn(announce=False)
@@ -297,15 +298,18 @@ class Pipeline:
             return
         self._turn_ev.set()
         self._turn.cancel()
+        cancelled_ourselves = False
         try:
             await self._turn
         except asyncio.CancelledError:
-            pass
+            cancelled_ourselves = bool(asyncio.current_task().cancelling())
         self._drain_audio()
         if announce:  # never block on a full queue: the client must learn about the cancel
             while self.out.full():
                 self.out.get_nowait()
             self.out.put_nowait(("json", {"type": "cancel"}))
+        if cancelled_ourselves:   # cleanup done; do not swallow the caller's own cancellation
+            raise asyncio.CancelledError
 
     # ---- speculative shadow turn --------------------------------------------------------------
     def _shadow_wanted(self, text: str) -> bool:

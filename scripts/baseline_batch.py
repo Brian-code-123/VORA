@@ -17,7 +17,7 @@ def main(n: int = 30) -> None:
     endpoint = stream["latency_ms_audio_mode"]["asr_final"]
     rows = []
     for i in range(n):
-        lang, text, _ = qs[i % len(qs)]
+        _, text, _ = qs[i % len(qs)]
         t0 = time.perf_counter()
         hits = m.retriever.search(text)
         t1 = time.perf_counter()

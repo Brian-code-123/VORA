@@ -29,7 +29,7 @@ def bench_onnx(model_dir: Path, runs: int = 5) -> dict:
         t0 = time.perf_counter()
         model.generate(ids, max_new_tokens=1, do_sample=False)
         t1 = time.perf_counter()
-        out = model.generate(ids, max_new_tokens=32, do_sample=False, min_new_tokens=32)
+        model.generate(ids, max_new_tokens=32, do_sample=False, min_new_tokens=32)
         t2 = time.perf_counter()
         first.append((t1 - t0) * 1e3)
         rate.append(32 / (t2 - t1 - (t1 - t0)) if t2 - t1 > t1 - t0 else 0)

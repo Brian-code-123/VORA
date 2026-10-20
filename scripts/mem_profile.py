@@ -39,7 +39,6 @@ def main() -> None:
     S = Settings()
     from vora.asr import AsrSession, load_recognizers
     recs = load_recognizers(S)
-    r = recs if isinstance(recs, dict) else None
     for lang in ("en", "zh"):
         AsrSession(recs, lang).feed(b"\x00\x00" * 1600)
         mark(f"asr {lang}")

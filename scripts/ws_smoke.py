@@ -36,6 +36,7 @@ async def run(url: str, wav: str, lang: str, timeout: float, verbose: bool, inse
     ctx = None
     if url.startswith("wss://"):
         ctx = ssl.create_default_context()
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
         if insecure:                                   # the demo box uses a self-signed certificate
             ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
     async with websockets.connect(url, max_size=None, ssl=ctx) as ws:

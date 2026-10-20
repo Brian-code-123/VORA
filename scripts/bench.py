@@ -7,6 +7,7 @@ import os
 import platform
 import statistics
 import time
+from pathlib import Path
 
 import numpy as np
 import psutil
@@ -167,7 +168,7 @@ async def main() -> None:
            "rss_delta_load_mb": round((proc.memory_info().rss - rss0) / 2**20), "rows": rows, "oracle_rows": orows}
     p = ROOT / "results"
     p.mkdir(exist_ok=True)
-    open(a.out, "w").write(json.dumps(res, ensure_ascii=False, indent=1))
+    Path(a.out).write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps({k: res[k] for k in ("host", "n", "skipped", "latency_ms_audio_mode", "latency_ms_oracle_text", "estimated_total_ms", "rss_mb_after_load")}, ensure_ascii=False, indent=1))
 
 
