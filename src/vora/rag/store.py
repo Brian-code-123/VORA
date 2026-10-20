@@ -35,13 +35,18 @@ class Lane:
 _TITLE = re.compile(r"^([^:：.。!?！？]{2,40})([:：])")
 
 
+CHUNKS_FILE = "chunks.json"
+
+
 def split_passages(text: str) -> list[tuple[str, str]]:
     """[(sentence, embedding text)]: the first sentence already carries the "Title:", later ones get it prepended so a
     sentence like "The M100 warranty is 1 year." is still about warranties when it is embedded and when it is read."""
     sents = [x.strip() for x in split_sentences(text) if x.strip()]
     m = _TITLE.match(text.strip())
     title = m.group(1).strip() if m and len(m.group(1).split()) <= 6 else ""
-    sep = (m.group(2) + (" " if m.group(2) == ":" else "")) if title else ""
+    sep = ""
+    if title:
+        sep = m.group(2) + (" " if m.group(2) == ":" else "")
     return [(s, s if j == 0 or not title else f"{title}{sep}{s}") for j, s in enumerate(sents)]
 
 
@@ -75,13 +80,13 @@ def save(index_dir: Path, chunks: list[dict], vecs: dict[str, np.ndarray], meta:
     for lang, (pv, rows) in (passages or {}).items():
         np.save(index_dir / f"passages_{lang}.npy", pv.astype(np.float32))
         (index_dir / f"passages_{lang}.json").write_text(json.dumps(rows, ensure_ascii=False))
-    (index_dir / "chunks.json").write_text(json.dumps(chunks, ensure_ascii=False))
+    (index_dir / CHUNKS_FILE).write_text(json.dumps(chunks, ensure_ascii=False))
     (index_dir / "meta.json").write_text(json.dumps(meta))
 
 
 def exists(index_dir: Path) -> bool:
     d = Path(index_dir)
-    return (d / "chunks.json").exists() and any(d.glob("faiss_*.index"))
+    return (d / CHUNKS_FILE).exists() and any(d.glob("faiss_*.index"))
 
 
 def load(index_dir: Path):
@@ -89,7 +94,7 @@ def load(index_dir: Path):
     d = Path(index_dir)
     if not exists(d):
         raise FileNotFoundError(f"no index in {d}: run python -m vora.rag.ingest (older single-index layouts must be rebuilt)")
-    chunks = json.loads((d / "chunks.json").read_text())
+    chunks = json.loads((d / CHUNKS_FILE).read_text())
     lanes = {}
     for f in sorted(d.glob("faiss_*.index")):
         lang = f.stem.split("_", 1)[1]

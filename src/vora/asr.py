@@ -102,6 +102,52 @@ class AsrSession:
         r = self.rec.get_result(self.stream)
         return getattr(r, "text", r)
 
+    def _delta(self, raw: str) -> str:
+        """Text added since the last final."""
+        if raw.startswith(self._emitted):
+            return _norm(raw[len(self._emitted):])
+        self.rewrites += 1                     # beam search rewrote the tail of what we already sent
+        k = len(os.path.commonprefix([raw, self._emitted]))
+        if " " in raw and k < len(raw):
+            k = raw.rfind(" ", 0, k + 1) + 1       # snap back to a word boundary (English); Chinese has none
+        return _norm(raw[k:])
+
+    def _partials(self, text: str) -> list[AsrEvent]:
+        events: list[AsrEvent] = []
+        if text and text != self._last:
+            self._same = 0
+            events.append(AsrEvent("partial", text, False))
+        elif text:
+            self._same += 1
+            if self._same == 2:
+                events.append(AsrEvent("partial", text, True))
+        self._last = text
+        return events
+
+    def _still_holding(self, text: str, clean: str, forced: bool, n_samples: int) -> bool:
+        """User stopped mid-sentence: keep decoding the SAME stream and wait up to hold_ms of audio for more words."""
+        if forced or self.hold_ms <= 0 or not looks_incomplete(clean, self.lang) or self._held >= self.hold_total_cap_ms * SR // 1000:
+            return False
+        if self._hold_since is None or text != self._hold_text:
+            self._hold_since, self._hold_text = self._stream_samples, text
+        self._held += n_samples
+        return self._stream_samples - self._hold_since < self.hold_ms * SR // 1000
+
+    def _reset_stream(self) -> None:
+        self.rec.reset(self.stream)
+        self._reset_state()
+
+    def _finalize(self, raw: str, clean: str) -> list[AsrEvent]:
+        held_ms = round(self._held * 1000 / SR, 1)
+        self._hold_since, self._hold_text, self._held = None, "", 0
+        events: list[AsrEvent] = []
+        if len(re.sub(r"\W+", "", clean)) >= 2:   # a 1-letter "s" or a lone "uh" must not start a turn
+            events.append(AsrEvent("final", clean, True, held_ms=held_ms))
+        self._emitted, self._last, self._same, self._since_final = raw, "", 0, 0
+        if self._stream_samples > self.RESET_AFTER_S * SR:
+            self._reset_stream()
+        return events
+
     def feed(self, pcm16: bytes) -> list[AsrEvent]:
         x = np.frombuffer(pcm16, dtype=np.int16).astype(np.float32) / 32768.0
         if x.size == 0:
@@ -112,44 +158,15 @@ class AsrSession:
         while self.rec.is_ready(self.stream):
             self.rec.decode_stream(self.stream)
         raw = self._raw()
-        if raw.startswith(self._emitted):
-            new = raw[len(self._emitted):]
-        else:                                  # beam search rewrote the tail of what we already sent
-            self.rewrites += 1
-            k = len(os.path.commonprefix([raw, self._emitted]))
-            if " " in raw and k < len(raw):
-                k = raw.rfind(" ", 0, k + 1) + 1       # snap back to a word boundary (English); Chinese has none
-            new = raw[k:]
-        text = _norm(new)
-        events: list[AsrEvent] = []
-        if text and text != self._last:
-            self._same = 0
-            events.append(AsrEvent("partial", text, False))
-        elif text:
-            self._same += 1
-            if self._same == 2:
-                events.append(AsrEvent("partial", text, True))
-        self._last = text
+        text = self._delta(raw)
+        events = self._partials(text)
         endpoint = self.rec.is_endpoint(self.stream)
         forced = self._since_final > MAX_UTTERANCE_S * SR
         clean = strip_disfluency(text, self.lang)
         if text and (endpoint or forced):
-            if not forced and self.hold_ms > 0 and looks_incomplete(clean, self.lang) and self._held < self.hold_total_cap_ms * SR // 1000:
-                # user stopped mid-sentence: keep decoding the SAME stream and wait up to hold_ms of audio for more words
-                if self._hold_since is None or text != self._hold_text:
-                    self._hold_since, self._hold_text = self._stream_samples, text
-                self._held += x.size
-                if self._stream_samples - self._hold_since < self.hold_ms * SR // 1000:
-                    return events
-            held_ms = round(self._held * 1000 / SR, 1)
-            self._hold_since, self._hold_text, self._held = None, "", 0
-            if len(re.sub(r"\W+", "", clean)) >= 2:   # a 1-letter "s" or a lone "uh" must not start a turn
-                events.append(AsrEvent("final", clean, True, held_ms=held_ms))
-            self._emitted, self._last, self._same, self._since_final = raw, "", 0, 0
-            if self._stream_samples > self.RESET_AFTER_S * SR:
-                self.rec.reset(self.stream)
-                self._reset_state()
+            if self._still_holding(text, clean, forced, x.size):
+                return events
+            events.extend(self._finalize(raw, clean))
         elif endpoint and self._stream_samples > self.RESET_AFTER_S * SR and not text:
-            self.rec.reset(self.stream)    # long silence-only stretch: bound the stream
-            self._reset_state()
+            self._reset_stream()    # long silence-only stretch: bound the stream
         return events

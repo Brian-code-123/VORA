@@ -69,6 +69,39 @@ async def _send_loop(ws, pipe: Pipeline) -> None:
         return
 
 
+async def _handle_text(ws, pipe: Pipeline, models: Models, s: Settings, text: str, lang: str) -> tuple[bool, str]:
+    """(keep serving, current language) after one text frame."""
+    if len(text) > s.max_text_frame_bytes:
+        await _close(ws, 1009)
+        return False, lang
+    try:
+        d = json.loads(text)
+    except ValueError:
+        return True, lang
+    if not isinstance(d, dict):
+        return True, lang
+    if d.get("type") == "stop":
+        return False, lang
+    if d.get("type") == "config" and d.get("lang") in ("en", "zh") and d["lang"] != lang:
+        lang = d["lang"]
+        await pipe.close()
+        pipe.asr = models.make_asr(lang)
+    return True, lang
+
+
+async def _handle_frame(ws, pipe: Pipeline, models: Models, s: Settings, msg: dict, lang: str) -> tuple[bool, str]:
+    """(keep serving, current language) after one websocket message."""
+    if msg.get("bytes") is not None:
+        if len(msg["bytes"]) > s.max_frame_bytes:
+            await _close(ws, 1009)
+            return False, lang
+        await pipe.on_audio(msg["bytes"])
+        return True, lang
+    if msg.get("text"):
+        return await _handle_text(ws, pipe, models, s, msg["text"], lang)
+    return True, lang
+
+
 async def serve_session(ws, models: Models, s: Settings, sessions: set, already_accepted: bool = False) -> None:
     """Duck-typed on `ws` (accept/receive/send_json/send_bytes/close) so tests can drive it with a stub."""
     if not already_accepted:
@@ -86,27 +119,9 @@ async def serve_session(ws, models: Models, s: Settings, sessions: set, already_
             msg = await asyncio.wait_for(ws.receive(), s.idle_timeout_s)
             if msg["type"] == "websocket.disconnect":
                 break
-            if msg.get("bytes") is not None:
-                if len(msg["bytes"]) > s.max_frame_bytes:
-                    await _close(ws, 1009)
-                    break
-                await pipe.on_audio(msg["bytes"])
-            elif msg.get("text"):
-                if len(msg["text"]) > s.max_text_frame_bytes:
-                    await _close(ws, 1009)
-                    break
-                try:
-                    d = json.loads(msg["text"])
-                except ValueError:
-                    continue
-                if not isinstance(d, dict):
-                    continue
-                if d.get("type") == "stop":
-                    break
-                if d.get("type") == "config" and d.get("lang") in ("en", "zh") and d["lang"] != lang:
-                    lang = d["lang"]
-                    await pipe.close()
-                    pipe.asr = models.make_asr(lang)
+            keep_going, lang = await _handle_frame(ws, pipe, models, s, msg, lang)
+            if not keep_going:
+                break
     except asyncio.TimeoutError:
         await _close(ws, 1000)
     except ClientStalled:  # client keeps the socket open but never reads: free the slot
@@ -160,6 +175,21 @@ class ClientFiles(StaticFiles):
         return resp
 
 
+def _origin_allowed(ws, s: Settings) -> bool:
+    origin = ws.headers.get("origin")
+    return not (origin and urlparse(origin).netloc != ws.headers.get("host") and origin not in s.allowed_origins)
+
+
+async def _load_models(app: FastAPI, s: Settings, models: Models | None, loader: Callable[[Settings], Models] | None) -> None:
+    try:
+        app.state.models = await asyncio.to_thread(loader or Models.load, s) if models is None else models
+        app.state.ready = True
+    except Exception as e:  # noqa: BLE001
+        # surfaced on /health and in the log, never a silent 503 forever
+        log.exception("model load failed")
+        app.state.error = f"{type(e).__name__}: {e}"
+
+
 def create_app(models: Models | None = None, settings: Settings | None = None,
                loader: Callable[[Settings], Models] | None = None) -> FastAPI:
     s = settings or Settings()
@@ -169,15 +199,7 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
         app.state.ready, app.state.models, app.state.sessions, app.state.error = False, models, set(), None
         app.state.throttle = AuthThrottle(s.auth_max_fails, s.auth_window_s)
 
-        async def load():
-            try:
-                app.state.models = await asyncio.to_thread(loader or Models.load, s) if models is None else models
-                app.state.ready = True
-            except Exception as e:  # noqa: BLE001 - surfaced on /health and in the log, never a silent 503 forever
-                log.exception("model load failed")
-                app.state.error = f"{type(e).__name__}: {e}"
-
-        task = asyncio.create_task(load())  # not awaited: /health answers 503 while models warm up
+        task = asyncio.create_task(_load_models(app, s, models, loader))  # not awaited: /health answers 503 while models warm up
         yield
         task.cancel()
 
@@ -193,8 +215,7 @@ def create_app(models: Models | None = None, settings: Settings | None = None,
 
     @app.websocket("/ws")
     async def ws_endpoint(ws: WebSocket):
-        origin = ws.headers.get("origin")
-        if origin and urlparse(origin).netloc != ws.headers.get("host") and origin not in s.allowed_origins:
+        if not _origin_allowed(ws, s):
             await _close(ws, 1008)   # any web page could otherwise drive a localhost server from the user's browser
             return
         await ws.accept()          # accept first: a refused handshake reaches a browser as a bare 1006, without the reason

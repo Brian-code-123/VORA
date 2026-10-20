@@ -25,7 +25,7 @@ def _lang(text: str) -> str:
 
 def _terms(text: str) -> set[str]:
     t = text.lower()
-    words = {w for w in re.findall(r"[a-z0-9]{3,}", t)}
+    words = set(re.findall(r"[a-z0-9]{3,}", t))
     cjk = "".join(_CJK.findall(t))
     return words | {cjk[i:i + 2] for i in range(len(cjk) - 1)}
 
@@ -50,6 +50,87 @@ def chatml_prompt(msgs: list[dict], think_off: bool) -> str:
     makes it answer directly (and keeps <think> tokens out of the stream the guard reads)."""
     out = "".join(f"<|im_start|>{m['role']}\n{m['content']}<|im_end|>\n" for m in msgs) + "<|im_start|>assistant\n"
     return out + "<think>\n\n</think>\n\n" if think_off else out
+
+
+class _StreamGuard:
+    """Judges a streamed answer against the retrieved text. The first tokens are held back until the answer can be
+    judged, and digit-ish tokens until the whole number is known (a number is judged in context: "X" + "200" is a model code)."""
+
+    def __init__(self, question: str, hits: list[Hit]) -> None:
+        self.question, self.hits = question, hits
+        self.buf: list[str] = []
+        self.pending: list[str] = []       # digit-ish tokens held back until the whole number is known
+        self.said: list[str] = []          # everything released so far
+        self.decided = False
+        self.ref = _terms(hits[0].text) | _terms(question)
+        self.texts = [h.text for h in hits]
+        self.chunks_text = " ".join(self.texts)
+
+    def _fallback(self) -> str:
+        return extractive_answer(self.question, self.texts)
+
+    def _number_ok(self) -> bool:
+        return not numbers_mismatch(self.chunks_text, "".join(self.said) + "".join(self.pending))
+
+    def _decide(self) -> str | None:
+        """Head = buffered tokens minus a trailing, possibly incomplete number (that moves to `pending`)."""
+        while self.buf and is_digitish(self.buf[-1]):
+            self.pending.insert(0, self.buf.pop())
+        return Llm._replacement(self.question, self.hits, "".join(self.buf), self.ref)
+
+    def feed(self, tok: str | None) -> tuple[list[str], bool]:
+        """(text to release now, stop). A stop means the rest of the model output is replaced or dropped."""
+        if not tok:
+            return [], False
+        return self._feed_body(tok) if self.decided else self._feed_head(tok)
+
+    def _feed_head(self, tok: str) -> tuple[list[str], bool]:
+        self.buf.append(tok)
+        if len(self.buf) < _DECIDE_TOKENS:
+            return [], False
+        self.decided = True
+        fix = self._decide()
+        if fix is not None:
+            return [fix], True
+        head = "".join(self.buf)
+        self.said.append(head)
+        return [head], False
+
+    def _feed_body(self, tok: str) -> tuple[list[str], bool]:
+        if is_digitish(tok):
+            self.pending.append(tok)
+            return [], False
+        out: list[str] = []
+        if self.pending:
+            if not self._number_ok():                      # invented figure: replace the rest with the real sentence
+                return [self._fallback()], True
+            number = "".join(self.pending)
+            self.said.append(number)
+            out.append(number)
+            self.pending.clear()
+        self.said.append(tok)
+        out.append(tok)
+        return out, False
+
+    def finish(self) -> list[str]:
+        """What is still held back when the model stops."""
+        if not self.decided and self.buf:  # short answer that ended before the decision point
+            fix = self._decide()
+            text = "".join(self.buf) + "".join(self.pending)
+            return [text if fix is None and (not self.pending or self._number_ok()) else self._fallback()]
+        if self.pending:
+            return ["".join(self.pending) if self._number_ok() else self._fallback()]
+        return []
+
+    def tail(self) -> list[str]:
+        """Text to add after a finished answer: it only rephrased the question, or it lacks the figure the text has."""
+        if not self.decided:
+            return []
+        spoken = "".join(self.said) + "".join(self.pending)
+        wants_number = expects_number(self.question)
+        rephrased = not wants_number and is_question_echo(spoken, self.question, self.chunks_text)
+        missing_figure = wants_number and not has_number(spoken) and has_number(self.chunks_text)
+        return [" " + self._fallback()] if rephrased or missing_figure else []
 
 
 class Llm:
@@ -92,6 +173,23 @@ class Llm:
     def _ntok(self, text: str) -> int:
         return len(self.llm.tokenize(text.encode(), add_bos=False))
 
+    def _fit_sentences(self, text: str, question: str, used: int, budget: int) -> tuple[str, int]:
+        """The sentence that best matches the question, grown outwards while the budget allows, in original order."""
+        sents = split_sentences(text)
+        best = best_sentence(text, question)
+        keep = {sents.index(best)} if best in sents else {0}
+        centre = next(iter(keep))
+        used += self._ntok(sents[centre])
+        for j in sorted(range(len(sents)), key=lambda j: abs(j - centre)):
+            if j in keep:
+                continue
+            m = self._ntok(sents[j])
+            if used + m > budget:
+                break
+            keep.add(j)
+            used += m
+        return " ".join(sents[j] for j in sorted(keep)), used
+
     def _context(self, question: str, hits: list[Hit]) -> str:
         """Top hit whole if it fits the budget, else its sentences that best match the question (original order);
         more hits only if they still fit. Keeps prefill (and first-token time) short without cutting the answer."""
@@ -102,19 +200,8 @@ class Llm:
                 parts.append(h.text)
                 used += n
             elif i == 0:
-                sents = split_sentences(h.text)
-                best = best_sentence(h.text, question)
-                keep = {sents.index(best)} if best in sents else {0}
-                used += self._ntok(sents[next(iter(keep))])
-                for j in sorted(range(len(sents)), key=lambda j: abs(j - next(iter(keep)))):   # grow outwards from the best one
-                    if j in keep:
-                        continue
-                    m = self._ntok(sents[j])
-                    if used + m > budget:
-                        break
-                    keep.add(j)
-                    used += m
-                parts.append(" ".join(sents[j] for j in sorted(keep)))
+                text, used = self._fit_sentences(h.text, question, used, budget)
+                parts.append(text)
             else:
                 break
         return "\n".join(f"[{i + 1}] {p}" for i, p in enumerate(parts))
@@ -154,63 +241,18 @@ class Llm:
             cancel.clear()
         gen = None
         try:
-            msgs = self._messages(question, hits)
-            gen = self._deltas(msgs)
-            buf, decided, ref = [], False, _terms(hits[0].text) | _terms(question)
-            pending: list[str] = []          # digit-ish tokens held back until the whole number is known
-            chunks_text = " ".join(h.text for h in hits)
-
-            said: list[str] = []             # everything yielded so far (a number is judged in context: "X" + "200" is a model code)
-
-            def number_ok() -> bool:
-                return not numbers_mismatch(chunks_text, "".join(said) + "".join(pending))
-
-            def decide() -> str | None:
-                """Head = buffered tokens minus a trailing, possibly incomplete number (that moves to `pending`)."""
-                while buf and is_digitish(buf[-1]):
-                    pending.insert(0, buf.pop())
-                return self._replacement(question, hits, "".join(buf), ref)
-
+            gen = self._deltas(self._messages(question, hits))
+            guard = _StreamGuard(question, hits)
             for tok in gen:
                 if cancel.is_set():
                     return
-                if not tok:
-                    continue
-                if not decided:
-                    buf.append(tok)
-                    if len(buf) < _DECIDE_TOKENS:
-                        continue
-                    decided = True
-                    fix = decide()
-                    if fix is not None:
-                        yield fix
-                        return
-                    said.append("".join(buf))
-                    yield "".join(buf)
-                    continue
-                if is_digitish(tok):
-                    pending.append(tok)
-                    continue
-                if pending:
-                    if not number_ok():                      # invented figure: replace the rest with the real sentence
-                        yield extractive_answer(question, [h.text for h in hits])
-                        return
-                    said.append("".join(pending))
-                    yield "".join(pending)
-                    pending.clear()
-                said.append(tok)
-                yield tok
-            if not decided and buf:  # short answer that ended before the decision point
-                fix = decide()
-                text = "".join(buf) + "".join(pending)
-                yield text if fix is None and (not pending or number_ok()) else extractive_answer(question, [h.text for h in hits])
-            elif pending:
-                yield "".join(pending) if number_ok() else extractive_answer(question, [h.text for h in hits])
-            if decided and not cancel.is_set() and not expects_number(question) and is_question_echo("".join(said) + "".join(pending), question, chunks_text):
-                yield " " + extractive_answer(question, [h.text for h in hits])   # the whole answer only rephrased the question: add the text
-            if decided and not cancel.is_set() and expects_number(question) and not has_number("".join(said) + "".join(pending)) \
-                    and has_number(chunks_text):
-                yield " " + extractive_answer(question, [h.text for h in hits])   # asked "how far/long/much": the figure is in the text
+                out, done = guard.feed(tok)
+                yield from out
+                if done:
+                    return
+            yield from guard.finish()
+            if not cancel.is_set():
+                yield from guard.tail()
         finally:
             if gen is not None:
                 gen.close()

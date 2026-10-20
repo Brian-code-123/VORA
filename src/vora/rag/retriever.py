@@ -33,7 +33,7 @@ class Retriever:
         self.s = settings
         self.lanes, self.chunks, meta = store.load(index_dir or settings.index_dir)
         ms = meta.get("min_score", settings.min_score)
-        self.min_score = ms if isinstance(ms, dict) else {lang: ms for lang in self.lanes}   # per language
+        self.min_score = ms if isinstance(ms, dict) else dict.fromkeys(self.lanes, ms)   # per language
         self._emb: dict[str, Embedder] = {}      # loaded on first query in that language
         self.bm25 = BM25Okapi([tokenize(c["text"]) for c in self.chunks])
         gpath = settings.kb_dir / "glossary.json"
@@ -42,27 +42,28 @@ class Retriever:
         self.synonyms = json.loads(spath.read_text(encoding="utf-8")) if spath.exists() else {}
         self._variants = [(canon, _compact(v)) for canon, vs in self.glossary.items() for v in [canon, *vs]]
 
+    def _best_canon(self, words: list[str], i: int) -> tuple[str | None, int]:
+        """Glossary form that the 1 to 4 words starting at i most resemble (fuzzy ratio >= 85), and how many words it covers."""
+        best = (0.0, None, 1)
+        for n in range(min(4, len(words) - i), 0, -1):
+            c = _compact(" ".join(words[i:i + n]))
+            if len(c) < 3:
+                continue
+            for canon, v in self._variants:
+                r = fuzz.ratio(c, v)
+                if r >= 85 and r > best[0]:
+                    best = (r, canon, n)
+        return best[1], best[2]
+
     def normalize_query(self, text: str) -> str:
         """Fuzzy-map ASR-mangled product terms ("vora x 200") to glossary canonical forms ("VORA-X200")."""
         def fix(m: re.Match) -> str:
             words = m.group(0).split(" ")
             i, out = 0, []
             while i < len(words):
-                best = (0.0, None, 1)
-                for n in range(min(4, len(words) - i), 0, -1):
-                    c = _compact(" ".join(words[i:i + n]))
-                    if len(c) < 3:
-                        continue
-                    for canon, v in self._variants:
-                        r = fuzz.ratio(c, v)
-                        if r >= 85 and r > best[0]:
-                            best = (r, canon, n)
-                if best[1]:
-                    out.append(best[1])
-                    i += best[2]
-                else:
-                    out.append(words[i])
-                    i += 1
+                canon, n = self._best_canon(words, i)
+                out.append(canon or words[i])
+                i += n
             return " ".join(out)
         return _LATIN_RUN.sub(fix, text)
 

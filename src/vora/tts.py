@@ -21,6 +21,8 @@ _CODE = re.compile(r"\b([A-Za-z]+)-?([A-Za-z]?)(\d+)\b")
 _ZH_DIGITS = str.maketrans("0123456789.", "零一二三四五六七八九点")
 
 
+TOKENS_FILE = "tokens.txt"
+
 def lang_of(text: str) -> Literal["zh", "en"]:
     # zh when CJK characters >= Latin words: "請問 VORA Box 支援 WiFi 嗎" is Chinese with English terms
     return "zh" if len(_CJK.findall(text)) >= max(1, len(re.findall(r"[A-Za-z]+", text))) else "en"
@@ -111,7 +113,7 @@ def ensure_patched_lexicon(zh_dir: Path) -> Path:
     out = zh_dir / "lexicon.patched.txt"
     if out.exists():
         return out
-    tokens = {l.split(" ")[0] for l in (zh_dir / "tokens.txt").read_text(encoding="utf-8").splitlines() if l.strip()}
+    tokens = {l.split(" ")[0] for l in (zh_dir / TOKENS_FILE).read_text(encoding="utf-8").splitlines() if l.strip()}
     lines = []
     for line in (zh_dir / "lexicon.txt").read_text(encoding="utf-8").splitlines():
         parts = line.split()
@@ -124,7 +126,7 @@ def ensure_patched_lexicon(zh_dir: Path) -> Path:
 
 def _usable_zh_chars(zh_dir: Path) -> set[str]:
     """Characters the zh voice can really say, from the patched lexicon (phonemes must all be in tokens.txt)."""
-    tokens = {l.split(" ")[0] for l in (zh_dir / "tokens.txt").read_text(encoding="utf-8").splitlines() if l.strip()}
+    tokens = {l.split(" ")[0] for l in (zh_dir / TOKENS_FILE).read_text(encoding="utf-8").splitlines() if l.strip()}
     out = set()
     for line in ensure_patched_lexicon(zh_dir).read_text(encoding="utf-8").splitlines():
         parts = line.split()
@@ -149,8 +151,8 @@ class Tts:
         en = en_voice_dir(settings)
         zh = d / "tts_zh"
         self.voices = {
-            "en": _voice(str(pick_en_model(en, settings.tts_en_fp32)), str(en / "tokens.txt"), data_dir=str(en / "espeak-ng-data")),
-            "zh": _voice(str(next(zh.glob("*.onnx"))), str(zh / "tokens.txt"), lexicon=str(ensure_patched_lexicon(zh))),
+            "en": _voice(str(pick_en_model(en, settings.tts_en_fp32)), str(en / TOKENS_FILE), data_dir=str(en / "espeak-ng-data")),
+            "zh": _voice(str(next(zh.glob("*.onnx"))), str(zh / TOKENS_FILE), lexicon=str(ensure_patched_lexicon(zh))),
         }
         self.zh_lexicon = _usable_zh_chars(zh)
         self.oov_total = 0   # zh characters the voice cannot say (counted, logged, exposed as metrics tts_oov)
@@ -160,6 +162,28 @@ class Tts:
     def cancel(self) -> None:
         self._cancel.set()
 
+    def _zh_prepare(self, run: str) -> str:
+        run = zh_numbers(run)
+        oov = [c for c in run if _CJK.match(c) and c not in self.zh_lexicon]
+        if oov:
+            self.oov_total += len(oov)
+            log.warning("TTS OOV: zh voice cannot say %s (skipped)", "".join(sorted(set(oov))))
+        return run
+
+    def _render(self, lang: str, run: str, cancel: threading.Event) -> np.ndarray | None:
+        """16 kHz int16 samples for one single-script run, or None when there is nothing to say."""
+        if lang == "zh":
+            run = self._zh_prepare(run)
+        v = self.voices[lang]
+        with self._lock:  # released before chunks are yielded: a slow client must not hold the voice
+            audio = v.generate(run.strip(), sid=0, speed=1.0, callback=lambda s, p: 0 if cancel.is_set() else 1)  # sherpa 1.13: 1 = continue, 0 = stop (its docstring says the reverse)
+        x = np.asarray(audio.samples, dtype=np.float32)
+        if x.size == 0 or audio.sample_rate <= 0:   # all-OOV run: nothing to say (used to crash in resample)
+            return None
+        if audio.sample_rate != SR:
+            x = resample(x, audio.sample_rate, SR)
+        return (np.clip(x, -1, 1) * 32767).astype(np.int16)
+
     def synth(self, text: str, cancel: threading.Event | None = None) -> Iterator[bytes]:
         if cancel is None:
             cancel = self._cancel
@@ -167,21 +191,9 @@ class Tts:
         for lang, run in split_by_script(sanitize_for_tts(text)):
             if not re.search(r"\w", run):
                 continue
-            if lang == "zh":
-                run = zh_numbers(run)
-                oov = [c for c in run if _CJK.match(c) and c not in self.zh_lexicon]
-                if oov:
-                    self.oov_total += len(oov)
-                    log.warning("TTS OOV: zh voice cannot say %s (skipped)", "".join(sorted(set(oov))))
-            v = self.voices[lang]
-            with self._lock:  # released before chunks are yielded: a slow client must not hold the voice
-                audio = v.generate(run.strip(), sid=0, speed=1.0, callback=lambda s, p: 0 if cancel.is_set() else 1)  # sherpa 1.13: 1 = continue, 0 = stop (its docstring says the reverse)
-            x = np.asarray(audio.samples, dtype=np.float32)
-            if x.size == 0 or audio.sample_rate <= 0:   # all-OOV run: nothing to say (used to crash in resample)
+            pcm = self._render(lang, run, cancel)
+            if pcm is None:
                 continue
-            if audio.sample_rate != SR:
-                x = resample(x, audio.sample_rate, SR)
-            pcm = (np.clip(x, -1, 1) * 32767).astype(np.int16)
             for i in range(0, len(pcm), CHUNK):
                 if cancel.is_set():
                     return

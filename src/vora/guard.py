@@ -37,22 +37,30 @@ def _neg_count_en(words: list[str]) -> int:
     return sum(1 for w in words if w in _EN_NEG or w.endswith("n't"))
 
 
+def _zh_sentence_negates(sent: str, kws: list[str]) -> bool:
+    for kw in kws:
+        for m in re.finditer(re.escape(kw), sent):
+            win = sent[max(0, m.start() - 6): m.end() + 2]
+            if sum(win.count(ch) for ch in _ZH_NEG) % 2 == 1:
+                return True
+    return False
+
+
+def _en_sentence_negates(sent: str, kws: list[str]) -> bool:
+    words = re.findall(r"[a-z0-9'\-]+", sent)
+    for i, w in enumerate(words):
+        near_topic = any(w.startswith(k) or (k.startswith(w) and len(w) > 3) for k in kws)
+        if near_topic and _neg_count_en(words[max(0, i - 6): i + 7]) % 2 == 1:
+            return True
+    return False
+
+
 def _chunk_negates_topic(question: str, chunk: str) -> bool:
     """Per sentence: a negation cue within 6 words / 6 chars of a question keyword; an even number of cues cancels."""
     kws = _keywords(question)
     for sent in (x.lower() for x in split_sentences(chunk)):
-        if _is_zh(sent):
-            for kw in kws:
-                for m in re.finditer(re.escape(kw), sent):
-                    win = sent[max(0, m.start() - 6): m.end() + 2]
-                    if sum(win.count(ch) for ch in _ZH_NEG) % 2 == 1:
-                        return True
-            continue
-        words = re.findall(r"[a-z0-9'\-]+", sent)
-        for i, w in enumerate(words):
-            if any(w.startswith(k) or (k.startswith(w) and len(w) > 3) for k in kws):
-                if _neg_count_en(words[max(0, i - 6): i + 7]) % 2 == 1:
-                    return True
+        if (_zh_sentence_negates if _is_zh(sent) else _en_sentence_negates)(sent, kws):
+            return True
     return False
 
 
@@ -127,6 +135,34 @@ def numbers_mismatch(chunk: str, head: str) -> bool:
     return bool(h) and not h <= _numbers(chunk)
 
 
+def _yes_no_answer(question: str, chunk: str, sents: list[str], scored: list[tuple[int, int]]) -> str | None:
+    neg = negating_sentence(question, chunk)
+    if neg:
+        return neg
+    if len(sents) > 1:
+        order = sorted(sorted(scored, key=lambda t: (-t[0], t[1]))[:2], key=lambda t: t[1])
+        return " ".join(sents[i] for _, i in order)
+    return None
+
+
+def _best_sentence_or_chunk(chunk: str, sents: list[str], scored: list[tuple[int, int]]) -> str:
+    top = max(scored)[0]
+    return sents[[i for sc, i in scored if sc == top][0]] if len(sents) > 1 else chunk.strip()
+
+
+def _answer_from_chunk(question: str, chunk: str, kws: set[str], yes_no: bool) -> str | None:
+    """None when the chunk shares nothing with the question (the caller tries the next chunk)."""
+    sents = split_sentences(chunk)
+    scored = [(sum(1 for k in kws if k in x.lower()), i) for i, x in enumerate(sents)]
+    if not scored or max(scored)[0] == 0:
+        return None
+    if yes_no:
+        answer = _yes_no_answer(question, chunk, sents, scored)
+        if answer is not None:
+            return answer
+    return _best_sentence_or_chunk(chunk, sents, scored)
+
+
 def extractive_answer(question: str, chunks: list[str]) -> str:
     """Honest answer straight from the text, from the highest-ranked chunk that shares anything with the question (a lower
     chunk only gets a say when the better ones are unrelated). Yes/no question: the sentence that negates the topic if any,
@@ -135,33 +171,26 @@ def extractive_answer(question: str, chunks: list[str]) -> str:
     yes_no = is_yes_no_question(question)
     kws = set(_keywords(question))
     for c in chunks:
-        sents = split_sentences(c)
-        scored = [(sum(1 for k in kws if k in x.lower()), i) for i, x in enumerate(sents)]
-        if not scored or max(scored)[0] == 0:
-            continue                                   # nothing in common with the question: try the next chunk
-        if yes_no:
-            neg = negating_sentence(question, c)
-            if neg:
-                return neg
-            if len(sents) > 1:
-                order = sorted(sorted(scored, key=lambda t: (-t[0], t[1]))[:2], key=lambda t: t[1])
-                return " ".join(sents[i] for _, i in order)
-        top = max(scored)[0]
-        return sents[[i for sc, i in scored if sc == top][0]] if len(sents) > 1 else c.strip()
+        answer = _answer_from_chunk(question, c, kws, yes_no)
+        if answer is not None:
+            return answer
     return chunks[0] if chunks else ""
 
 
-_EXPECTS_EN = re.compile(r"^\s*(how\s+(long|much|many|far|big|often|loud|tall|heavy|fast|old)|what(?:'s| is)?\s+(the\s+)?(temperature|power|size|price|cost|range|capacity|storage))\b", re.I)
-_EXPECTS_ZH = re.compile(r"(多久|多少|多大|多远|多长|多高|多重|几[年个天月秒米瓦核次]|范围|距离|温度|功耗|价格|售价|容量)")
-_NUMWORD = re.compile(r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|hundred|thousand)\b", re.I)
+_EXPECTS_EN = (re.compile(r"^\s*how\s+(long|much|many|far|big|often|loud|tall|heavy|fast|old)\b", re.I),
+               re.compile(r"^\s*what(?:'s| is)?\s+(the\s+)?(temperature|power|size|price|cost|range|capacity|storage)\b", re.I))
+_EXPECTS_ZH = (re.compile(r"(多久|多少|多大|多远|多长|多高|多重|几[年个天月秒米瓦核次])"),
+               re.compile(r"(范围|距离|温度|功耗|价格|售价|容量)"))
+_NUMWORDS = (re.compile(r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b", re.I),
+             re.compile(r"\b(twenty|thirty|forty|fifty|hundred|thousand)\b", re.I))
 
 
 def expects_number(question: str) -> bool:
-    return bool(_EXPECTS_ZH.search(question) if _is_zh(question) else _EXPECTS_EN.search(question))
+    return any(p.search(question) for p in (_EXPECTS_ZH if _is_zh(question) else _EXPECTS_EN))
 
 
 def has_number(text: str) -> bool:
-    return bool(_NUM.search(text) or _NUMWORD.search(text) or re.search(r"[一二三四五六七八九十百千万两]", text))
+    return bool(_NUM.search(text) or any(p.search(text) for p in _NUMWORDS) or re.search(r"[一二三四五六七八九十百千万两]", text))
 
 
 _CODE = re.compile(r"(?<![A-Za-z0-9])[A-Za-z]\d{2,4}(?![A-Za-z0-9])")   # X200, M100 (also glued to CJK: "X200保修期"); not E-502 or Wi-Fi 6

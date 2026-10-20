@@ -38,47 +38,56 @@ class SentenceChunker:
         word = re.split(r"\s", self.buf[:i])[-1].lower()
         return word not in _ABBR
 
+    def _clause_long_enough(self, i: int) -> bool:
+        head = self.buf[: i + 1]
+        return len(head.strip()) >= (8 if _is_cjk(head) else 12)
+
+    def _scan_cut(self) -> int | None:
+        """First sentence end, or (before the first chunk) the first clause break that is long enough."""
+        for i, ch in enumerate(self.buf):
+            if ch in _END:
+                return i + 1
+            if ch == ".":
+                ends = self._period_ends_sentence(i)
+                if ends is None:
+                    return None
+                if ends:
+                    return i + 1
+            elif ch in _CLAUSE and not self.first_done and self._clause_long_enough(i):
+                return i + 1
+        return None
+
+    def _word_cut(self, n: int) -> int | None:
+        w = self.buf.split(" ")
+        if len(w) >= n + 1 and len(" ".join(w[:n])) >= int(3.5 * n):   # "You can" (7) must split, "Yes it" (6) must not
+            return len(" ".join(w[:n])) + 1
+        return None
+
+    def _limit_cut(self) -> int | None:
+        cjk = _is_cjk(self.buf)
+        limit = 60 if cjk else 120
+        if len(self.buf) < limit:
+            return None
+        if cjk:
+            return limit
+        sp = self.buf.rfind(" ", 0, limit)
+        return sp + 1 if sp > 0 else limit
+
+    def _next_cut(self) -> int | None:
+        cut = self._scan_cut()
+        # latency: the first audio chunk is synthesised at ~0.2x real time, so keep it to ~first_words words
+        if cut is None and not self.first_done and not _is_cjk(self.buf):
+            cut = self._word_cut(self.first_words)
+        if cut is None and self.first_done and not self.second_done and self.second_words and not _is_cjk(self.buf):
+            cut = self._word_cut(self.second_words)
+        return cut if cut is not None else self._limit_cut()
+
     def push(self, token: str) -> list[str]:
         self.buf += token
         out: list[str] = []
-        while True:
-            cut = None
-            for i, ch in enumerate(self.buf):
-                if ch in _END:
-                    cut = i + 1
-                    break
-                if ch == ".":
-                    r = self._period_ends_sentence(i)
-                    if r is None:
-                        break
-                    if r:
-                        cut = i + 1
-                        break
-                elif ch in _CLAUSE and not self.first_done:
-                    head = self.buf[: i + 1]
-                    if len(head.strip()) >= (8 if _is_cjk(head) else 12):
-                        cut = i + 1
-                        break
-            if cut is None and not self.first_done and not _is_cjk(self.buf):
-                # latency: the first audio chunk is synthesised at ~0.2x real time, so keep it to ~first_words words
-                n = self.first_words
-                w = self.buf.split(" ")
-                if len(w) >= n + 1 and len(" ".join(w[:n])) >= int(3.5 * n):   # "You can" (7) must split, "Yes it" (6) must not
-                    cut = len(" ".join(w[:n])) + 1
-            if cut is None and self.first_done and not self.second_done and self.second_words and not _is_cjk(self.buf):
-                w = self.buf.split(" ")
-                if len(w) >= self.second_words + 1 and len(" ".join(w[: self.second_words])) >= int(3.5 * self.second_words):
-                    cut = len(" ".join(w[: self.second_words])) + 1
-            if cut is None:
-                limit = 60 if _is_cjk(self.buf) else 120
-                if len(self.buf) >= limit:
-                    cut = limit
-                    if not _is_cjk(self.buf):
-                        sp = self.buf.rfind(" ", 0, limit)
-                        cut = sp + 1 if sp > 0 else limit
-                else:
-                    return out
+        while (cut := self._next_cut()) is not None:
             self._emit(cut, out)
+        return out
 
     def flush(self) -> list[str]:
         out: list[str] = []

@@ -120,6 +120,143 @@ def _lang(text: str) -> str:
     return "zh" if any("一" <= c <= "鿿" for c in text) else "en"
 
 
+class _TurnRun:
+    """State and worker threads of one answer. `llm_worker` and `tts_worker` run in executors and reach the event loop only
+    through run_coroutine_threadsafe. `gate` is set for a shadow turn: its output is held back until it is promoted."""
+
+    def __init__(self, pipe: "Pipeline", text: str, hits, trace: LatencyTrace, ev: threading.Event, gate: ShadowGate | None) -> None:
+        self.pipe, self.text, self.hits, self.trace, self.ev, self.gate = pipe, text, hits, trace, ev, gate
+        self.sent_q: queue.Queue = queue.Queue()
+        self.answer: list[str] = []      # every token, in order: the screen text must not depend on the droppable token messages
+        self.stamps: dict[str, float] = gate.stamps if gate is not None else {}
+        self.admitted = False
+        self._released = threading.Event()
+        self._rendered = 0
+
+    def stamp(self, is_filler: bool) -> None:
+        now = self.pipe.clock()
+        self.stamps.setdefault("first_audio", now)
+        if not is_filler:
+            self.stamps.setdefault("first_content", now)
+
+    def record_spoken(self, sentence: str) -> None:
+        if self.gate is not None:
+            with self.gate.lock:
+                if not self.gate.open.is_set():
+                    self.gate.spoken.append((self.pipe.clock(), sentence))
+                    return
+        self.pipe._spoken.append((self.pipe.clock(), sentence))
+
+    def _say(self, sentence: str, is_filler: bool) -> None:
+        self.record_spoken(sentence)
+        self.sent_q.put((sentence, is_filler))
+
+    def say_filler(self) -> None:
+        self._say(FILLER[_lang(self.text)], True)
+
+    def release_once(self) -> None:   # exactly one release per acquire, whichever path ends the turn first
+        if not self._released.is_set():
+            self._released.set()
+            self.pipe.ex.admission.release()
+
+    def _hold_token(self, tok: str) -> bool:
+        """True while a shadow turn is muted: the token waits in the gate instead of going to the client."""
+        if self.gate is None:
+            return False
+        with self.gate.lock:
+            held = not self.gate.open.is_set()
+            if held:
+                self.gate.tokens.append(tok)
+        return held
+
+    def _stream_answer(self, chunker: SentenceChunker) -> None:
+        for tok in self.pipe.llm.stream(self.text, self.hits, self.ev):
+            if self.ev.is_set():
+                return
+            self.answer.append(tok)
+            if "first_token" not in self.trace.marks:
+                self.trace.mark("first_token")
+            if not self._hold_token(tok):
+                asyncio.run_coroutine_threadsafe(
+                    self.pipe._emit_bg({"type": "token", "text": tok, "full": "".join(self.answer)}, droppable=True), self.pipe.loop)
+            for c in chunker.push(tok):
+                self._say(c, False)
+        for c in chunker.flush():
+            self._say(c, False)
+
+    def llm_worker(self) -> None:
+        if self.ev.is_set():
+            self.release_once()
+            return
+        chunker = SentenceChunker(first_words=self.pipe.s.first_chunk_words, second_words=self.pipe.s.second_chunk_words)
+        try:
+            self._stream_answer(chunker)
+        except Exception:  # noqa: BLE001 - a failing model must not kill the session: log it and say so
+            log.exception("LLM turn failed")
+            self.sent_q.put((BUSY[_lang(self.text)], False))
+        finally:
+            self.release_once()
+            self.sent_q.put(None)
+
+    def busy_worker(self) -> None:
+        self.sent_q.put((BUSY[_lang(self.text)], False))
+        self.sent_q.put(None)
+
+    def emit_audio(self, chunk: bytes, is_filler: bool) -> None:
+        self.stamp(is_filler)
+        asyncio.run_coroutine_threadsafe(self.pipe._put_audio(chunk, self.ev), self.pipe.loop).result()
+
+    def flush_buffered(self) -> None:
+        for pc, pf in self.gate.take_audio():
+            self.emit_audio(pc, pf)
+
+    def _flush_if_promoted(self) -> None:
+        if self.gate is not None and self.gate.open.is_set():
+            self.flush_buffered()
+
+    def _wait_for_promotion(self) -> bool:
+        """Shadow turn: pre-render only the first sentences, then wait for the final text. False if cancelled meanwhile."""
+        gate = self.gate
+        self._rendered += 1
+        while not gate.open.is_set() and self._rendered > SHADOW_PRERENDER_SENTENCES and not self.ev.is_set():
+            gate.open.wait(0.01)
+        if self.ev.is_set():
+            return False
+        if gate.open.is_set():
+            self.flush_buffered()
+        return True
+
+    def _speak(self, sentence: str, is_filler: bool) -> bool:
+        """Synthesise one sentence. False when the turn was cancelled meanwhile."""
+        gate = self.gate
+        if gate is not None and not self._wait_for_promotion():
+            return False
+        for chunk in self.pipe.tts.synth(sentence, self.ev):
+            if self.ev.is_set():
+                return False
+            if gate is not None:
+                with gate.lock:
+                    if not gate.open.is_set():
+                        gate.audio.append((chunk, is_filler))
+                        continue
+                self.flush_buffered()                          # anything pre-rendered goes out first
+            self.emit_audio(chunk, is_filler)
+        return True
+
+    def tts_worker(self) -> None:
+        while not self.ev.is_set():
+            try:
+                item = self.sent_q.get(timeout=0.01 if self.gate is not None else 0.05)
+            except queue.Empty:
+                self._flush_if_promoted()               # promoted while we were idle: release the pre-rendered audio now
+                continue
+            if item is None:
+                self._flush_if_promoted()
+                return
+            if not self._speak(*item):
+                return
+
+
 class Pipeline:
     def __init__(self, asr, retriever, llm, tts, settings: Settings, executors: Executors | None = None,
                  clock: Callable[[], float] = time.perf_counter, active_sessions: Callable[[], int] = lambda: 1):
@@ -210,23 +347,29 @@ class Pipeline:
             await self._cancel_shadow()                    # another user arrived: do not burn their CPU on a guess
         for e in events:
             if e.kind == "partial":
-                if not e.stable:
-                    self._change_times.append(self.clock())
-                self._last_partial = e.text
-                await self._emit({"type": "partial", "text": e.text, "stable": e.stable}, droppable=True)
-                if e.stable and len(e.text) >= PREFETCH_MIN_CHARS:
-                    self._maybe_prefetch(e.text)
-                if self._shadow is not None and not e.stable and not _same_text(e.text, self._shadow.text):
-                    await self._cancel_shadow()            # the user kept talking: the guess is stale
-                if e.stable:
-                    self._maybe_shadow(e.text)
-                if not e.stable and self._turn_active():
-                    while self._change_times and self.clock() - self._change_times[0] > BARGE_IN_WINDOW_S:
-                        self._change_times.popleft()
-                    if len(self._change_times) >= BARGE_IN_CHANGES and not self._is_echo(e.text):
-                        await self._cancel_turn()  # user talks over the reply
+                await self._on_partial(e)
             else:
                 await self._on_final(e.text, getattr(e, "held_ms", 0.0))
+
+    async def _on_partial(self, e) -> None:
+        if not e.stable:
+            self._change_times.append(self.clock())
+        self._last_partial = e.text
+        await self._emit({"type": "partial", "text": e.text, "stable": e.stable}, droppable=True)
+        if e.stable and len(e.text) >= PREFETCH_MIN_CHARS:
+            self._maybe_prefetch(e.text)
+        if self._shadow is not None and not e.stable and not _same_text(e.text, self._shadow.text):
+            await self._cancel_shadow()            # the user kept talking: the guess is stale
+        if e.stable:
+            self._maybe_shadow(e.text)
+        if not e.stable and self._turn_active():
+            await self._maybe_barge_in(e.text)
+
+    async def _maybe_barge_in(self, text: str) -> None:
+        while self._change_times and self.clock() - self._change_times[0] > BARGE_IN_WINDOW_S:
+            self._change_times.popleft()
+        if len(self._change_times) >= BARGE_IN_CHANGES and not self._is_echo(text):
+            await self._cancel_turn()  # user talks over the reply
 
     def _turn_active(self) -> bool:
         return self._turn is not None and not self._turn.done()
@@ -279,7 +422,7 @@ class Pipeline:
             return
         if self._shadow is not None and _same_text(self._shadow.text, text) and not self._turn_active() \
                 and not self._shadow.task.done():       # a refused / failed guess has nothing to promote
-            await self._promote_shadow(text, speech_end, held_ms)
+            await self._promote_shadow(text, speech_end)
             return
         await self._cancel_shadow()
         await self._cancel_turn()
@@ -343,7 +486,7 @@ class Pipeline:
         except (asyncio.CancelledError, Exception):  # noqa: BLE001 - a dropped guess must never surface
             pass
 
-    async def _promote_shadow(self, text: str, speech_end: float, held_ms: float) -> None:
+    async def _promote_shadow(self, text: str, speech_end: float) -> None:
         """The final text equals the guess: release what the shadow already prepared, in order, immediately."""
         sh, self._shadow = self._shadow, None
         sh.trace.marks["speech_end"] = speech_end
@@ -365,150 +508,55 @@ class Pipeline:
             await self._emit_bg({"type": "token", "text": t, "full": acc}, droppable=True)   # `full`: a dropped token leaves no hole
         # buffered audio is released by the TTS thread (the only writer) or, if it already finished, by _run_turn
 
+    async def _announce_context(self, hits, gate: ShadowGate | None) -> None:
+        if gate is None:
+            await self._emit_bg({"type": "context", "ids": [h.chunk_id for h in hits]})
+            return
+        with gate.lock:
+            gate.context_ids, gate.context_ready = [h.chunk_id for h in hits], True
+            promoted = gate.open.is_set()
+        if promoted:            # promoted while we were still retrieving: _promote_shadow left the event to us
+            await self._emit_bg({"type": "context", "ids": gate.context_ids})
+
     async def _run_turn(self, text: str, trace: LatencyTrace, ev: threading.Event, prefetched, held_ms: float = 0.0,
                         gate: ShadowGate | None = None) -> None:
         hits = await self._hits_for(text, prefetched)
-        if gate is None:
-            await self._emit_bg({"type": "context", "ids": [h.chunk_id for h in hits]})
-        else:
-            with gate.lock:
-                gate.context_ids, gate.context_ready = [h.chunk_id for h in hits], True
-                promoted = gate.open.is_set()
-            if promoted:            # promoted while we were still retrieving: _promote_shadow left the event to us
-                await self._emit_bg({"type": "context", "ids": gate.context_ids})
-        sent_q: queue.Queue = queue.Queue()
-        answer: list[str] = []      # every token, in order: the screen text must not depend on the droppable token messages
-        stamps: dict[str, float] = gate.stamps if gate is not None else {}
-        def record_spoken(sentence: str) -> None:
-            if gate is not None:
-                with gate.lock:
-                    if not gate.open.is_set():
-                        gate.spoken.append((self.clock(), sentence))
-                        return
-            self._spoken.append((self.clock(), sentence))
-
+        await self._announce_context(hits, gate)
+        run = _TurnRun(self, text, hits, trace, ev, gate)
         if self.s.filler:
-            record_spoken(FILLER[_lang(text)])
-            sent_q.put((FILLER[_lang(text)], True))
-
-        admitted = self.ex.admission.try_acquire()
-        if gate is not None and not admitted:
+            run.say_filler()
+        run.admitted = self.ex.admission.try_acquire()
+        if gate is not None and not run.admitted:
             return                                     # a guess never queues behind (or talks over) a real turn
-        released = threading.Event()
-
-        def release_once() -> None:   # exactly one release per acquire, whichever path ends the turn first
-            if not released.is_set():
-                released.set()
-                self.ex.admission.release()
-
-        def llm_worker() -> None:
-            if ev.is_set():
-                release_once()
-                return
-            chunker = SentenceChunker(first_words=self.s.first_chunk_words, second_words=self.s.second_chunk_words)
-            try:
-                for tok in self.llm.stream(text, hits, ev):
-                    if ev.is_set():
-                        return
-                    answer.append(tok)
-                    if "first_token" not in trace.marks:
-                        trace.mark("first_token")
-                    if gate is not None:
-                        with gate.lock:
-                            held = not gate.open.is_set()
-                            if held:
-                                gate.tokens.append(tok)
-                    else:
-                        held = False
-                    if not held:
-                        asyncio.run_coroutine_threadsafe(self._emit_bg({"type": "token", "text": tok, "full": "".join(answer)}, droppable=True), self.loop)
-                    for c in chunker.push(tok):
-                        record_spoken(c)
-                        sent_q.put((c, False))
-                for c in chunker.flush():
-                    record_spoken(c)
-                    sent_q.put((c, False))
-            except Exception:  # noqa: BLE001 - a failing model must not kill the session: log it and say so
-                log.exception("LLM turn failed")
-                sent_q.put((BUSY[_lang(text)], False))
-            finally:
-                release_once()
-                sent_q.put(None)
-
-        def busy_worker() -> None:
-            sent_q.put((BUSY[_lang(text)], False))
-            sent_q.put(None)
-
-        rendered = [0]
-
-        def emit_audio(chunk: bytes, is_filler: bool) -> None:
-            now = self.clock()
-            stamps.setdefault("first_audio", now)
-            if not is_filler:
-                stamps.setdefault("first_content", now)
-            asyncio.run_coroutine_threadsafe(self._put_audio(chunk, ev), self.loop).result()
-
-        def flush_buffered() -> None:
-            for pc, pf in gate.take_audio():
-                emit_audio(pc, pf)
-
-        def tts_worker() -> None:
-            while not ev.is_set():
-                try:
-                    item = sent_q.get(timeout=0.01 if gate is not None else 0.05)
-                except queue.Empty:
-                    if gate is not None and gate.open.is_set():
-                        flush_buffered()               # promoted while we were idle: release the pre-rendered audio now
-                    continue
-                if item is None:
-                    if gate is not None and gate.open.is_set():
-                        flush_buffered()
-                    return
-                sentence, is_filler = item
-                if gate is not None:
-                    # muted until promoted: pre-render only the first sentences, then wait for the final text
-                    rendered[0] += 1
-                    while not gate.open.is_set() and rendered[0] > SHADOW_PRERENDER_SENTENCES and not ev.is_set():
-                        gate.open.wait(0.01)
-                    if ev.is_set():
-                        return
-                    if gate.open.is_set():
-                        flush_buffered()
-                for chunk in self.tts.synth(sentence, ev):
-                    if ev.is_set():
-                        return
-                    if gate is not None:
-                        with gate.lock:
-                            if not gate.open.is_set():
-                                gate.audio.append((chunk, is_filler))
-                                continue
-                        flush_buffered()                          # anything pre-rendered goes out first
-                    emit_audio(chunk, is_filler)
-
         try:
             await asyncio.gather(
-                self.loop.run_in_executor(self.ex.llm, llm_worker) if admitted else self.loop.run_in_executor(None, busy_worker),
-                self.loop.run_in_executor(self.ex.tts, tts_worker),
+                self.loop.run_in_executor(self.ex.llm, run.llm_worker) if run.admitted else self.loop.run_in_executor(None, run.busy_worker),
+                self.loop.run_in_executor(self.ex.tts, run.tts_worker),
             )
         finally:
-            if admitted:
-                release_once()   # cancelled before the worker started, or it died: free the slot
+            if run.admitted:
+                run.release_once()   # cancelled before the worker started, or it died: free the slot
         if gate is not None:
-            while not gate.open.is_set():              # finished early (short answer): wait to be promoted or cancelled
-                await asyncio.sleep(0.01)
-            if not ev.is_set():
-                for pc, pf in gate.take_audio():       # the TTS thread is gone: this coroutine is the only writer
-                    now = self.clock()
-                    stamps.setdefault("first_audio", now)
-                    if not pf:
-                        stamps.setdefault("first_content", now)
-                    await self._put_audio(pc, ev)
+            await self._drain_gate(run)
         if ev.is_set():
             return
+        await self._report_turn(run, held_ms)
+
+    async def _drain_gate(self, run: "_TurnRun") -> None:
+        gate = run.gate
+        while not gate.open.is_set():              # finished early (short answer): wait to be promoted or cancelled
+            await asyncio.sleep(0.01)
+        if not run.ev.is_set():
+            for pc, pf in gate.take_audio():       # the TTS thread is gone: this coroutine is the only writer
+                run.stamp(pf)
+                await self._put_audio(pc, run.ev)
+
+    async def _report_turn(self, run: "_TurnRun", held_ms: float) -> None:
+        trace, stamps, gate = run.trace, run.stamps, run.gate
         first_content = stamps.get("first_content", stamps.get("first_audio"))
         if first_content is not None:
             trace.marks["first_audio"] = first_content  # content audio is what the brief's 1.5 s means
-        await self._emit_bg({"type": "answer", "text": "".join(answer)})   # complete text; the live tokens above may have been dropped
+        await self._emit_bg({"type": "answer", "text": "".join(run.answer)})   # complete text; the live tokens above may have been dropped
         m = trace.report()
         m["tts_oov"] = getattr(self.tts, "oov_total", 0)
         m["hold_ms"] = held_ms
