@@ -15,9 +15,10 @@ for p in (str(ROOT), str(ROOT / "src")):
 from scripts import eval_suite  # noqa: E402
 
 MINDS = ("minds14_en_us", "minds14_en_gb", "minds14_en_au", "minds14_zh")
-NOISY = ("ambient@10", "ambient@5", "babble@10", "reverb@0.6", "quiet", "loud")
-READ = {"librispeech_clean": ("ambient@10", "codec"), "librispeech_other": ("ambient@10",), "fleurs_en": ("ambient@10",),
-        "aishell": ("ambient@10",), "fleurs_zh": ("ambient@10",)}
+AMBIENT10 = "ambient@10"
+NOISY = (AMBIENT10, "ambient@5", "babble@10", "reverb@0.6", "quiet", "loud")
+READ = {"librispeech_clean": (AMBIENT10, "codec"), "librispeech_other": (AMBIENT10,), "fleurs_en": (AMBIENT10,),
+        "aishell": (AMBIENT10,), "fleurs_zh": (AMBIENT10,)}
 
 
 def cells() -> list[tuple[str, str, str]]:

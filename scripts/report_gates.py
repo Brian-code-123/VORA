@@ -33,25 +33,20 @@ def _pct(xs: list[float], p: float) -> float:
     return xs[lo] + (xs[hi] - xs[lo]) * (k - lo)
 
 
-def evaluate(results_dir: Path) -> list[Gate]:
-    d = Path(results_dir)
-    bench, mem, asr, rag = (_load(d, f) for f in ("bench.json", "memory.json", "asr.json", "rag.json"))
-    conc = _load(d, "concurrent.json")
-    quiet = False
-    if bench:
-        h = bench.get("host", {})
-        # bench.json records an instantaneous-CPU verdict; fall back to the load average for older results
-        quiet = bool(bench["quiet"]) if "quiet" in bench else is_quiet(h.get("loadavg_1m", 99.0), h.get("cores"))
-    gs: list[Gate] = []
+NO_DATA = "no data"
+G5_TARGET = "top-3 >=80%, faithfulness >=95%"
 
+
+def _gate_latency(bench, quiet: bool) -> Gate:
+    name, target = "end-to-end latency (synthetic en audio)", "p50 <=1500 ms, p90 <=1800 ms"
     en = [r["total"] for r in (bench or {}).get("rows", []) if r.get("lang") == "en" and "total" in r]
-    if en:
-        p50, p90 = _pct(en, 50), _pct(en, 90)
-        gs.append(Gate("G1", "end-to-end latency (synthetic en audio)", "p50 <=1500 ms, p90 <=1800 ms", f"p50 {p50:.0f} / p90 {p90:.0f} ms", p50 <= 1500 and p90 <= 1800, quiet))
-    else:
-        gs.append(Gate("G1", "end-to-end latency (synthetic en audio)", "p50 <=1500 ms, p90 <=1800 ms", "no data", None, quiet))
+    if not en:
+        return Gate("G1", name, target, NO_DATA, None, quiet)
+    p50, p90 = _pct(en, 50), _pct(en, 90)
+    return Gate("G1", name, target, f"p50 {p50:.0f} / p90 {p90:.0f} ms", p50 <= 1500 and p90 <= 1800, quiet)
 
-    # G1r: the same 1.5 s target on REAL voices (MInDS-14 telephone requests, test split, answered turns), the primary row
+
+def _real_voice_rows(d: Path) -> tuple[list, bool]:
     rows, quiet_r = [], True
     for f in sorted((d / "suites").glob("minds14_*__clean__test.json")) if (d / "suites").exists() else []:
         r = json.loads(f.read_text())
@@ -61,64 +56,97 @@ def evaluate(results_dir: Path) -> list[Gate]:
             acc = {"en-us": "en-US", "en-gb": "en-GB", "en-au": "en-AU", "zh": "zh-CN"}.get(acc, acc)
             rows.append((acc, a["p50"], a["p90"]))
             quiet_r = quiet_r and bool(r.get("quiet"))
+    return rows, quiet_r
+
+
+def _gate_real_voices(d: Path) -> Gate:
+    """G1r: the same 1.5 s target on REAL voices (MInDS-14 telephone requests, test split, answered turns), the primary row."""
+    rows, quiet_r = _real_voice_rows(d)
     meas = ", ".join(f"{a} {p50:.0f}/{p90:.0f}" for a, p50, p90 in rows) + " ms (p50/p90)" if rows else "no real-voice run"
     ok_r = (all(p50 <= 1500 and p90 <= 1800 for _, p50, p90 in rows) if quiet_r else None) if rows else None
-    gs.append(Gate("G1r", "end-to-end latency, real voices (MInDS-14)", "answered turns p50 <=1500 ms, p90 <=1800 ms",
-                   meas if quiet_r or not rows else meas + " (busy host)", ok_r, quiet_r))
+    return Gate("G1r", "end-to-end latency, real voices (MInDS-14)", "answered turns p50 <=1500 ms, p90 <=1800 ms",
+                meas if quiet_r or not rows else meas + " (busy host)", ok_r, quiet_r)
 
+
+def _gate_tts_first_chunk(d: Path, bench, quiet: bool) -> Gate:
     tf = _load(d, "tts_first_chunk.json")
     if tf:   # dedicated test: text of the real first chunk -> first PCM piece (the bench metric also waits for LLM tokens)
         worst = max(tf["en_p95_ms"], tf["zh_p95_ms"])
-        gs.append(Gate("G2", "TTS first chunk", "p95 <=200 ms", f"en p95 {tf['en_p95_ms']:.0f} / zh {tf['zh_p95_ms']:.0f} ms", worst <= 200, bool(tf.get("quiet"))))
+        return Gate("G2", "TTS first chunk", "p95 <=200 ms", f"en p95 {tf['en_p95_ms']:.0f} / zh {tf['zh_p95_ms']:.0f} ms", worst <= 200, bool(tf.get("quiet")))
+    t = ((bench or {}).get("latency_ms_oracle_text") or {}).get("tts_first_chunk")
+    return Gate("G2", "TTS first chunk", "p95 <=200 ms", f"p95 {t['p95']:.0f} ms" if t else NO_DATA, (t["p95"] <= 200) if t else None, quiet)
+
+
+def _gate_memory(mem) -> Gate:
+    return Gate("G3", "ASR+RAG+TTS memory", "<=500 MB (USS)", f"{mem['asr_rag_tts']:.0f} MB" if mem else NO_DATA,
+                (mem["asr_rag_tts"] <= 500) if mem else None, True)   # USS does not depend on host load
+
+
+def _gate_asr(asr) -> Gate:
+    if not asr:
+        return Gate("G4", "ASR accuracy", "WER/CER <=15%", NO_DATA, None, True)
+    en_w = asr.get("en_librispeech_clean/clean", {}).get("value")
+    zh_c = asr.get("zh_aishell/clean", {}).get("value")
+    meas = f"en {en_w*100:.1f}%" if en_w is not None else "en n/a"
+    meas += f", zh AISHELL {zh_c*100:.1f}%" if zh_c is not None else ", zh AISHELL missing"
+    ok = None if (en_w is None or zh_c is None) else (en_w <= 0.15 and zh_c <= 0.15)
+    if en_w is not None and en_w > 0.15:
+        ok = False
+    return Gate("G4", "ASR accuracy", "WER/CER <=15%", meas, ok, True)
+
+
+def _gate_rag(rag) -> Gate:
+    if not rag:
+        return Gate("G5", "RAG top-3 + faithfulness", G5_TARGET, NO_DATA, None, True)
+    if "faithfulness_all" in rag:   # frozen held-out set (eval/rag_blind4.jsonl) + the 40 dev questions
+        top = min(rag["top3_dev"]["acc"], rag["top3_heldout"]["acc"], rag["blind"]["top3"])
+        fa = rag["faithfulness_all"]["acc"]
+        meas = f"top-3 {top*100:.0f}% (blind {rag['blind']['top3']*100:.0f}%), faithful {fa*100:.0f}% of {rag['faithfulness_all']['n']} (blind {rag['blind']['faith_with_refusals']*100:.1f}%)"
     else:
-        t = ((bench or {}).get("latency_ms_oracle_text") or {}).get("tts_first_chunk")
-        gs.append(Gate("G2", "TTS first chunk", "p95 <=200 ms", f"p95 {t['p95']:.0f} ms" if t else "no data", (t["p95"] <= 200) if t else None, quiet))
+        top = min(rag["top3_dev"]["acc"], rag["top3_heldout"]["acc"])
+        fa = rag["faithfulness"]["acc"]
+        meas = f"top-3 {top*100:.0f}%, faithful {fa*100:.0f}%"
+    return Gate("G5", "RAG top-3 + faithfulness", G5_TARGET, meas, top >= 0.8 and fa >= 0.95, True)
 
-    gs.append(Gate("G3", "ASR+RAG+TTS memory", "<=500 MB (USS)", f"{mem['asr_rag_tts']:.0f} MB" if mem else "no data",
-                   (mem["asr_rag_tts"] <= 500) if mem else None, True))   # USS does not depend on host load
 
-    if asr:
-        en_w = asr.get("en_librispeech_clean/clean", {}).get("value")
-        zh_c = asr.get("zh_aishell/clean", {}).get("value")
-        meas = f"en {en_w*100:.1f}%" if en_w is not None else "en n/a"
-        meas += f", zh AISHELL {zh_c*100:.1f}%" if zh_c is not None else ", zh AISHELL missing"
-        ok = None if (en_w is None or zh_c is None) else (en_w <= 0.15 and zh_c <= 0.15)
-        if en_w is not None and en_w > 0.15:
-            ok = False
-        gs.append(Gate("G4", "ASR accuracy", "WER/CER <=15%", meas, ok, True))
-    else:
-        gs.append(Gate("G4", "ASR accuracy", "WER/CER <=15%", "no data", None, True))
+def _gate_concurrency(conc) -> Gate:
+    return Gate("G6", "2 concurrent users", "each p50 <=2x single", json.dumps(conc.get("summary")) if conc else "not measured",
+                conc.get("ok") if conc else None, bool(conc.get("quiet")) if conc else False)
 
-    if rag:
-        if "faithfulness_all" in rag:   # frozen held-out set (eval/rag_blind4.jsonl) + the 40 dev questions
-            top = min(rag["top3_dev"]["acc"], rag["top3_heldout"]["acc"], rag["blind"]["top3"])
-            fa = rag["faithfulness_all"]["acc"]
-            meas = f"top-3 {top*100:.0f}% (blind {rag['blind']['top3']*100:.0f}%), faithful {fa*100:.0f}% of {rag['faithfulness_all']['n']} (blind {rag['blind']['faith_with_refusals']*100:.1f}%)"
-        else:
-            top = min(rag["top3_dev"]["acc"], rag["top3_heldout"]["acc"])
-            fa = rag["faithfulness"]["acc"]
-            meas = f"top-3 {top*100:.0f}%, faithful {fa*100:.0f}%"
-        gs.append(Gate("G5", "RAG top-3 + faithfulness", "top-3 >=80%, faithfulness >=95%", meas, top >= 0.8 and fa >= 0.95, True))
-    else:
-        gs.append(Gate("G5", "RAG top-3 + faithfulness", "top-3 >=80%, faithfulness >=95%", "no data", None, True))
 
-    gs.append(Gate("G6", "2 concurrent users", "each p50 <=2x single", json.dumps(conc.get("summary")) if conc else "not measured",
-                   conc.get("ok") if conc else None, bool(conc.get("quiet")) if conc else False))
+def _gate_deploy(d: Path) -> Gate:
     dep = _load(d, "deploy.json") or {}
     parts = ("docker_arm64", "docker_amd64", "limited_core_run", "pi_class_measured")
     state = {k: (dep.get(k) or {}).get("ok") for k in parts}
     word = {True: "yes", False: "FAILED", None: "unverified"}
     measured = ", ".join(f"{k}: {word[v]}" for k, v in state.items()) + "; Jetson: unverified (no hardware)"
     ok7 = False if False in state.values() else (True if all(v is True for v in state.values()) else None)
-    gs.append(Gate("G7", "Docker + Pi-class proof", "arm64 + amd64 image build/boot/smoke, limited-core run, Pi-class CPU run", measured, ok7, True))
+    return Gate("G7", "Docker + Pi-class proof", "arm64 + amd64 image build/boot/smoke, limited-core run, Pi-class CPU run", measured, ok7, True)
 
+
+def _gate_licences(d: Path) -> Gate:
     man = (d.parent / "models" / "MANIFEST.json")
-    if man.exists():
-        lic = {k: v.get("license", "") for k, v in json.loads(man.read_text()).items()}
-        bad = [k for k, v in lic.items() if BAD_LICENCE.search(v)]
-        gs.append(Gate("G8", "permissive licences", "no custom/unknown", f"non-permissive: {', '.join(bad) or 'none'}", not bad, True))
-    else:
-        gs.append(Gate("G8", "permissive licences", "no custom/unknown", "no MANIFEST", None, True))
+    if not man.exists():
+        return Gate("G8", "permissive licences", "no custom/unknown", "no MANIFEST", None, True)
+    lic = {k: v.get("license", "") for k, v in json.loads(man.read_text()).items()}
+    bad = [k for k, v in lic.items() if BAD_LICENCE.search(v)]
+    return Gate("G8", "permissive licences", "no custom/unknown", f"non-permissive: {', '.join(bad) or 'none'}", not bad, True)
+
+
+def _host_quiet(bench) -> bool:
+    if not bench:
+        return False
+    h = bench.get("host", {})
+    # bench.json records an instantaneous-CPU verdict; fall back to the load average for older results
+    return bool(bench["quiet"]) if "quiet" in bench else is_quiet(h.get("loadavg_1m", 99.0), h.get("cores"))
+
+
+def evaluate(results_dir: Path) -> list[Gate]:
+    d = Path(results_dir)
+    bench, mem, asr, rag = (_load(d, f) for f in ("bench.json", "memory.json", "asr.json", "rag.json"))
+    quiet = _host_quiet(bench)
+    gs = [_gate_latency(bench, quiet), _gate_real_voices(d), _gate_tts_first_chunk(d, bench, quiet), _gate_memory(mem), _gate_asr(asr),
+          _gate_rag(rag), _gate_concurrency(_load(d, "concurrent.json")), _gate_deploy(d), _gate_licences(d)]
     for g in gs:   # a latency number measured while other apps used the CPU proves neither pass nor fail
         if g.id in ("G1", "G2", "G6") and not g.quiet and g.ok is not None:
             g.measured = f"busy host, not conclusive ({'would pass' if g.ok else 'would fail'}): {g.measured}"

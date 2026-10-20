@@ -120,14 +120,45 @@ def summarize(rows: list[dict]) -> dict:
                 "p95": round(percentile([r[k] for r in rows if k in r], 95), 1)} for k in keys}
 
 
-async def main() -> None:
+def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=0, help="0 = every answerable question once")
     ap.add_argument("--speculate", choices=["on", "off", "default", "ab"], default="default", help="A/B the shadow turn")
     ap.add_argument("--audio-only", action="store_true", help="skip the oracle-text pass (A/B runs)")
     ap.add_argument("--force", action="store_true", help="run on a busy host (results marked quiet=false)")
     ap.add_argument("--out", default=str(ROOT / "results" / "bench.json"))
-    a = ap.parse_args()
+    return ap.parse_args()
+
+
+async def _audio_turns(models, arms: list, i: int, question: tuple, rows: list[dict]) -> int:
+    """Audio-mode turn for each arm, alternating which arm goes first. Returns how many turns produced no metrics."""
+    lang, text, pcm = question
+    skipped = 0
+    for arm, st in (arms if i % 2 == 0 else arms[::-1]):     # drift hits both arms equally
+        m = await one_turn(models, st, lang, pcm)
+        if m is None:
+            skipped += 1
+            continue
+        m["q"], m["lang"], m["arm"] = text, lang, arm
+        rows.append(m)
+        print(f"audio  {i:2d} {arm} {lang} heard={m.get('heard')!r} ctx={m.get('context')} total={m.get('total')} asr={m.get('asr_final')} llm={m.get('rag_first_token')} tts={m.get('tts_first_chunk')}")
+    return skipped
+
+
+async def _oracle_turns(models, s: Settings, i: int, lang: str, text: str, orows: list[dict]) -> None:
+    o = await oracle_turn(models, s, lang, text)
+    if o:
+        o["q"], o["lang"] = text, lang
+        orows.append(o)
+        print(f"oracle {i:2d} {lang} ctx={o.get('context')} total={o.get('total')} llm={o.get('rag_first_token')} tts={o.get('tts_first_chunk')}")
+
+
+def _numeric(rows: list[dict]) -> list[dict]:
+    return [{k: v for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)} for r in rows]
+
+
+async def main() -> None:
+    a = _parse_args()
     from vora.hostcheck import perf_skip_reason
     reason = perf_skip_reason()
     if reason and not a.force:
@@ -145,29 +176,16 @@ async def main() -> None:
     rows, orows, skipped = [], [], 0
     arms = [("off", Settings(speculate=False)), ("on", Settings(speculate=True))] if a.speculate == "ab" else [(None, s)]
     for i in range(a.n):
-        lang, text, pcm = qs[i % len(qs)]
-        order = arms if i % 2 == 0 else arms[::-1]     # alternate which arm runs first: drift hits both arms equally
-        for arm, st in order:
-            m = await one_turn(models, st, lang, pcm)
-            if m is None:
-                skipped += 1
-                continue
-            m["q"], m["lang"], m["arm"] = text, lang, arm
-            rows.append(m)
-            print(f"audio  {i:2d} {arm} {lang} heard={m.get('heard')!r} ctx={m.get('context')} total={m.get('total')} asr={m.get('asr_final')} llm={m.get('rag_first_token')} tts={m.get('tts_first_chunk')}")
-        o = None if a.audio_only else await oracle_turn(models, s, lang, text)
-        if o:
-            o["q"], o["lang"] = text, lang
-            orows.append(o)
-            print(f"oracle {i:2d} {lang} ctx={o.get('context')} total={o.get('total')} llm={o.get('rag_first_token')} tts={o.get('tts_first_chunk')}")
-    num = lambda rs: [{k: v for k, v in r.items() if isinstance(v, (int, float)) and not isinstance(v, bool)} for r in rs]
-    lat, olat = summarize(num(rows)), summarize(num(orows))
+        question = qs[i % len(qs)]
+        skipped += await _audio_turns(models, arms, i, question, rows)
+        if not a.audio_only:
+            await _oracle_turns(models, s, i, question[0], question[1], orows)
+    lat, olat = summarize(_numeric(rows)), summarize(_numeric(orows))
     est = {"p50": round(lat["asr_final"]["p50"] + olat["total"]["p50"], 1), "p95": round(lat["asr_final"]["p95"] + olat["total"]["p95"], 1)} if olat else {}
     qm = mon.stop()
     res = {"quiet": qm["quiet"], "max_other_cpu_pct": qm["max_other_cpu_pct"], "p90_other_cpu_pct": qm["p90_other_cpu_pct"], "host": host(), "n": len(rows), "skipped": skipped, "latency_ms_audio_mode": lat, "latency_ms_oracle_text": olat, "estimated_total_ms": est, "speculate": a.speculate, "rss_mb_after_load": round(proc.memory_info().rss / 2**20),
            "rss_delta_load_mb": round((proc.memory_info().rss - rss0) / 2**20), "rows": rows, "oracle_rows": orows}
-    p = ROOT / "results"
-    p.mkdir(exist_ok=True)
+    (ROOT / "results").mkdir(exist_ok=True)
     Path(a.out).write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps({k: res[k] for k in ("host", "n", "skipped", "latency_ms_audio_mode", "latency_ms_oracle_text", "estimated_total_ms", "rss_mb_after_load")}, ensure_ascii=False, indent=1))
 

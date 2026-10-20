@@ -15,8 +15,8 @@ class Pcm16Worklet extends AudioWorkletProcessor {
   }
 
   process(inputs) {
-    const ch = inputs[0] && inputs[0][0];
-    if (!ch || !ch.length) return true;
+    const ch = inputs[0]?.[0];
+    if (!ch?.length) return true;
     for (let i = 0; i < ch.length; i++) {
       this.sumSq += ch[i] * ch[i];
       if (++this.count >= this.levelEvery) {

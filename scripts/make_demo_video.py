@@ -464,110 +464,149 @@ def _stop_process(proc: subprocess.Popen) -> None:
         proc.kill()
 
 
+def _chrome_args(port: int, tdir: Path, mic_wav: Path) -> list[str]:
+    return ["nice", "-n", "10", CHROME, "--headless=new", f"--remote-debugging-port={port}", f"--user-data-dir={tdir / 'profile'}",
+            "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream",
+            "--disable-features=AudioServiceSandbox",      # else the sandboxed audio service cannot read the wav: silence
+            f"--use-file-for-fake-audio-capture={mic_wav}%noloop", "--autoplay-policy=no-user-gesture-required",
+            f"--window-size={W},{H}", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check", "about:blank"]
+
+
+async def _wait_for_page_target(port: int) -> str:
+    for _ in range(60):
+        try:
+            targets = json.load(urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=1))
+            return next(t for t in targets if t["type"] == "page")["webSocketDebuggerUrl"]
+        except Exception:
+            await asyncio.sleep(0.25)
+    raise RuntimeError("Chrome did not start")
+
+
+class _Capture:
+    """Screencast frames with their timestamps, and the page's TTS audio (tapped in the page, sent through a binding)."""
+
+    def __init__(self, tdir: Path, cdp: "Cdp") -> None:
+        self.tdir, self.cdp = tdir, cdp
+        self.frames: list[str] = []
+        self.stamps: list[float] = []
+        self.audio = bytearray()
+        self.acks: set = set()
+        cdp.handlers["Page.screencastFrame"], cdp.handlers["Runtime.bindingCalled"] = self.on_frame, self.on_binding
+        if os.environ.get("VORA_DEMO_DEBUG"):
+            cdp.handlers["Runtime.consoleAPICalled"] = lambda p: print("  console:", p["type"], [a.get("value", a.get("description")) for a in p["args"]][:3], flush=True)
+            cdp.handlers["Runtime.exceptionThrown"] = lambda p: print("  exception:", p["exceptionDetails"].get("text"), str(p["exceptionDetails"].get("exception", {}).get("description", ""))[:200], flush=True)
+
+    def on_frame(self, p: dict) -> None:
+        path = self.tdir / "frames" / f"{len(self.frames):06d}.jpg"
+        path.write_bytes(base64.b64decode(p["data"]))
+        self.frames.append(str(path))
+        self.stamps.append(p["metadata"]["timestamp"])
+        task = asyncio.create_task(self.cdp.send("Page.screencastFrameAck", sessionId=p["sessionId"]))
+        self.acks.add(task)
+        task.add_done_callback(self.acks.discard)
+
+    def on_binding(self, p: dict) -> None:
+        if p.get("name") == "demoAudio":
+            self.audio.extend(base64.b64decode(p["payload"]))
+
+    async def drain_acks(self) -> None:
+        if self.acks:
+            await asyncio.wait(self.acks, timeout=1.0)
+            for t in list(self.acks):
+                t.cancel()
+
+
+async def _open_page(cdp: "Cdp", server: str, scene: Scene) -> None:
+    """Load the app, start the screencast, show the scene script and press the start button."""
+    await cdp.send("Page.enable")
+    await cdp.send("Runtime.enable")
+    await cdp.send("Runtime.addBinding", name="demoAudio")
+    await cdp.send("Page.setBypassCSP", enabled=True)       # for the overlay only; the real CSP was verified separately
+    await cdp.send("Page.addScriptToEvaluateOnNewDocument", source=INIT_JS)
+    await cdp.send("Emulation.setDeviceMetricsOverride", width=W, height=H, deviceScaleFactor=1, mobile=False)
+    await cdp.send("Page.navigate", url=server.rstrip("/") + "/")
+    for _ in range(80):
+        if await cdp.js("!!window.__vora && !!document.getElementById('go') && !!window.__demoSetup"):
+            break
+        await asyncio.sleep(0.25)
+    await cdp.send("Page.startScreencast", format="jpeg", quality=85, maxWidth=W, maxHeight=H, everyNthFrame=1)
+    if scene.lang == "zh":
+        await cdp.js("(()=>{const s=document.getElementById('lang');s.value='zh';s.dispatchEvent(new Event('change'));})()")
+    await cdp.js(f"window.__demoSetup({json.dumps(scene.title)}, {json.dumps([s.caption for s in scene.steps])}, {json.dumps(MIC_NOTE_SHORT)})")
+    await asyncio.sleep(1.4)                                   # the script is on screen before anything happens
+    await cdp.js("document.getElementById('go').click()")
+
+
+def _due_triggers(snap: dict, metrics_base: int) -> dict:
+    return {
+        "start": True,
+        "partial": snap["live"].strip() not in ("", "…"),
+        "context": bool(snap["ctx"]),
+        "tokens": snap["reply"].strip() not in ("", "…"),
+        "speaking": snap["phase"] == "speaking" or latency_due(snap["metrics"], metrics_base),
+        "barge_in": snap["bargeIn"],
+        "latency": latency_due(snap["metrics"], metrics_base),
+    }
+
+
+async def _fire_step(cdp: "Cdp", step, i: int, snap: dict, result: dict) -> None:
+    text = step.caption.replace("{ids}", ", ".join(snap["ctx"]) or "–").replace("{latency}", response_time_text(snap["lastMs"])).replace("{outcome}", outcome_text(snap["ctx"]))
+    await cdp.js(f"window.__demoStep({i}, {json.dumps(text)})")
+    if step.trigger == "latency":
+        await cdp.js("window.__demoHighlight('lat')")
+        result["latency_ms"] = float(snap["lastMs"] or 0)
+        result["stages"] = snap["stages"]
+        result["ctx"] = snap["ctx"]
+        result["heard"] = snap["live"].strip()
+
+
+async def _play_script(cdp: "Cdp", scene: Scene, result: dict) -> dict[int, float]:
+    """Light each caption when its trigger shows on the page. Returns step index to the time it fired."""
+    t_click, fired, metrics_base, last = time.time(), {}, 0, time.time()
+    while time.time() - t_click < scene.budget_s - 1.4 + TAIL_S:
+        snap = await cdp.js(SNAPSHOT_JS)
+        if os.environ.get("VORA_DEMO_DEBUG"):
+            print(f"  {time.time() - t_click:5.1f}s", {k: v for k, v in snap.items() if k not in ("mic", "audioStart")}, flush=True)
+        for i in steps_to_fire(scene.steps, set(fired), _due_triggers(snap, metrics_base)):
+            await _fire_step(cdp, scene.steps[i], i, snap, result)
+            fired[i] = time.time()
+            if scene.steps[i].trigger == "barge_in":
+                metrics_base = snap["metrics"]                   # the next metrics message belongs to the new question
+            last = time.time()
+        if len(fired) == len(scene.steps) and time.time() - last > TAIL_S:
+            break
+        await asyncio.sleep(0.1)
+    return fired
+
+
+async def _finish_take(cdp: "Cdp", cap: _Capture, scene: Scene, result: dict, fired: dict[int, float]) -> None:
+    snap = await cdp.js(SNAPSHOT_JS)
+    await cdp.js("window.__demoStopTap()")
+    await asyncio.sleep(0.8)
+    await cdp.send("Page.stopScreencast")
+    result.update(ok=take_ok(len(fired), len(scene.steps), result.get("ctx", []), scene.expect_context, bool(snap["fits"])), fired=sorted(fired), fired_t=[fired[i] for i in sorted(fired)], mic_epoch=snap["mic"] / 1000,
+                  audio_epoch=snap["audioStart"] / 1000, end_epoch=time.time(), frames=cap.frames, stamps=cap.stamps)
+    (cap.tdir / "tts.webm").write_bytes(bytes(cap.audio))
+    result["tts"] = str(cap.tdir / "tts.webm") if cap.audio else None
+    await cap.drain_acks()
+    cdp.task.cancel()
+
+
 async def record_take(scene: Scene, server: str, mic_wav: Path, work: Path, take: int) -> dict:
     import websockets
     tdir = work / f"{scene.id}_take{take}"
     (tdir / "frames").mkdir(parents=True, exist_ok=True)
     port = free_port()
-    proc = await asyncio.to_thread(subprocess.Popen, ["nice", "-n", "10", CHROME, "--headless=new", f"--remote-debugging-port={port}", f"--user-data-dir={tdir / 'profile'}",
-                             "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream",
-                             "--disable-features=AudioServiceSandbox",      # else the sandboxed audio service cannot read the wav: silence
-                             f"--use-file-for-fake-audio-capture={mic_wav}%noloop", "--autoplay-policy=no-user-gesture-required",
-                             f"--window-size={W},{H}", "--hide-scrollbars", "--no-first-run", "--no-default-browser-check", "about:blank"],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    proc = await asyncio.to_thread(subprocess.Popen, _chrome_args(port, tdir, mic_wav), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     result = {"scene": scene.id, "take": take, "ok": False, "latency_ms": 0, "fired": []}
     try:
-        for _ in range(60):
-            try:
-                targets = json.load(urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=1))
-                page_t = next(t for t in targets if t["type"] == "page")
-                break
-            except Exception:
-                await asyncio.sleep(0.25)
-        else:
-            raise RuntimeError("Chrome did not start")
-        async with websockets.connect(page_t["webSocketDebuggerUrl"], max_size=None) as ws:
+        ws_url = await _wait_for_page_target(port)
+        async with websockets.connect(ws_url, max_size=None) as ws:
             cdp = Cdp(ws)
-            frames, stamps, audio, acks = [], [], bytearray(), set()
-
-            def on_frame(p):
-                path = tdir / "frames" / f"{len(frames):06d}.jpg"
-                path.write_bytes(base64.b64decode(p["data"]))
-                frames.append(str(path))
-                stamps.append(p["metadata"]["timestamp"])
-                task = asyncio.create_task(cdp.send("Page.screencastFrameAck", sessionId=p["sessionId"]))
-                acks.add(task)
-                task.add_done_callback(acks.discard)
-
-            def on_binding(p):
-                if p.get("name") == "demoAudio":
-                    audio.extend(base64.b64decode(p["payload"]))
-
-            cdp.handlers["Page.screencastFrame"], cdp.handlers["Runtime.bindingCalled"] = on_frame, on_binding
-            if os.environ.get("VORA_DEMO_DEBUG"):
-                cdp.handlers["Runtime.consoleAPICalled"] = lambda p: print("  console:", p["type"], [a.get("value", a.get("description")) for a in p["args"]][:3], flush=True)
-                cdp.handlers["Runtime.exceptionThrown"] = lambda p: print("  exception:", p["exceptionDetails"].get("text"), str(p["exceptionDetails"].get("exception", {}).get("description", ""))[:200], flush=True)
-            await cdp.send("Page.enable")
-            await cdp.send("Runtime.enable")
-            await cdp.send("Runtime.addBinding", name="demoAudio")
-            await cdp.send("Page.setBypassCSP", enabled=True)       # for the overlay only; the real CSP was verified separately
-            await cdp.send("Page.addScriptToEvaluateOnNewDocument", source=INIT_JS)
-            await cdp.send("Emulation.setDeviceMetricsOverride", width=W, height=H, deviceScaleFactor=1, mobile=False)
-            await cdp.send("Page.navigate", url=server.rstrip("/") + "/")
-            for _ in range(80):
-                if await cdp.js("!!window.__vora && !!document.getElementById('go') && !!window.__demoSetup"):
-                    break
-                await asyncio.sleep(0.25)
-            await cdp.send("Page.startScreencast", format="jpeg", quality=85, maxWidth=W, maxHeight=H, everyNthFrame=1)
-            if scene.lang == "zh":
-                await cdp.js("(()=>{const s=document.getElementById('lang');s.value='zh';s.dispatchEvent(new Event('change'));})()")
-            await cdp.js(f"window.__demoSetup({json.dumps(scene.title)}, {json.dumps([s.caption for s in scene.steps])}, {json.dumps(MIC_NOTE_SHORT)})")
-            await asyncio.sleep(1.4)                                   # the script is on screen before anything happens
-            await cdp.js("document.getElementById('go').click()")
-            t_click, fired, metrics_base, last = time.time(), {}, 0, time.time()
-            while time.time() - t_click < scene.budget_s - 1.4 + TAIL_S:
-                snap = await cdp.js(SNAPSHOT_JS)
-                if os.environ.get("VORA_DEMO_DEBUG"):
-                    print(f"  {time.time() - t_click:5.1f}s", {k: v for k, v in snap.items() if k not in ("mic", "audioStart")}, flush=True)
-                due = {
-                    "start": True,
-                    "partial": snap["live"].strip() not in ("", "…"),
-                    "context": bool(snap["ctx"]),
-                    "tokens": snap["reply"].strip() not in ("", "…"),
-                    "speaking": snap["phase"] == "speaking" or latency_due(snap["metrics"], metrics_base),
-                    "barge_in": snap["bargeIn"],
-                    "latency": latency_due(snap["metrics"], metrics_base),
-                }
-                for i in steps_to_fire(scene.steps, set(fired), due):
-                    st = scene.steps[i]
-                    text = st.caption.replace("{ids}", ", ".join(snap["ctx"]) or "–").replace("{latency}", response_time_text(snap["lastMs"])).replace("{outcome}", outcome_text(snap["ctx"]))
-                    await cdp.js(f"window.__demoStep({i}, {json.dumps(text)})")
-                    if st.trigger == "latency":
-                        await cdp.js("window.__demoHighlight('lat')")
-                        result["latency_ms"] = float(snap["lastMs"] or 0)
-                        result["stages"] = snap["stages"]
-                        result["ctx"] = snap["ctx"]
-                        result["heard"] = snap["live"].strip()
-                    fired[i] = time.time()
-                    if st.trigger == "barge_in":
-                        metrics_base = snap["metrics"]                   # the next metrics message belongs to the new question
-                    last = time.time()
-                if len(fired) == len(scene.steps) and time.time() - last > TAIL_S:
-                    break
-                await asyncio.sleep(0.1)
-            snap = await cdp.js(SNAPSHOT_JS)
-            await cdp.js("window.__demoStopTap()")
-            await asyncio.sleep(0.8)
-            await cdp.send("Page.stopScreencast")
-            result.update(ok=take_ok(len(fired), len(scene.steps), result.get("ctx", []), scene.expect_context, bool(snap["fits"])), fired=sorted(fired), fired_t=[fired[i] for i in sorted(fired)], mic_epoch=snap["mic"] / 1000,
-                          audio_epoch=snap["audioStart"] / 1000, end_epoch=time.time(), frames=frames, stamps=stamps)
-            (tdir / "tts.webm").write_bytes(bytes(audio))
-            result["tts"] = str(tdir / "tts.webm") if audio else None
-            if acks:
-                await asyncio.wait(acks, timeout=1.0)
-                for t in list(acks):
-                    t.cancel()
-            cdp.task.cancel()
+            cap = _Capture(tdir, cdp)
+            await _open_page(cdp, server, scene)
+            fired = await _play_script(cdp, scene, result)
+            await _finish_take(cdp, cap, scene, result, fired)
     finally:
         await asyncio.to_thread(_stop_process, proc)
     return result
@@ -616,13 +655,52 @@ async def warm_up(server: str, lang: str) -> None:
         print(f"warm-up skipped: {e}", file=sys.stderr)
 
 
+def _server_up(server: str) -> bool:
+    try:
+        urllib.request.urlopen(server.rstrip("/") + "/health", timeout=3)
+        return True
+    except Exception:
+        return False
+
+
+async def _record_scene(sc: Scene, a, work: Path, mic_override: Path | None, chosen: dict, problems: list[str]) -> Path:
+    """Record the takes of one scene, keep the best, render its clip and check that there is sound after the last step."""
+    mic = make_mic_wav(sc, work, mic_override)
+    await warm_up(a.server, sc.lang)
+    takes = []
+    for n in range(1, a.takes + 1):
+        t = await record_take(sc, a.server, mic, work, n)
+        print(f"{sc.id} take {n}: ok={t['ok']} latency={t['latency_ms']:.0f} ms steps={len(t['fired'])}/{len(sc.steps)} stages={t.get('stages')}", flush=True)
+        takes.append(t)
+    best = pick_take(takes)
+    chosen[sc.id] = {**best, "n": len(takes), "all": [{"ok": t["ok"], "latency_ms": t["latency_ms"], "heard": t.get("heard", "")} for t in takes]}
+    clip = work / f"scene_{sc.id}.mp4"
+    dur = render_take(best, mic, clip, work)
+    last_step = best["fired_t"][-1] - best["stamps"][0]                # seconds into the clip when the last step lit up
+    mean_db = window_mean_volume(clip, last_step + 0.5, 2.0)
+    chosen[sc.id]["audio_after_last_step_db"] = round(mean_db, 1)
+    if (problem := check_scene_audio(sc.id, mean_db)):
+        problems.append(problem)
+    print(f"{sc.id}: chosen take {best['take']} ({best['latency_ms']:.0f} ms), {dur:.1f} s, "
+          f"sound after the last step {mean_db:.0f} dB", flush=True)
+    return clip
+
+
+def _concat_final(work: Path, clips: list[Path], out_dir: Path) -> Path:
+    order = [work / "card_title.mp4", *clips, work / "card_latency.mp4", work / "card_gates.mp4", work / "card_limits.mp4"]
+    listing = work / "all.txt"
+    listing.write_text("\n".join(f"file '{p}'" for p in order))
+    final = out_dir / "vora-demo.mp4"
+    sh("ffmpeg", "-loglevel", "error", "-y", "-f", "concat", "-safe", 0, "-i", listing, "-c:v", "libx264", "-preset", "medium", "-crf", 22,
+       "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-ar", 48000, "-ac", 2, "-movflags", "+faststart", final)
+    return final
+
+
 async def main_async(a) -> int:
     only = [x for x in a.only.split(",") if x] or [s.id for s in SCENES]
     scenes = [s for s in SCENES if s.id in only]
     overrides = {k: Path(v) for k, v in (kv.split("=", 1) for kv in a.mic)}
-    try:
-        urllib.request.urlopen(a.server.rstrip("/") + "/health", timeout=3)
-    except Exception:
+    if not _server_up(a.server):
         print(f"no server at {a.server}: start it with `python -m vora.server`", file=sys.stderr)
         return 2
     out_dir = Path(a.out)
@@ -638,34 +716,11 @@ async def main_async(a) -> int:
     chosen, clips, problems = {}, [], []
     still_clip(title_card(), CARDS["title"], work / "card_title.mp4", work)
     for sc in scenes:
-        mic = make_mic_wav(sc, work, overrides.get(sc.id))
-        await warm_up(a.server, sc.lang)
-        takes = []
-        for n in range(1, a.takes + 1):
-            t = await record_take(sc, a.server, mic, work, n)
-            print(f"{sc.id} take {n}: ok={t['ok']} latency={t['latency_ms']:.0f} ms steps={len(t['fired'])}/{len(sc.steps)} stages={t.get('stages')}", flush=True)
-            takes.append(t)
-        best = pick_take(takes)
-        chosen[sc.id] = {**best, "n": len(takes), "all": [{"ok": t["ok"], "latency_ms": t["latency_ms"], "heard": t.get("heard", "")} for t in takes]}
-        clip = work / f"scene_{sc.id}.mp4"
-        dur = render_take(best, mic, clip, work)
-        last_step = best["fired_t"][-1] - best["stamps"][0]                # seconds into the clip when the last step lit up
-        mean_db = window_mean_volume(clip, last_step + 0.5, 2.0)
-        chosen[sc.id]["audio_after_last_step_db"] = round(mean_db, 1)
-        if (problem := check_scene_audio(sc.id, mean_db)):
-            problems.append(problem)
-        print(f"{sc.id}: chosen take {best['take']} ({best['latency_ms']:.0f} ms), {dur:.1f} s, "
-              f"sound after the last step {mean_db:.0f} dB", flush=True)
-        clips.append(clip)
+        clips.append(await _record_scene(sc, a, work, overrides.get(sc.id), chosen, problems))
     still_clip(latency_card(chosen, gates, baseline), CARDS["latency"], work / "card_latency.mp4", work)
     still_clip(gates_card(gates), CARDS["gates"], work / "card_gates.mp4", work)
     still_clip(limits_card(chosen), CARDS["limits"], work / "card_limits.mp4", work)
-    order = [work / "card_title.mp4", *clips, work / "card_latency.mp4", work / "card_gates.mp4", work / "card_limits.mp4"]
-    listing = work / "all.txt"
-    listing.write_text("\n".join(f"file '{p}'" for p in order))
-    final = out_dir / "vora-demo.mp4"
-    sh("ffmpeg", "-loglevel", "error", "-y", "-f", "concat", "-safe", 0, "-i", listing, "-c:v", "libx264", "-preset", "medium", "-crf", 22,
-       "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-ar", 48000, "-ac", 2, "-movflags", "+faststart", final)
+    final = _concat_final(work, clips, out_dir)
     (out_dir / "takes.json").write_text(json.dumps({k: {"latency_ms": v["latency_ms"], "takes_ok": sum(t["ok"] for t in v["all"]), "takes": v["n"], "all": v["all"],
                                                            "audio_after_last_step_db": v["audio_after_last_step_db"]} for k, v in chosen.items()}, indent=1))
     (ROOT / "docs" / "demo-video-script.md").write_text(script_markdown(SCENES, CARDS), encoding="utf-8")

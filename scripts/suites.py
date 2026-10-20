@@ -50,7 +50,8 @@ def make_row(*, id: str, wav: str, text: str, lang: str, scenario: str, accent: 
 def decode_audio(b: bytes) -> tuple[np.ndarray, int] | None:
     try:
         x, sr = sf.read(io.BytesIO(b), dtype="float32")
-    except Exception:  # noqa: BLE001 - any decoder failure = skip the clip, counted in the report
+    except Exception:  # noqa: BLE001
+        # any decoder failure = skip the clip, counted in the report
         return None
     return (x[:, 0] if x.ndim > 1 else x), sr
 
@@ -104,12 +105,12 @@ def rows_from_minds14(table, cfg: str, intent_names: list[str], out_dir: Path) -
             report[why] += 1
             continue
         pth = Path(r["path"])    # en-AU names every file response_N.wav inside one folder per intent: the folder is part of the id
-        id = f"minds14_{cfg}_{pth.parent.name.replace('~', '-')}_{pth.stem}"
-        if id in seen:
-            raise ValueError(f"duplicate id {id}: two rows would share one wav file")
-        seen.add(id)
-        rel = _write(out_dir, id, to_16k(x, sr))
-        rows.append(make_row(id=id, wav=rel, text=r["transcription"].strip(), lang=lang, scenario="telephone", accent=cfg,
+        row_id = f"minds14_{cfg}_{pth.parent.name.replace('~', '-')}_{pth.stem}"
+        if row_id in seen:
+            raise ValueError(f"duplicate id {row_id}: two rows would share one wav file")
+        seen.add(row_id)
+        rel = _write(out_dir, row_id, to_16k(x, sr))
+        rows.append(make_row(id=row_id, wav=rel, text=r["transcription"].strip(), lang=lang, scenario="telephone", accent=cfg,
                              intent=intent_names[r["intent_class"]], source=p["repo"], licence=p["licence"], orig_sr=sr))
         report["kept"] += 1
     return rows, report
@@ -138,8 +139,8 @@ def _read_rows(name: str, out_dir: Path) -> tuple[list[dict], dict]:
         if why:
             report[why] += 1
             continue
-        id = f"{name}_{i:04d}"
-        rows.append(make_row(id=id, wav=_write(out_dir, id, pcm), text=text.strip(), lang=lang, scenario=scenario, accent="",
+        row_id = f"{name}_{i:04d}"
+        rows.append(make_row(id=row_id, wav=_write(out_dir, row_id, pcm), text=text.strip(), lang=lang, scenario=scenario, accent="",
                              intent=None, source=p["repo"], licence=p["licence"], orig_sr=SR))
         report["kept"] += 1
     return rows, report
@@ -157,8 +158,8 @@ def _noise_rows(out_dir: Path) -> tuple[list[dict], dict]:
             bad += 1
             continue
         x, sr = dec
-        id = f"ambient_{i:02d}"
-        rows.append(make_row(id=id, wav=_write(out_dir, id, to_16k(x, sr)), text="", lang="", scenario="ambient", accent="", intent=None,
+        row_id = f"ambient_{i:02d}"
+        rows.append(make_row(id=row_id, wav=_write(out_dir, row_id, to_16k(x, sr)), text="", lang="", scenario="ambient", accent="", intent=None,
                              source=p["repo"], licence=p["licence"], orig_sr=sr))
     return rows, {"seen": len(rows) + bad, "kept": len(rows), "corrupt": bad}
 

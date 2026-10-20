@@ -150,6 +150,32 @@ def offtopic_false_accept(rows: list[dict], retriever) -> float:
     return sum(bool(retriever.search(r["text"])) for r in rows) / len(rows) if rows else 0.0
 
 
+def _score_faith(rec: dict, r: dict, hyp: str, hits: list, hits_ref: list, kws: list[str], llm, unsure: dict | None, fa: dict) -> None:
+    ans = "".join(llm.stream(hyp, hits)) if hits else (unsure or {}).get(r["lang"], "")
+    ans_ref = "".join(llm.stream(r["text"], hits_ref)) if hits_ref else ""
+    fa["n"] += 1; fa["ok"] += faith_check(ans, kws); fa["ok_ref"] += faith_check(ans_ref, kws)
+    rec.update(answer=ans, faith=faith_check(ans, kws))
+
+
+def _score_retrieval(rec: dict, r: dict, hyp: str, retriever, intent: dict, llm, unsure: dict | None, rt: dict, fa: dict) -> None:
+    want = set(intent["chunk_ids"])
+    t1, t3, hits = _retrieve(retriever, hyp, want)
+    t1r, t3r, hits_ref = _retrieve(retriever, r["text"], want)
+    rt["n"] += 1; rt["top1"] += t1; rt["top3"] += t3; rt["refused"] += not hits; rt["top1_ref"] += t1r; rt["top3_ref"] += t3r
+    rec.update(top3=t3, top3_ref=t3r, refused=not hits, ctx=[h.chunk_id for h in hits])
+    if llm is not None:
+        _score_faith(rec, r, hyp, hits, hits_ref, intent["kw"][r["lang"]], llm, unsure, fa)
+
+
+def _summaries(out: dict, rt: dict, fa: dict) -> None:
+    if rt["n"]:
+        n = rt["n"]
+        out["retrieval"] = {**rt, **{f"{k}_ci": list(wilson(rt[k], n)) for k in ("top1", "top3", "top1_ref", "top3_ref")},
+                            **{k: rt[k] / n for k in ("top1", "top3", "top1_ref", "top3_ref")}, "refused_rate": rt["refused"] / n}
+    if fa["n"]:
+        out["faith"] = {"n": fa["n"], "acc": fa["ok"] / fa["n"], "ci": list(wilson(fa["ok"], fa["n"])), "acc_ref": fa["ok_ref"] / fa["n"]}
+
+
 def evaluate(rows: list[dict], load_pcm, transcribe_fn, retriever=None, intents: dict | None = None, llm=None,
              aug: str = "clean", noise: list[np.ndarray] | None = None, unsure: dict | None = None) -> dict:
     by_id = {r["id"]: r for r in rows}
@@ -166,25 +192,10 @@ def evaluate(rows: list[dict], load_pcm, transcribe_fn, retriever=None, intents:
         refs.append(r["text"]); hyps.append(hyp)
         rec = {"id": r["id"], "ref": r["text"], "hyp": hyp}
         if retriever is not None and intents and r.get("intent") in intents:
-            want = set(intents[r["intent"]]["chunk_ids"])
-            t1, t3, hits = _retrieve(retriever, hyp, want)
-            t1r, t3r, hits_ref = _retrieve(retriever, r["text"], want)
-            rt["n"] += 1; rt["top1"] += t1; rt["top3"] += t3; rt["refused"] += not hits; rt["top1_ref"] += t1r; rt["top3_ref"] += t3r
-            rec.update(top3=t3, top3_ref=t3r, refused=not hits, ctx=[h.chunk_id for h in hits])
-            if llm is not None:
-                kws = intents[r["intent"]]["kw"][r["lang"]]
-                ans = "".join(llm.stream(hyp, hits)) if hits else (unsure or {}).get(r["lang"], "")
-                ans_ref = "".join(llm.stream(r["text"], hits_ref)) if hits_ref else ""
-                fa["n"] += 1; fa["ok"] += faith_check(ans, kws); fa["ok_ref"] += faith_check(ans_ref, kws)
-                rec.update(answer=ans, faith=faith_check(ans, kws))
+            _score_retrieval(rec, r, hyp, retriever, intents[r["intent"]], llm, unsure, rt, fa)
         per.append(rec)
     out = {"n": len(refs), "n_skipped_empty_ref": skipped, "asr": score_asr(refs, hyps, rows[0]["lang"]) if rows else None, "rows": per}
-    if rt["n"]:
-        n = rt["n"]
-        out["retrieval"] = {**rt, **{f"{k}_ci": list(wilson(rt[k], n)) for k in ("top1", "top3", "top1_ref", "top3_ref")},
-                            **{k: rt[k] / n for k in ("top1", "top3", "top1_ref", "top3_ref")}, "refused_rate": rt["refused"] / n}
-    if fa["n"]:
-        out["faith"] = {"n": fa["n"], "acc": fa["ok"] / fa["n"], "ci": list(wilson(fa["ok"], fa["n"])), "acc_ref": fa["ok_ref"] / fa["n"]}
+    _summaries(out, rt, fa)
     return out
 
 
@@ -290,25 +301,52 @@ def _models(kb: str, faith: bool):
     return s, _CACHE["recs"], _CACHE.get("retriever") if kb == "bank" else None, _CACHE.get("llm") if (kb == "bank" and faith) else None, intents
 
 
+def _select_rows(suite: str, split: str, final: bool, n: int, audio_dir: Path | None):
+    """(rows to score, every row of the suite, wav loader, split label)."""
+    if audio_dir is not None:
+        rows = rows_from_dir(audio_dir)
+        return rows, rows, (lambda r: load_dir_pcm(audio_dir, r)), "all"
+    pool_rows = suites.load_manifest(suite)
+    return pick(pool_rows, split, final, n), pool_rows, (lambda r: suites.load_wav(suite, r)), split
+
+
+def _offtopic_block(rows: list[dict], retriever, split: str) -> dict:
+    lang = rows[0]["lang"]
+    off = [r for n_ in OFFTOPIC_SUITES[lang] for r in [x for x in suites.load_manifest(n_) if x["split"] == split][:100]]
+    return {"rate": offtopic_false_accept(off, retriever), "n": len(off)}
+
+
+def _add_silero_gaps(turns: list, items: list) -> None:
+    from scripts import refvad
+    if not refvad.SILERO_PATH.exists():
+        return
+    for t, (_, x) in zip(turns, items):
+        if t is not None:   # one_turn pads 0.5 s of silence in front; both rules see the same padded signal
+            y = np.concatenate([np.zeros(SR // 2, np.int16), x])
+            t["silero_gap_ms"] = round((refvad.speech_end(y) - refvad.pipeline_speech_end(y)) * 1000, 1)
+
+
+def _latency_block(rows: list[dict], pool_rows: list[dict], load_pcm, audio_dir: Path | None, split: str, aug: str, noise: list, s) -> dict:
+    ids = None if audio_dir else json.loads((suites.PINS).read_text())["latency_ids"].get(rows[0]["lang"], {}).get(split)
+    lat_rows = rows if ids is None else [r for r in pool_rows if r["id"] in set(ids)]
+    by_id = {r["id"]: r for r in pool_rows}
+    items = [(r["lang"], apply_aug(load_pcm(r), aug, r["id"], list(by_id), lambda i: load_pcm(by_id[i]), noise)) for r in lat_rows]
+    from vora.server import Models
+    turns = asyncio.run(_latency_turns(Models.load(s), s, items))
+    _add_silero_gaps(turns, items)
+    return latency_summary(turns)
+
+
 def run(suite: str, aug: str = "clean", split: str = "dev", final: bool = False, n: int = 0, kb: str = "none",
         faith: bool = False, latency: bool = False, audio_dir: Path | None = None, force: bool = False,
         out_dir: Path | None = None) -> dict:
     if audio_dir is None and suite not in suites.ALL:
         raise KeyError(f"unknown suite: {suite}")
-    from vora.config import Settings
     from vora.hostcheck import QuietMonitor, perf_skip_reason
     if latency and not force and (reason := perf_skip_reason()):
         raise SystemExit(f"refusing to measure latency: {reason}. --force records it with quiet=false.")
-    if audio_dir is not None:
-        rows, load_pcm, split = rows_from_dir(audio_dir), (lambda r: load_dir_pcm(audio_dir, r)), "all"
-        pool_rows = rows
-    else:
-        pool_rows = suites.load_manifest(suite)
-        rows = pick(pool_rows, split, final, n)
-        load_pcm = lambda r: suites.load_wav(suite, r)  # noqa: E731
-    noise = []
-    if aug.startswith("ambient"):
-        noise = [suites.load_wav(suites.NOISE, r) for r in suites.load_manifest(suites.NOISE)]
+    rows, pool_rows, load_pcm, split = _select_rows(suite, split, final, n, audio_dir)
+    noise = [suites.load_wav(suites.NOISE, r) for r in suites.load_manifest(suites.NOISE)] if aug.startswith("ambient") else []
     from scripts import eval_asr
     s, recs, retriever, llm, intents = _models(kb, faith)
     mon = QuietMonitor()
@@ -317,24 +355,10 @@ def run(suite: str, aug: str = "clean", split: str = "dev", final: bool = False,
         rows, load_pcm, lambda r, x: eval_asr.transcribe(recs, r["lang"], x)[0], retriever, intents, llm, aug, noise,
         unsure={"en": "I'm not sure", "zh": "我不确定"})}
     if retriever is not None and rows:
-        lang = rows[0]["lang"]
-        off = [r for n_ in OFFTOPIC_SUITES[lang] for r in [x for x in suites.load_manifest(n_) if x["split"] == split][:100]]
-        res["offtopic_false_accept"] = {"rate": offtopic_false_accept(off, retriever), "n": len(off)}
+        res["offtopic_false_accept"] = _offtopic_block(rows, retriever, split)
     res["speech_end_gap"] = _speech_end_gaps(rows, load_pcm)
     if latency:
-        ids = None if audio_dir else json.loads((suites.PINS).read_text())["latency_ids"].get(rows[0]["lang"], {}).get(split)
-        lat_rows = rows if ids is None else [r for r in pool_rows if r["id"] in set(ids)]
-        by_id = {r["id"]: r for r in pool_rows}
-        items = [(r["lang"], apply_aug(load_pcm(r), aug, r["id"], list(by_id), lambda i: load_pcm(by_id[i]), noise)) for r in lat_rows]
-        from vora.server import Models
-        turns = asyncio.run(_latency_turns(Models.load(s), s, items))
-        from scripts import refvad
-        if refvad.SILERO_PATH.exists():
-            for t, (_, x) in zip(turns, items):
-                if t is not None:   # one_turn pads 0.5 s of silence in front; both rules see the same padded signal
-                    y = np.concatenate([np.zeros(SR // 2, np.int16), x])
-                    t["silero_gap_ms"] = round((refvad.speech_end(y) - refvad.pipeline_speech_end(y)) * 1000, 1)
-        res["latency"] = latency_summary(turns)
+        res["latency"] = _latency_block(rows, pool_rows, load_pcm, audio_dir, split, aug, noise, s)
     return finish(res, mon.stop(), out_dir)
 
 

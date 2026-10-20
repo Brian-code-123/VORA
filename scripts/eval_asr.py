@@ -15,12 +15,13 @@ from vora.asr import AsrSession, load_recognizers
 from vora.config import ROOT, Settings
 
 SR = 16000
+AISHELL_REPO = "shenyunhang/AISHELL-1"
 SETS = {
     "en_librispeech_clean": ("openslr/librispeech_asr", "clean", "en", "text"),
     "en_librispeech_other": ("openslr/librispeech_asr", "other", "en", "text"),   # harder accents / recording conditions
     "en_fleurs": ("google/fleurs", "en_us", "en", "transcription"),
     "zh_fleurs": ("google/fleurs", "cmn_hans_cn", "zh", "transcription"),
-    "zh_aishell": ("shenyunhang/AISHELL-1", None, "zh", None),   # Apache-2.0; 20 test speakers, per-file wavs
+    "zh_aishell": (AISHELL_REPO, None, "zh", None),   # Apache-2.0; 20 test speakers, per-file wavs
 }
 AISHELL_REV = "2724409d538167445e43ebf846990319f12a1cbf"
 _PINS = json.loads((ROOT / "eval" / "suites" / "pins.json").read_text())["datasets"]
@@ -69,7 +70,8 @@ def transcribe(recs, lang: str, pcm: np.ndarray, agc: bool | None = None) -> tup
     """Same input path as the server: optional gain control (Settings.agc) in front of the streaming wrapper."""
     from vora.agc import Agc
     sess = AsrSession(recs, lang)
-    gain = Agc() if (Settings().agc if agc is None else agc) else None
+    use_agc = Settings().agc if agc is None else agc
+    gain = Agc() if use_agc else None
     x = np.concatenate([pcm, np.zeros(int(1.5 * SR), dtype=np.int16)])
     t0, finals = time.perf_counter(), []
     for i in range(0, len(x), 1600):
@@ -103,17 +105,17 @@ def _stream_aishell(n: int):
     """n clips spread over the 20 AISHELL-1 test speakers (per-file download, ~150 KB each)."""
     import collections
     from huggingface_hub import HfApi, hf_hub_download
-    files = [f for f in HfApi().list_repo_files("shenyunhang/AISHELL-1", repo_type="dataset", revision=AISHELL_REV) if "/wav/test/" in f]
+    files = [f for f in HfApi().list_repo_files(AISHELL_REPO, repo_type="dataset", revision=AISHELL_REV) if "/wav/test/" in f]
     by = collections.defaultdict(list)
     for f in sorted(files):
         by[f.split("/")[-2]].append(f)
     per = -(-n // len(by))
     pick = [f for spk in sorted(by) for f in by[spk][:per]][:n]
-    tr = Path(hf_hub_download("shenyunhang/AISHELL-1", "data_aishell/transcript/aishell_transcript_v0.8.txt", repo_type="dataset", revision=AISHELL_REV))
+    tr = Path(hf_hub_download(AISHELL_REPO, "data_aishell/transcript/aishell_transcript_v0.8.txt", repo_type="dataset", revision=AISHELL_REV))
     text = {l.split(" ", 1)[0]: l.split(" ", 1)[1].replace(" ", "").strip() for l in tr.read_text(encoding="utf-8").splitlines() if " " in l}
     out = []
     for f in pick:
-        p = hf_hub_download("shenyunhang/AISHELL-1", f, repo_type="dataset", revision=AISHELL_REV)
+        p = hf_hub_download(AISHELL_REPO, f, repo_type="dataset", revision=AISHELL_REV)
         x, sr = sf.read(p, dtype="float32")
         assert sr == SR, sr
         pcm = (x / (np.abs(x).max() + 1e-9) * 0.5 * 32767).astype(np.int16)
@@ -124,7 +126,7 @@ def _stream_aishell(n: int):
 def _stream(name: str, n: int):
     if name == "zh_aishell":
         return _stream_aishell(n)
-    repo, cfg, lang, col = SETS[name]
+    repo, cfg, _lang, col = SETS[name]
     from datasets import Audio, load_dataset   # heavy, eval-only: test modules import norm() without it
     ds = load_dataset(repo, cfg, split="test", streaming=True, revision=REVISION.get(repo)).cast_column("audio", Audio(decode=False))
     out = []

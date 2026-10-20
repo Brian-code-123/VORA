@@ -119,10 +119,15 @@ export function sources(lang, ids) {
   box.replaceChildren(...ids.map((id) => { const c = document.createElement("span"); c.className = "chip"; c.textContent = id; return c; }));
 }
 
+function latencyClass(ms) {
+  if (ms == null) return "";
+  return ms <= 1500 ? "good" : "bad";
+}
+
 export function latency(lang, m, hist) {
   const ms = m.first_content_audio_ms;
   $("lat").textContent = sec(ms);
-  $("lat").className = `lat-big ${ms == null ? "" : ms <= 1500 ? "good" : "bad"}`;
+  $("lat").className = `lat-big ${latencyClass(ms)}`;
   const sum = hist.summary();
   $("lat-sub").textContent = sum.n ? `${t(lang, "lat_p50", { ms: sec(sum.p50) })} · ${t(lang, "lat_target")}` : t(lang, "lat_none");
   drawChart(hist.items.map((x) => x.first_content_audio_ms).filter((x) => typeof x === "number"));
@@ -155,7 +160,8 @@ function drawChart(xs) {
 
 export function event(lang, key, text = "") {
   const el = $("events"), p = document.createElement("div");
-  p.textContent = `${t(lang, key)}${text ? `: ${text}` : ""}`;
+  const suffix = text ? `: ${text}` : "";
+  p.textContent = `${t(lang, key)}${suffix}`;
   el.prepend(p);
   while (el.children.length > 5) el.lastChild.remove();
 }

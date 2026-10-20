@@ -14,24 +14,35 @@ SR = 16000
 SETS = ("en_librispeech_clean", "en_fleurs", "zh_aishell")
 
 
+def _finals_in(sess: AsrSession, pcm: np.ndarray) -> tuple[int, float | None]:
+    """(number of finals, seconds from clip start to the first final) when the clip is followed by 2.5 s of silence."""
+    x = np.concatenate([pcm, np.zeros(int(2.5 * SR), dtype=np.int16)])
+    t_first, finals = None, 0
+    for i in range(0, len(x), 1600):
+        for e in sess.feed(x[i:i + 1600].tobytes()):
+            if e.kind == "final":
+                finals += 1
+                if t_first is None:
+                    t_first = (i + 1600) / SR
+    return finals, t_first
+
+
+def _wait_ms(finals: int, t_first: float | None, n_samples: int) -> float:
+    """Speech end to the final, in ms; NaN when the clip produced several finals (no single wait to report)."""
+    return max(0.0, t_first - n_samples / SR) * 1000 if finals == 1 else float("nan")
+
+
 def run_set(name: str, settings: Settings, hold_ms: int, n: int = 50) -> dict:
     lang = E.SETS[name][2]
     recs = load_recognizers(settings)
     waits, extra, clips = [], 0, 0
     for _ref, pcm in E.load(name, n):
         sess = AsrSession(recs, lang, hold_ms=hold_ms, hold_total_cap_ms=settings.hold_total_cap_ms)
-        x = np.concatenate([pcm, np.zeros(int(2.5 * SR), dtype=np.int16)])
-        t_first, finals = None, 0
-        for i in range(0, len(x), 1600):
-            for e in sess.feed(x[i:i + 1600].tobytes()):
-                if e.kind == "final":
-                    finals += 1
-                    if t_first is None:
-                        t_first = (i + 1600) / SR
+        finals, t_first = _finals_in(sess, pcm)
         clips += 1
         extra += max(0, finals - 1)
         if finals:
-            waits.append(max(0.0, ((finals and t_first) - len(pcm) / SR)) * 1000 if finals == 1 else float("nan"))
+            waits.append(_wait_ms(finals, t_first, len(pcm)))
     w = [v for v in waits if not np.isnan(v)]
     return {"clips": clips, "single_final_clips": len(w), "wait_ms_p50": round(float(np.percentile(w, 50)), 0), "wait_ms_p95": round(float(np.percentile(w, 95)), 0),
             "extra_finals_per_clip": round(extra / clips, 3)}

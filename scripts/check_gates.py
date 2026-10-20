@@ -17,6 +17,36 @@ def evaluate(sizes: dict[str, int]) -> dict[str, dict]:
     return out
 
 
+ONNX = ".onnx"
+
+
+def _asr_weights(files: list[Path]) -> list[Path]:
+    return [f for f in files if f.suffix == ONNX and ".int8" in f.name or f.name.startswith(("decoder", "joiner")) and ".int8" in f.name]
+
+
+def _tts_weights(files: list[Path]) -> list[Path]:
+    quantised = [f for f in files if f.name.endswith(".int8" + ONNX)]
+    return quantised or [f for f in files if f.suffix == ONNX]
+
+
+def _llm_weights(files: list[Path]) -> list[Path]:
+    return [f for f in files if f.suffix == ".gguf"]
+
+
+def _embed_weights(files: list[Path]) -> list[Path]:
+    return [f for f in files if f.suffix == ONNX]
+
+
+_WEIGHTS = (("asr", _asr_weights), ("tts", _tts_weights), ("llm", _llm_weights), ("embed", _embed_weights))
+
+
+def _weights(name: str, files: list[Path]) -> list[Path]:
+    for prefix, pick in _WEIGHTS:
+        if name.startswith(prefix):
+            return pick(files)
+    return files
+
+
 def measure(models_dir: Path) -> dict[str, int]:
     """Count only the weights the runtime loads (int8 onnx / gguf), not espeak data."""
     sizes = {}
@@ -24,16 +54,7 @@ def measure(models_dir: Path) -> dict[str, int]:
         if not d.is_dir() or d.name == "aux":   # aux = dev-only tools (silero VAD for the latency cross-check), never shipped
             continue
         files = [f for f in d.rglob("*") if f.is_file()]
-        if d.name.startswith("asr"):
-            files = [f for f in files if f.suffix == ".onnx" and ".int8" in f.name or f.name.startswith(("decoder", "joiner")) and ".int8" in f.name]
-        elif d.name.startswith("tts"):
-            q = [f for f in files if f.name.endswith(".int8.onnx")]
-            files = q or [f for f in files if f.suffix == ".onnx"]
-        elif d.name.startswith("llm"):
-            files = [f for f in files if f.suffix == ".gguf"]
-        elif d.name.startswith("embed"):
-            files = [f for f in files if f.suffix == ".onnx"]
-        sizes[d.name] = sum(f.stat().st_size for f in files)
+        sizes[d.name] = sum(f.stat().st_size for f in _weights(d.name, files))
     return sizes
 
 

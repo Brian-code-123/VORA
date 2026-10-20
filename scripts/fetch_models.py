@@ -10,27 +10,28 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 REV = {"csukuangfj/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01": "a5f60fe00dcfbaf68fcc1c6b5cf53061e144d6da", 'csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17': 'd42f2d9f7ca24806fb667456a18a9f1b60f70d16', 'csukuangfj/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23': '204ad334e2e683fd295359930cc16fc0432a23ac', 'csukuangfj/vits-piper-en_US-lessac-low': '7f5edb341cadf35daab356f857ed5ae8545d22bf', 'csukuangfj/vits-piper-en_US-ljspeech-medium': '34f390d13b9edbaa30c339127de0f9c4c5948c90', 'csukuangfj/vits-piper-zh_CN-huayan-x_low': 'bf8284cf534fd7328467afd3c8b3eb992eedc02a', 'Xenova/bge-small-zh-v1.5': '75c43b069aac4d136ba6bc1122f995fedcfd2781', 'Xenova/bge-small-en-v1.5': 'ea104dacec62c0de699686887e3f920caeb4f3e3'}  # pinned commits (checked 2026-10-01)
 LLM_REV = "9217f5db79a29953eb74d5343926648285ec7e67"
 ROOT = Path(__file__).resolve().parent.parent / "models"
+APACHE, INT8_ONNX, TOKENS, TEST_WAVS, ESPEAK_DATA, ANY_ONNX = "Apache-2.0", "*.int8.onnx", "tokens.txt", "test_wavs/*", "espeak-ng-data/*", "*.onnx"
 SPECS = {
-    "asr_en": dict(repo="csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17", license="Apache-2.0",
-                   allow=["*.int8.onnx", "tokens.txt", "test_wavs/*"], ignore=["*epoch-99-avg-1.onnx"]),
-    "asr_zh": dict(repo="csukuangfj/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23", license="Apache-2.0",
-                   allow=["*.int8.onnx", "tokens.txt", "test_wavs/*"], ignore=[]),
-    "asr_zh_ctc": dict(repo="csukuangfj/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01", license="Apache-2.0",
-                       allow=["model.int8.onnx", "tokens.txt", "test_wavs/*"], ignore=[]),
-    "tts_en_ljspeech": dict(repo="csukuangfj/vits-piper-en_US-ljspeech-medium", license="Piper MIT; voice dataset LJ Speech: public domain (model card), trained from scratch",
-                            allow=["*.onnx", "tokens.txt", "espeak-ng-data/*", "MODEL_CARD"], ignore=[]),
-    "tts_zh": dict(repo="csukuangfj/vits-piper-zh_CN-huayan-x_low", license="Piper MIT; voice dataset licence UNKNOWN per Piper model card",
-                   allow=["*.onnx", "tokens.txt", "lexicon.txt", "espeak-ng-data/*", "*.fst", "*.txt"], ignore=[]),
-    "embed_zh": dict(repo="Xenova/bge-small-zh-v1.5", license="MIT (BAAI bge-small-zh-v1.5, int8 ONNX export)",
-                     allow=["onnx/model_int8.onnx", "tokenizer.json"], ignore=[]),
-    "embed_en": dict(repo="Xenova/bge-small-en-v1.5", license="MIT (BAAI bge-small-en-v1.5, int8 ONNX export)",
-                     allow=["onnx/model_int8.onnx", "tokenizer.json"], ignore=[]),
+    "asr_en": {"repo": "csukuangfj/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17", "license": APACHE,
+                   "allow": [INT8_ONNX, TOKENS, TEST_WAVS], "ignore": ["*epoch-99-avg-1.onnx"]},
+    "asr_zh": {"repo": "csukuangfj/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23", "license": APACHE,
+                   "allow": [INT8_ONNX, TOKENS, TEST_WAVS], "ignore": []},
+    "asr_zh_ctc": {"repo": "csukuangfj/sherpa-onnx-streaming-zipformer-small-ctc-zh-int8-2025-04-01", "license": APACHE,
+                       "allow": ["model.int8.onnx", TOKENS, TEST_WAVS], "ignore": []},
+    "tts_en_ljspeech": {"repo": "csukuangfj/vits-piper-en_US-ljspeech-medium", "license": "Piper MIT; voice dataset LJ Speech: public domain (model card), trained from scratch",
+                            "allow": [ANY_ONNX, TOKENS, ESPEAK_DATA, "MODEL_CARD"], "ignore": []},
+    "tts_zh": {"repo": "csukuangfj/vits-piper-zh_CN-huayan-x_low", "license": "Piper MIT; voice dataset licence UNKNOWN per Piper model card",
+                   "allow": [ANY_ONNX, TOKENS, "lexicon.txt", ESPEAK_DATA, "*.fst", "*.txt"], "ignore": []},
+    "embed_zh": {"repo": "Xenova/bge-small-zh-v1.5", "license": "MIT (BAAI bge-small-zh-v1.5, int8 ONNX export)",
+                     "allow": ["onnx/model_int8.onnx", "tokenizer.json"], "ignore": []},
+    "embed_en": {"repo": "Xenova/bge-small-en-v1.5", "license": "MIT (BAAI bge-small-en-v1.5, int8 ONNX export)",
+                     "allow": ["onnx/model_int8.onnx", "tokenizer.json"], "ignore": []},
 }
 OPTIONAL = {   # only with --with-lessac: faster but its licence is custom (Blizzard 2013), see docs/licenses.md
-    "tts_en": dict(repo="csukuangfj/vits-piper-en_US-lessac-low", license="Piper MIT; voice dataset: Blizzard 2013 Lessac licence (custom, not OSI/CC)",
-                   allow=["*.onnx", "tokens.txt", "espeak-ng-data/*", "MODEL_CARD"], ignore=[]),
+    "tts_en": {"repo": "csukuangfj/vits-piper-en_US-lessac-low", "license": "Piper MIT; voice dataset: Blizzard 2013 Lessac licence (custom, not OSI/CC)",
+               "allow": [ANY_ONNX, TOKENS, ESPEAK_DATA, "MODEL_CARD"], "ignore": []},
 }
-LLM = dict(repo="Qwen/Qwen2.5-0.5B-Instruct-GGUF", file="qwen2.5-0.5b-instruct-q4_k_m.gguf", license="Apache-2.0")
+LLM = {"repo": "Qwen/Qwen2.5-0.5B-Instruct-GGUF", "file": "qwen2.5-0.5b-instruct-q4_k_m.gguf", "license": APACHE}
 
 
 def sha(p: Path) -> str:

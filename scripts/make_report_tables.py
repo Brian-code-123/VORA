@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parent.parent
 R = ROOT / "results"
 
 
+RULE3 = "|---|---|---|"
+
 def j(name: str) -> dict:
     return json.loads((R / name).read_text())
 
@@ -36,7 +38,7 @@ def tables() -> str:
     zh_ok = sum(bool(x["context"]) for x in zh)
     distinct = len({x["q"] for x in b["rows"]})
     out = [f"*Host: {b['host']['system']}, {b['host']['cores']} cores, CPU-only, 1-min load average {b['host'].get('loadavg_1m', '?')} ({'quiet host' if b.get('quiet') else 'BUSY host: numbers are noisy'}). Apple-Silicon Mac (arm64), not x86 and not a Raspberry Pi. N={b['n']} turns, {distinct} distinct questions, each asked once.*", "",
-           "**Latency (ms, p50 / p95)**", "", "| Stage | Budget | Measured |", "|---|---|---|",
+           "**Latency (ms, p50 / p95)**", "", "| Stage | Budget | Measured |", RULE3,
            f"| ASR endpoint wait (speech end → final text; per-chunk decode ≤300 is tested separately) | – | {ms(a, 'asr_final')} |",
            f"| Retrieval + LLM first token (oracle text) | ≤500 | {ms(o, 'rag_first_token')} |",
            f"| TTS first chunk (oracle text) | ≤200 | {ms(o, 'tts_first_chunk')} |",
@@ -44,7 +46,7 @@ def tables() -> str:
            f"| **End-to-end estimate** (ASR endpoint + oracle) | ≤1500 | {ms(b, 'estimated_total_ms') if b['estimated_total_ms'] else 'not run'} |",
            f"| End-to-end measured, English audio only (n={len(en)}) | ≤1500 | {en_p50:.0f} / {en_p95:.0f} |",
            f"| End-to-end measured, Chinese audio (n={len(zh)}) | ≤1500 | not meaningful: {zh_ok} of {len(zh)} turns retrieved anything (the ASR misheard the synthetic Chinese speech), so all took the fast 'not sure' path |",
-           "", "**Streaming vs batch baseline (same models, same questions)**", "", "| | p50 | p95 |", "|---|---|---|",
+           "", "**Streaming vs batch baseline (same models, same questions)**", "", "| | p50 | p95 |", RULE3,
            f"| Batch: endpoint + retrieve + full LLM + full TTS | {base['batch_total_ms']['p50']:.0f} | {base['batch_total_ms']['p95']:.0f} |",
            f"| Streaming (estimate) | {base['streaming_total_estimated_ms']['p50']:.0f} | {base['streaming_total_estimated_ms']['p95']:.0f} |",
            "", "**ASR accuracy (streaming wrapper, 50 clips per set)**", "", "| Set | Metric | Clean | 10 dB noise | RTF |", "|---|---|---|---|---|"]
@@ -53,7 +55,7 @@ def tables() -> str:
             continue
         c, n = asr[f"{k}/clean"], asr[f"{k}/noisy_10dB"]
         out.append(f"| {k} | {c['metric']} | {c['value']*100:.1f}% | {n['value']*100:.1f}% | {c['rtf']} |")
-    out += ["", "**RAG and TTS**", "", "| Metric | Result | Target |", "|---|---|---|",
+    out += ["", "**RAG and TTS**", "", "| Metric | Result | Target |", RULE3,
             f"| Top-3 retrieval, dev (n={rag['top3_dev']['n']}) | {rag['top3_dev']['acc']*100:.1f}% | ≥80% |",
             f"| Top-3 retrieval, held-out reworded (n={rag['top3_heldout']['n']}) | {rag['top3_heldout']['acc']*100:.1f}% | ≥80% |",
             f"| Off-topic queries rejected (n={rag['offtopic_rejected']['n']}) | {rag['offtopic_rejected']['rate']*100:.0f}% | – |",

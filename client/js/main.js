@@ -59,10 +59,20 @@ function render(prev) {
 }
 
 function noSoundWatch(v) {
-  if (s.phase !== "listening" || !audio.stream) { silentSince = null; return; }
-  if (v > 0.002) { silentSince = null; if (!$("banner").hidden && $("banner").dataset.kind === "warn" && !s.interrupted) ui.banner(lang, null); return; }
+  if (s.phase !== "listening" || !audio.stream) {
+    silentSince = null;
+    return;
+  }
+  if (v > 0.002) {
+    silentSince = null;
+    if (!$("banner").hidden && $("banner").dataset.kind === "warn" && !s.interrupted) ui.banner(lang, null);
+    return;
+  }
   silentSince ??= performance.now();
-  if (performance.now() - silentSince > 5000) { ui.banner(lang, "warn", "no_sound"); silentSince = performance.now() + 1e9; }
+  if (performance.now() - silentSince > 5000) {
+    ui.banner(lang, "warn", "no_sound");
+    silentSince = performance.now() + 1e9;
+  }
 }
 
 async function serverLoading() {
@@ -91,7 +101,10 @@ function onServer(raw) {
   const was = s.phase;
   dispatch({ type: "server", msg: m });
   if (!["listening", "hearing", "thinking", "speaking"].includes(s.phase)) return;
-  if (m.type === "partial") { if (was === "speaking") audio.stopPlayback(); ui.partial(lang, m.text); }
+  if (m.type === "partial") {
+    if (was === "speaking") audio.stopPlayback();
+    ui.partial(lang, m.text);
+  }
   else if (m.type === "final") ui.finalText(lang, m.text);
   else if (m.type === "context") ui.sources(lang, m.ids || []);
   else if (m.type === "token") ui.token(m.text, m.full);
@@ -151,7 +164,7 @@ async function start(file) {
       localStorageSet("vora.micok", "1"); $("micnote").hidden = true;
     }
   } catch (e) {
-    if (e?.name && /Error$/.test(e.name) && e.name !== "Error") dispatch({ type: "mic_error", name: e.name });
+    if (e?.name && e.name.endsWith("Error") && e.name !== "Error") dispatch({ type: "mic_error", name: e.name });
     else dispatch({ type: "close", code: 1006 });
     stop(true);
   }
@@ -217,13 +230,23 @@ $("sample").onchange = async (e) => {
   start(await buf);
   e.target.value = "";
 };
-$("file").onchange = async (e) => { const f = e.target.files?.[0]; if (!f) return; if (live()) stop(); audio.unlock(); start(await f.arrayBuffer()); e.target.value = ""; };
+$("file").onchange = async (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  if (live()) stop();
+  audio.unlock();
+  start(await f.arrayBuffer());
+  e.target.value = "";
+};
 $("mute").onclick = () => {
   audio.setMuted(!audio.muted);
   $("mute").setAttribute("aria-pressed", String(audio.muted));
   $("mute").dataset.i18n = audio.muted ? "unmute_out" : "mute_out"; ui.applyStrings(lang);
 };
-$("clear").onclick = () => { if (live()) stop(); ui.resetChat(); };
+$("clear").onclick = () => {
+  if (live()) stop();
+  ui.resetChat();
+};
 document.addEventListener("keydown", (e) => {
   if (e.target.closest?.("input, select, textarea, button")) return;
   if (e.code === "Space") { e.preventDefault(); live() ? stop() : start(); }

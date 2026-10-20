@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1
 # Multi-arch (linux/amd64, linux/arm64). CPU only. Models are fetched at build time (public HF repos).
 FROM python:3.12-slim AS build
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential cmake git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential cmake git \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY pyproject.toml ./
 COPY docker/constraints.txt ./constraints.txt
