@@ -84,7 +84,7 @@ MOS proxy (UTMOS22, 10 clips per voice): English 4.22, Chinese 3.44, against the
 | arm64 image (native) | built, ready in 84 s, WebSocket smoke test passes in English, Chinese and with a real voice |
 | amd64 image (emulated) | built 1.06 GB, boots, smoke test passes |
 | Pi 4 shape (`--cpus=4 --memory=1g`, fast M2 cores) | first audio p50 979 / p95 2811 ms; Linux USS 465 MB |
-| AWS t4g.small demo (2 Graviton2 vCPU, 2 GB) | HTTPS on 443, access key required; 3.8 to 5.6 s per answer: works, does not meet G1 |
+| AWS t4g.small (2 Graviton2 vCPU, 2 GB) | HTTPS on 443, access key required; 3.8 to 5.6 s per answer: works, does not meet G1 |
 | Pi-class CPU (a1.xlarge) and Jetson | not run: AWS free plan refused the instance type, and there is no Jetson hardware |
 
 ## 8. Limitations

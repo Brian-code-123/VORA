@@ -1,10 +1,10 @@
 # Security
 
-VORA is a demo of a streaming voice pipeline, not a hardened product. What protects the hosted demo, and what was knowingly left open, is in the Security section of [README.md](README.md); the measured prompt-injection results and the dependency-audit decisions are in [docs/rulings.md](docs/rulings.md).
+VORA is a demo of a streaming voice pipeline, not a hardened product. What protects a deployed instance, and what was knowingly left open, is in the Security section of [README.md](README.md); the measured prompt-injection results and the dependency-audit decisions are in [docs/rulings.md](docs/rulings.md).
 
 ## Reporting a problem
 
-Please open a GitHub issue for anything that is not exploitable on the hosted demo. If you found a way to use the hosted demo without its access key, or to read its logs, do not publish details: open a private security advisory on this repository (Security tab, "Report a vulnerability") or contact the maintainer through the GitHub profile.
+Please open a GitHub issue for anything that is not exploitable on a deployed instance. If you found a way to use a deployed instance without its access key, or to read its logs, do not publish details: open a private security advisory on this repository (Security tab, "Report a vulnerability") or contact the maintainer through the GitHub profile.
 
 ## What to know before running it yourself
 

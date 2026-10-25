@@ -12,7 +12,7 @@ Technical report (3 pages): [`docs/report.pdf`](docs/report.pdf) · full detail:
 
 - Local, for the best latency: follow the Quickstart, open `http://localhost:8000`, press the mic button and ask "How long is the warranty on the VORA X200?" or "怎么恢复出厂设置".
 - No microphone: tap an example question on the first screen, or open "Show details" for the sample menu and audio file input (add `?debug=1` to open it on load, with the latency chart and sources). "Real callers" are public MInDS-14 phone recordings of bank questions; they are off-topic for this knowledge base, so they show real-voice speech recognition and the "not sure" refusal.
-- Hosted demo (AWS, 2 vCPU): a private link of the form `https://<IP>/#key=…`, generated in AWS CloudShell (`cat ~/vora-demo-link.txt`). Answers take about 4 to 6 s on that box. Script: [`docs/demo-script.md`](docs/demo-script.md).
+- Demo script and talking points: [`docs/demo-script.md`](docs/demo-script.md).
 
 ## Results at a glance
 
@@ -111,7 +111,7 @@ Reproducing the numbers: results files are written only with `VORA_WRITE_RESULTS
 
 ## Security
 
-The hosted demo is reachable from the internet, so it was reviewed against the OWASP Top 10 (2021). What is in place, and where:
+The server can be exposed to the internet, so it was reviewed against the OWASP Top 10 (2021). What is in place, and where:
 
 | Risk | Control |
 |---|---|

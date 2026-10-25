@@ -36,7 +36,7 @@ Speculative turns (`VORA_SPECULATE`) switch themselves off below 6 cores, so a 4
 See docs/ui.md (TLS certificate via `scripts/make_cert.sh`, `VORA_HOST=0.0.0.0`). Before exposing the server beyond your
 own network, set `VORA_ACCESS_KEY`: without it anyone who can reach the port can use the models.
 
-## AWS demo box (t4g.small, HTTPS on 443, access key)
+## AWS deployment (t4g.small, HTTPS on 443, access key)
 A redeploy creates a new IP and a new access key, so links already shared stop working once the old box is gone. The old box
 keeps running until the new one answers `/health` (the script waits up to 20 minutes and then terminates it); if the new box
 never gets ready the old demo is left running and the script prints how to read the new box's console. A failed image build
